@@ -51,6 +51,7 @@ yarn-error.log*
 /src/plugins/contributions.client.generated.ts
 /src/plugins/plugin-keys.generated.ts
 /src/plugins/plugin-barrels.generated.ts
+/src/plugins/plugin-sources.generated.css
 
 # Gerados por scripts/gen-theme-registry.ts a partir das deps @venore/theme-* do package.json.
 /src/themes/registry.generated.ts
