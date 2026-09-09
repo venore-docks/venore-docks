@@ -267,6 +267,13 @@
       "when": 1788551138079,
       "tag": "0037_smart_william_stryker",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1788959966536,
+      "tag": "0038_neutralize_extension_state_backfill",
+      "breakpoints": true
     }
   ]
 }
