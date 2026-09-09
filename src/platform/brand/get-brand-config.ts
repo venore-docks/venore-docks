@@ -24,9 +24,10 @@ const KEYS = {
 
 // Default de código NEUTRO de propósito — o default embutido não pode carregar
 // identidade de tenant (foi "Aprenda Música" até a 0030/0032; ver
-// drizzle/0032_aprenda_musica_brand_no_longer_in_core.sql). Cada instalação define
-// a própria marca em /admin/settings/brand; a instalação da Aprenda Música
-// especificamente usa `npm run db:seed:aprenda-musica`.
+// drizzle/0032_aprenda_musica_brand_no_longer_in_core.sql). Cada instalação define a própria
+// marca em /admin/settings/brand — core nunca semeia identidade de tenant (não existe mais um
+// script tipo `db:seed:aprenda-musica`; um plugin que precise de dado inicial próprio usa
+// `contributions.seeds`, rodado no install de /admin/plugins).
 const DEFAULTS = {
   siteName: "Meu Site",
   logoMediaId: "",

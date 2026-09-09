@@ -32,8 +32,7 @@
     "db:seed:observability-logs-clear": "node --env-file=.env scripts/seed-observability-logs-clear-permission.mjs",
     "db:seed:observability-audit-view": "node --env-file=.env scripts/seed-observability-audit-view-permission.mjs",
     "db:install:fresh": "tsx --env-file=.env scripts/install-fresh.ts",
-    "db:bootstrap-superadmin": "tsx --env-file=.env scripts/bootstrap-superadmin.ts",
-    "db:seed:aprenda-musica": "tsx --env-file=.env scripts/seed-aprenda-musica.ts"
+    "db:bootstrap-superadmin": "tsx --env-file=.env scripts/bootstrap-superadmin.ts"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.3",
@@ -53,12 +52,6 @@
     "@tiptap/static-renderer": "^3.29.2",
     "@venore/plugin-academy": "git+https://github.com/venore-docks/venore-plugin-academy.git#v1.1.0",
     "@venore/theme-academy": "git+https://github.com/venore-docks/venore-theme-academy.git#v1.1.0",
-    "@venore/theme-druids": "git+https://github.com/venore-docks/venore-theme-druids.git#v1.1.0",
-    "@venore/theme-fearless": "git+https://github.com/venore-docks/venore-theme-fearless.git#v1.1.0",
-    "@venore/theme-knights": "git+https://github.com/venore-docks/venore-theme-knights.git#v1.1.0",
-    "@venore/theme-nite": "git+https://github.com/venore-docks/venore-theme-nite.git#v1.1.0",
-    "@venore/theme-paladins": "git+https://github.com/venore-docks/venore-theme-paladins.git#v1.1.0",
-    "@venore/theme-sorcerers": "git+https://github.com/venore-docks/venore-theme-sorcerers.git#v1.1.0",
     "@vercel/blob": "^2.6.1",
     "@vercel/functions": "^3.7.5",
     "class-variance-authority": "^0.7.1",
