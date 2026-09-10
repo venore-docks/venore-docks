@@ -88,22 +88,27 @@ export async function loadUninstallPreviewAction(
   return { success: true, data: await previewPluginUninstall(pluginKey) };
 }
 
-// Desinstalação "modo B" — limpar banco (docs/issues.md — "Plugins e Temas"). Destrutivo e
-// irreversível: exige que o admin digite a key do plugin para confirmar (mesma ideia do "digite o
-// nome do repositório" do GitHub). "Modo A" (desativar, reversível) continua sendo a ação
+// Desinstalação "modo B" (docs/issues.md — "Plugins e Temas"). Dois graus:
+//   purgeData=false — só tira o plugin do ar (installed_at nulo). Schema, dados e histórico de
+//     migrations ficam; reinstalar aplica só as migrations novas. Reversível na prática.
+//   purgeData=true  — limpa o banco do plugin (schemas dropados, settings e permissions do
+//     namespace apagados). Destrutivo e irreversível: exige que o admin digite a key do plugin
+//     para confirmar (mesma ideia do "digite o nome do repositório" do GitHub).
+// "Modo A" (desativar, 100% reversível, não mexe em installed_at) continua sendo
 // togglePluginEnabledAction.
 export async function uninstallPluginAction(
   _prevState: PluginsActionState,
   formData: FormData,
 ): Promise<PluginsActionState> {
   const pluginKey = String(formData.get("pluginKey") ?? "");
+  const purgeData = formData.get("purgeData") === "true";
   const confirmationKey = String(formData.get("confirmationKey") ?? "");
 
-  if (confirmationKey.trim() !== pluginKey) {
-    return { error: `Digite "${pluginKey}" para confirmar a desinstalação.` };
+  if (purgeData && confirmationKey.trim() !== pluginKey) {
+    return { error: `Digite "${pluginKey}" para confirmar a limpeza do banco.` };
   }
 
-  const result = await uninstallPlugin({ pluginKey });
+  const result = await uninstallPlugin({ pluginKey, purgeData });
   if (!result.success) {
     return { error: result.error.message };
   }

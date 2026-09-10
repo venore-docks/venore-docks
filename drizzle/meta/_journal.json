@@ -260,6 +260,13 @@
       "when": 1788375285002,
       "tag": "0036_reflective_starfox",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1788551138079,
+      "tag": "0037_smart_william_stryker",
+      "breakpoints": true
     }
   ]
 }

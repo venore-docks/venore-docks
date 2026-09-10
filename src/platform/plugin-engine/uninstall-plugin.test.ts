@@ -85,7 +85,7 @@ describe("uninstallPlugin / performPluginUninstall", () => {
     });
 
     const { uninstallPlugin } = await import("./uninstall-plugin");
-    const result = await uninstallPlugin({ pluginKey: "enrollment-dashboard" });
+    const result = await uninstallPlugin({ pluginKey: "enrollment-dashboard", purgeData: true });
 
     expect(result).toEqual({ success: false, error: { code: "rbac.authorization.forbidden", message: "sem permission" } });
     expect(transaction).not.toHaveBeenCalled();
@@ -93,7 +93,7 @@ describe("uninstallPlugin / performPluginUninstall", () => {
 
   it("rejects a plugin key that is not in the registry", async () => {
     const { performPluginUninstall } = await import("./uninstall-plugin");
-    const result = await performPluginUninstall({ pluginKey: "ghost", actorId: "actor-1" });
+    const result = await performPluginUninstall({ pluginKey: "ghost", purgeData: true, actorId: "actor-1" });
 
     expect(result.success).toBe(false);
     expect(result).toMatchObject({ error: { code: "plugin-engine.uninstall.unknown_plugin" } });
@@ -104,7 +104,7 @@ describe("uninstallPlugin / performPluginUninstall", () => {
     listExtensionStates.mockResolvedValue({ success: true, data: {} });
 
     const { performPluginUninstall } = await import("./uninstall-plugin");
-    const result = await performPluginUninstall({ pluginKey: "enrollment-dashboard", actorId: "actor-1" });
+    const result = await performPluginUninstall({ pluginKey: "enrollment-dashboard", purgeData: true, actorId: "actor-1" });
 
     expect(result).toMatchObject({ error: { code: "plugin-engine.uninstall.not_installed" } });
     expect(transaction).not.toHaveBeenCalled();
@@ -127,7 +127,7 @@ describe("uninstallPlugin / performPluginUninstall", () => {
     );
 
     const { performPluginUninstall } = await import("./uninstall-plugin");
-    const result = await performPluginUninstall({ pluginKey: "enrollment-dashboard", actorId: "actor-1" });
+    const result = await performPluginUninstall({ pluginKey: "enrollment-dashboard", purgeData: true, actorId: "actor-1" });
 
     expect(result).toEqual({
       success: false,
@@ -141,7 +141,7 @@ describe("uninstallPlugin / performPluginUninstall", () => {
 
   it("drops the schemas, purges the namespace, invalidates caches and audits on success", async () => {
     const { performPluginUninstall } = await import("./uninstall-plugin");
-    const result = await performPluginUninstall({ pluginKey: "enrollment-dashboard", actorId: "actor-1" });
+    const result = await performPluginUninstall({ pluginKey: "enrollment-dashboard", purgeData: true, actorId: "actor-1" });
 
     expect(result).toEqual({ success: true, data: undefined });
 
@@ -168,7 +168,7 @@ describe("uninstallPlugin / performPluginUninstall", () => {
     transaction.mockRejectedValue(new Error("connection reset"));
 
     const { performPluginUninstall } = await import("./uninstall-plugin");
-    const result = await performPluginUninstall({ pluginKey: "enrollment-dashboard", actorId: "actor-1" });
+    const result = await performPluginUninstall({ pluginKey: "enrollment-dashboard", purgeData: true, actorId: "actor-1" });
 
     expect(result).toMatchObject({ error: { code: "plugin-engine.uninstall.failed" } });
     expect(result.success).toBe(false);
@@ -182,10 +182,39 @@ describe("uninstallPlugin / performPluginUninstall", () => {
     listExtensionStates.mockResolvedValue({ success: true, data: { donations: { installed: true, enabled: true } } });
 
     const { performPluginUninstall } = await import("./uninstall-plugin");
-    const result = await performPluginUninstall({ pluginKey: "donations", actorId: "actor-1" });
+    const result = await performPluginUninstall({ pluginKey: "donations", purgeData: true, actorId: "actor-1" });
 
     expect(result).toEqual({ success: true, data: undefined });
     // Sem DROP SCHEMA: só DELETE settings + DELETE role_permissions + UPDATE extension_state.
     expect(txExecute).toHaveBeenCalledTimes(3);
+  });
+
+  it("preserves the schema and namespace when purgeData is false, only resetting extension_state", async () => {
+    const { performPluginUninstall } = await import("./uninstall-plugin");
+    const result = await performPluginUninstall({
+      pluginKey: "enrollment-dashboard",
+      purgeData: false,
+      actorId: "actor-1",
+    });
+
+    expect(result).toEqual({ success: true, data: undefined });
+
+    // Nenhum DROP SCHEMA, nenhum DELETE: só o UPDATE em extensions.extension_state.
+    expect(txExecute).toHaveBeenCalledTimes(1);
+
+    expect(invalidateExtensionStateCaches).toHaveBeenCalledWith("plugin", "enrollment-dashboard");
+    expect(invalidateCache).toHaveBeenCalledWith("plugin-engine:report");
+    expect(recordAuditEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "plugin-engine.uninstall-plugin",
+        outcome: "success",
+        detail: expect.objectContaining({
+          pluginKey: "enrollment-dashboard",
+          purgeData: false,
+          settingsDeleted: 0,
+          permissionsDeleted: 0,
+        }),
+      }),
+    );
   });
 });

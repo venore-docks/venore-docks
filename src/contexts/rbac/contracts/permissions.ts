@@ -39,4 +39,9 @@ export const RBAC_PERMISSIONS: PermissionDefinition[] = [
   // Trilha de auditoria de segurança é mais sensível que o log operacional (não é apagável por
   // ninguém via UI) — permission própria, não reaproveita observability.logs.view.
   { key: "observability.audit.view", label: "Ver auditoria de segurança" },
+  // Pertence conceitualmente a contexts/content-feed — mesmo stopgap de settings.manage acima.
+  // Lado publicador: quem pode criar/apagar conexão e escolher categorias liberadas pra ela.
+  { key: "content-feed.connections.manage", label: "Gerenciar quem pode assinar o feed de conteúdo" },
+  // Lado assinante: quem pode cadastrar/apagar fonte remota e disparar sincronização manual.
+  { key: "content-feed.sources.manage", label: "Gerenciar de onde este site assina conteúdo" },
 ];
