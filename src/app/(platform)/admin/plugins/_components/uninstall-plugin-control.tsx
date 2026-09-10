@@ -49,6 +49,8 @@ export function UninstallPluginControl({
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<"choose" | "confirm">("choose");
   const [confirmInput, setConfirmInput] = useState("");
+  // Qual das duas desinstalações o admin disparou — só pra escolher a mensagem de sucesso do toast.
+  const [purgeSubmitted, setPurgeSubmitted] = useState(false);
   const [preview, setPreview] = useState<PluginUninstallPreview | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -59,6 +61,7 @@ export function UninstallPluginControl({
   const resetDialog = useCallback(() => {
     setStep("choose");
     setConfirmInput("");
+    setPurgeSubmitted(false);
     setPreview(null);
     setPreviewError(null);
     setPreviewLoading(false);
@@ -78,7 +81,9 @@ export function UninstallPluginControl({
   useActionToast({
     pending: uninstallPending,
     error: uninstallState.error,
-    successMessage: `Plugin "${pluginKey}" desinstalado e removido do banco.`,
+    successMessage: purgeSubmitted
+      ? `Plugin "${pluginKey}" desinstalado e removido do banco.`
+      : `Plugin "${pluginKey}" desinstalado. Dados preservados no banco.`,
     onSuccess: closeDialog,
   });
 
@@ -136,7 +141,7 @@ export function UninstallPluginControl({
                 <DialogHeader>
                   <DialogTitle>{pluginName}</DialogTitle>
                   <DialogDescription>
-                    Escolha o que fazer com este plugin. Desativar é reversível; desinstalar limpando o banco não é.
+                    Escolha o que fazer com este plugin. Só a última opção — limpar o banco — é irreversível.
                   </DialogDescription>
                 </DialogHeader>
 
@@ -176,7 +181,28 @@ export function UninstallPluginControl({
                     </div>
                   )}
 
-                  <div className="rounded-lg border border-destructive/40 p-3 text-left">
+                  <div className="rounded-lg border border-border p-3 text-left">
+                    <p className="text-sm font-medium text-foreground">Desinstalar (mantém os dados)</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Tira o plugin do ar e remove a navegação e as permissions, mas o schema{" "}
+                      <span className="font-medium text-foreground">{pluginKey}</span>, todos os seus dados, as
+                      configurações e o histórico de migrations continuam no banco. Reinstalar depois aplica só as
+                      migrations novas — nada é recriado do zero.
+                    </p>
+                    <form
+                      action={uninstallFormAction}
+                      className="mt-3"
+                      onSubmit={() => setPurgeSubmitted(false)}
+                    >
+                      <input type="hidden" name="pluginKey" value={pluginKey} />
+                      <input type="hidden" name="purgeData" value="false" />
+                      <Button type="submit" variant="outline" size="sm" disabled={uninstallPending}>
+                        Desinstalar sem apagar dados
+                      </Button>
+                    </form>
+                  </div>
+
+                  <div className="rounded-lg border-2 border-destructive bg-destructive/5 p-3 text-left">
                     <p className="text-sm font-medium text-destructive">Desinstalar e limpar o banco</p>
                     <p className="mt-1 text-xs text-muted-foreground">
                       Remove o schema do plugin e todos os seus dados, apaga as configurações e as concessões de
@@ -241,8 +267,13 @@ export function UninstallPluginControl({
                   </ul>
                 )}
 
-                <form action={uninstallFormAction} className="space-y-3">
+                <form
+                  action={uninstallFormAction}
+                  className="space-y-3"
+                  onSubmit={() => setPurgeSubmitted(true)}
+                >
                   <input type="hidden" name="pluginKey" value={pluginKey} />
+                  <input type="hidden" name="purgeData" value="true" />
                   <Input
                     name="confirmationKey"
                     autoComplete="off"
