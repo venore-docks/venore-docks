@@ -51,7 +51,7 @@
     "@tiptap/react": "^3.29.2",
     "@tiptap/starter-kit": "^3.29.2",
     "@tiptap/static-renderer": "^3.29.2",
-    "@venore/plugin-broadcast": "git+https://github.com/venore-docks/venore-plugin-broadcast.git#v1.7.0",
+    "@venore/plugin-broadcast": "git+https://github.com/venore-docks/venore-plugin-broadcast.git#v1.8.0",
     "@venore/theme-fearless": "git+https://github.com/venore-docks/venore-theme-fearless.git#v1.0.0",
     "@vercel/blob": "^2.6.1",
     "@vercel/functions": "^3.7.5",
