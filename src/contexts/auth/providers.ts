@@ -139,7 +139,10 @@ export function buildAuthProviders() {
 
         if (!username || !password) return null;
 
-        const found = await findUserByEmail({ email: username });
+        // Email é sempre salvo em lowercase no registro — sem normalizar aqui, um login com
+        // maiúscula não acha o usuário e cai (incorretamente) no fallback de dev credentials
+        // quando AUTH_ENABLE_DEV_CREDENTIALS está ligado, ou num "senha inválida" genérico.
+        const found = await findUserByEmail({ email: username.toLowerCase() });
         if (found.success && found.data.passwordHash) {
           if (!(await verifyPasswordHash(password, found.data.passwordHash))) return null;
           // P9 (generalizado) — só "approved" autentica por senha; pending/rejected/frozen/removed

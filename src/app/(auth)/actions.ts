@@ -24,8 +24,13 @@ const LOGIN_BLOCKED_STATUS_MESSAGE: Partial<Record<UserRegistrationStatus, strin
 // a mensagem antes de tentar autenticar de verdade). Email inexistente devolve null aqui de
 // propósito: não é revelado "essa conta não existe", só "essa conta existe e está bloqueada".
 async function resolveLoginBlockMessage(email: string): Promise<string | null> {
-  if (!email) return null;
-  const found = await findUserByEmail({ email });
+  // Email é sempre salvo em lowercase no registro (register-with-password/service.ts,
+  // admin-create-user/service.ts) e o lookup é exato (`eq`) — sem normalizar aqui, digitar o
+  // email com qualquer maiúscula faz o pré-check não achar o usuário, pular o aviso de status
+  // específico e cair na mensagem genérica de "senha inválida" lá embaixo.
+  const normalized = email.trim().toLowerCase();
+  if (!normalized) return null;
+  const found = await findUserByEmail({ email: normalized });
   if (!found.success) return null;
   return LOGIN_BLOCKED_STATUS_MESSAGE[found.data.status] ?? null;
 }
