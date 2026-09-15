@@ -42,10 +42,5 @@
 // — mesmo critério dos bumps anteriores. `docs/venore-docks.md` ("Contrato de slot") foi
 // atualizado junto: a frase "o arranjo espacial... é responsabilidade da composição da shell
 // (platform/), não do tema" foi revertida — arranjo agora é sempre do tema.
-// Bump para "7.0.0": `HeaderSlotProps.messageAlert` renomeado pra `notificationAlert` — mudança
-// de shape (rename, não extensão aditiva), mesmo critério dos bumps anteriores. O nome antigo
-// vazava o único plugin que o populava (Academy) pro contrato compartilhado por todo tema; o
-// valor sempre foi genérico (platform/notifications/notification-registry.ts agrega qualquer
-// plugin ativo), só o nome do campo estava amarrado a "mensagem".
-export const CURRENT_THEME_CONTRACT_VERSION = "7.0.0";
-export const SUPPORTED_THEME_CONTRACT_RANGE = "^7.0.0";
+export const CURRENT_THEME_CONTRACT_VERSION = "6.0.0";
+export const SUPPORTED_THEME_CONTRACT_RANGE = "^6.0.0";

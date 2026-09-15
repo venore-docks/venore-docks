@@ -69,20 +69,6 @@ async function CoursesHome() {
   );
 }
 
-// Aluno logado sem acesso ao admin e sem nenhum plugin ativo reivindicando studentLandingPath
-// (nenhum instalado ainda, ou nenhum tem área de aluno). Estado neutro, não um redirect quebrado.
-function StudentHomeFallback() {
-  return (
-    <div className="mx-auto max-w-md py-16">
-      <EmptyState
-        icon={<BookOpen className="size-8" strokeWidth={1.5} />}
-        title="Nenhum aplicativo disponível ainda"
-        description="Fale com o administrador — nenhum recurso está ativo pra sua conta neste momento."
-      />
-    </div>
-  );
-}
-
 export default async function HomePage() {
   const currentUser = await getCurrentUser();
   const isAuthenticated = currentUser.success && Boolean(currentUser.data);
@@ -95,18 +81,9 @@ export default async function HomePage() {
 
   const adminGate = await getAdminPageData();
 
-  // Aluno logado (sem acesso ao admin) vai pra rota que o primeiro plugin ativo reivindicar como
-  // studentLandingPath (contributions.ts) — nunca um caminho fixo aqui. Sem nenhum plugin ativo
-  // reivindicando isso, mostra um estado neutro em vez de redirecionar pra uma rota que pode nem
-  // existir.
+  // Aluno logado (sem acesso ao admin) vai direto pro dashboard dele.
   if (!adminGate.granted) {
-    const activePluginKeys = await getActivePluginKeys();
-    const landingPath = Object.entries(PLUGIN_CONTRIBUTIONS)
-      .filter(([key]) => activePluginKeys.has(key))
-      .map(([, contributions]) => contributions.studentLandingPath)
-      .find((path): path is string => Boolean(path));
-    if (landingPath) redirect(landingPath);
-    return <StudentHomeFallback />;
+    redirect("/academy");
   }
 
   // Daqui pra baixo só admin: mostra a entry "home" do CMS se existir, senão o painel de cursos.

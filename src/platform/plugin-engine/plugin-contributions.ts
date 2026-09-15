@@ -42,11 +42,4 @@ export type PluginContributions = {
   // - publicHomeShowcase: vitrine no meio da home "/" quando não há entry "home" no CMS.
   adminDashboardPanel?: () => Promise<ReactNode>;
   publicHomeShowcase?: () => Promise<ReactNode>;
-  // Rota pra onde um usuário autenticado SEM acesso ao admin (aluno) é mandado a partir de "/"
-  // (src/app/(platform)/page.tsx). Dado puro (caminho, não handler) porque a decisão não depende
-  // de nada em runtime — só "este plugin é a experiência principal de quem não é admin". Primeiro
-  // plugin ativo que declarar vence; sem nenhum, a home mostra um estado neutro em vez de
-  // redirecionar pra uma rota que pode nem existir (era hardcoded "/academy" antes — violava
-  // AGENTS.md §1.1, app/ nunca conhece nome de plugin).
-  studentLandingPath?: string;
 };

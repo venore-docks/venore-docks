@@ -138,19 +138,18 @@ export type HeaderSlotProps = {
   user: HeaderUserInfo | null;
   canAccessAdmin: boolean;
   onSignOut: () => Promise<void>;
-  // Alerta de notificação (qualquer plugin ativo pode produzir um — mensagem não lida, atividade
-  // avaliada, etc.), ao lado do user-nav. Nome genérico de propósito (bump pra
-  // themeContractVersion "7.0.0": campo se chamava `messageAlert`, nome vazado do único plugin que
-  // o populava na época — Academy — pra dentro do contrato compartilhado por todo tema; nenhum
-  // outro plugin deveria precisar encaixar seu alerta num campo chamado "mensagem". Resolvido em
-  // platform/notifications/notification-registry.ts, que já agrega qualquer plugin ativo, não só
-  // Academy. `label` já vem pronto de quem produziu o alerta (o tema não decide o texto, só
-  // renderiza). null/undefined = nada pra mostrar.
-  notificationAlert?: { count: number; href: string; label: string } | null;
+  // Alerta de notificação (mensagem não lida OU atividade avaliada), ao lado do user-nav (pedido
+  // desta sessão: "bolinha de pulse e um texto 'Nova mensagem'", depois estendido pra nota/
+  // comentário de atividade). Extensão aditiva do contrato, mesmo critério de `user` acima — hoje
+  // só o plugin Academy popula isso (platform/notifications/notification-registry.ts), mas o campo
+  // em si é genérico (não amarrado a "academy" no tipo). `label` já vem pronto de quem produziu o
+  // alerta (o tema não decide o texto, só renderiza — mesmo alerta pode ser sobre mensagem ou nota).
+  // null/undefined = nada pra mostrar.
+  messageAlert?: { count: number; href: string; label: string } | null;
   // Itens que plugins ativos contribuem pro MENU DO USUÁRIO (não pro admin-nav) — ex.: "Mensagens"
   // do Academy. Resolvido em resolveThemeSlotProps a partir de platform/user-nav/registry.ts.
-  // Extensão aditiva do contrato, mesmo critério de `notificationAlert` acima: tema que não
-  // renderiza user-nav simplesmente ignora. Lista vazia / undefined = nada a acrescentar.
+  // Extensão aditiva do contrato, mesmo critério de `messageAlert` acima: tema que não renderiza
+  // user-nav simplesmente ignora. Lista vazia / undefined = nada a acrescentar.
   userNavItems?: NavItem[];
 };
 
