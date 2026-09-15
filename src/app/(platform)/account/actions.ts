@@ -1,10 +1,25 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { updateOwnAvatar } from "@/contexts/auth";
+import { setOwnName, updateOwnAvatar } from "@/contexts/auth";
 import { uploadAvatarMediaAsset } from "@/contexts/media";
 
 export type AccountActionState = { error: string | null };
+
+// setOwnName recusa quando authProvider da sessão não é "credentials" (conta OAuth tem o nome
+// gerenciado pelo provedor) — o form nem aparece nesse caso (page.tsx), isto é defesa em
+// profundidade caso a action seja chamada de outro jeito.
+export async function updateOwnNameAction(_prevState: AccountActionState, formData: FormData): Promise<AccountActionState> {
+  const name = String(formData.get("name") ?? "");
+
+  const result = await setOwnName({ name });
+  if (!result.success) {
+    return { error: result.error.message };
+  }
+
+  revalidatePath("/account");
+  return { error: null };
+}
 
 // Mesmo padrão de /admin/cms/actions.ts: erro do handler devolvido de verdade via
 // useActionState, nunca descartado silenciosamente (docs/venore-docks.md).

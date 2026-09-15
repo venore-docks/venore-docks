@@ -33,6 +33,21 @@ const CORE_PERMISSION_COPY: Record<string, { groupId: string; title: string; des
     title: "Aprovar cadastros",
     description: "Permite aceitar ou recusar pedidos de pessoas querendo entrar na organização.",
   },
+  "rbac.users.manage": {
+    groupId: "people-and-access",
+    title: "Gerenciar contas de usuário",
+    description: "Permite ver o perfil, congelar e reativar contas já aprovadas na Comunidade.",
+  },
+  "rbac.users.remove": {
+    groupId: "people-and-access",
+    title: "Remover contas de usuário",
+    description: "Permite remover uma conta (anonimiza os dados e bloqueia o acesso, sem apagar de vez).",
+  },
+  "rbac.users.purge": {
+    groupId: "people-and-access",
+    title: "Apagar contas de usuário definitivamente",
+    description: "Permite apagar de vez uma conta já removida, sem possibilidade de recuperação depois.",
+  },
   "cms.entries.manage": {
     groupId: "content",
     title: "Criar e publicar conteúdo",

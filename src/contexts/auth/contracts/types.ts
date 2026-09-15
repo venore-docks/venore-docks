@@ -6,6 +6,11 @@ export type AuthenticatedUser = {
   // Avatar escolhido via seletor de mídia — quando setado, tem prioridade sobre `image` (ver
   // consumidores de getCurrentUser, ex: resolve-theme-slot-props.ts).
   avatarMediaId: string | null;
+  // Provider desta sessão ("credentials" | "google" | "github" | "microsoft-entra-id") — só
+  // "credentials" pode editar o próprio nome em /account (setOwnName recusa qualquer outro valor,
+  // inclusive `null`). OAuth mantém o nome sincronizado do provedor a cada login (ver jwt()
+  // callback em auth.config.ts), então não faz sentido editar manualmente aqui.
+  authProvider: string | null;
 };
 
 // "approved" é o único estado "bom" — pending (aguardando aprovação), rejected (cadastro

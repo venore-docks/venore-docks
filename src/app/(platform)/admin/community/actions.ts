@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { adminCreateUser, adminSetUserPassword, freezeUser, removeUser, unfreezeUser } from "@/contexts/auth";
 import { approveRegistration, grantDefaultRoleOnRegistration, rejectRegistration } from "@/contexts/rbac";
+import { purgeUserSafely } from "@/platform/identity-lifecycle/purge-user-safely";
 
 export type CommunityActionState = { error: string | null };
 
@@ -55,6 +56,15 @@ export async function removeUserAction(_prevState: CommunityActionState, formDat
   const targetUserId = String(formData.get("targetUserId") ?? "");
   const reason = String(formData.get("reason") ?? "").trim();
   const result = await removeUser({ targetUserId, reason: reason || undefined });
+  if (!result.success) return { error: result.error.message };
+
+  revalidateCommunity(targetUserId);
+  return { error: null };
+}
+
+export async function purgeUserAction(_prevState: CommunityActionState, formData: FormData): Promise<CommunityActionState> {
+  const targetUserId = String(formData.get("targetUserId") ?? "");
+  const result = await purgeUserSafely({ targetUserId });
   if (!result.success) return { error: result.error.message };
 
   revalidateCommunity(targetUserId);

@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/empty-state";
 import { ApproveUserButton } from "../_components/approve-user-button";
 import { FreezeUserDialog } from "../_components/freeze-user-dialog";
+import { PurgeUserDialog } from "../_components/purge-user-dialog";
 import { RejectUserDialog } from "../_components/reject-user-dialog";
 import { RemoveUserDialog } from "../_components/remove-user-dialog";
 import { UnfreezeUserButton } from "../_components/unfreeze-user-button";
@@ -26,6 +27,7 @@ export default async function CommunityUserProfilePage({ params }: { params: Pro
   const { userId } = await params;
   const canManage = gate.actor.isSuperadmin || gate.actor.permissions.includes("rbac.users.manage");
   const canRemove = gate.actor.isSuperadmin || gate.actor.permissions.includes("rbac.users.remove");
+  const canPurge = gate.actor.isSuperadmin || gate.actor.permissions.includes("rbac.users.purge");
   const canViewActivity = gate.actor.isSuperadmin || gate.actor.permissions.includes("observability.audit.view");
 
   const [userResult, contextResult] = await Promise.all([
@@ -105,6 +107,7 @@ export default async function CommunityUserProfilePage({ params }: { params: Pro
           {user.status === "approved" && <FreezeUserDialog userId={user.id} />}
           {user.status === "frozen" && <UnfreezeUserButton userId={user.id} />}
           {canRemove && user.status !== "removed" && <RemoveUserDialog userId={user.id} />}
+          {canPurge && user.status === "removed" && <PurgeUserDialog userId={user.id} />}
         </div>
       </section>
 

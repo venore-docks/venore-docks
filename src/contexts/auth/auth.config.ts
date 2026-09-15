@@ -8,6 +8,7 @@ import * as schema from "./database/schema";
 // então lê o status de registro pelo store da feature diretamente.
 import { findUserStatusById } from "./features/session/get-current-user-registration-status/store";
 import { recordUserLogin } from "./features/session/record-user-login/store";
+import { syncUserNameFromProvider } from "./features/session/sync-oauth-name/store";
 import { buildAuthProviders } from "./providers";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -26,8 +27,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     strategy: "jwt",
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, account, profile }) {
       if (user) token.id = user.id;
+      // account/profile só vêm preenchidos na chamada de sign-in (trigger "signIn"/"signUp"),
+      // nunca nas leituras seguintes do mesmo JWT — por isso o provider fica gravado no token daí
+      // pra frente, ao contrário do status (que é revalidado no banco a cada request).
+      if (account) {
+        token.provider = account.provider;
+        // Nome de conta OAuth é sempre "o que o provedor manda" (pedido do dono: só quem loga por
+        // senha edita o próprio nome em /account, ver set-own-name). Sincroniza a cada login OAuth
+        // — se a pessoa mudar o nome no Google/GitHub/Microsoft, reflete aqui no próximo login.
+        if (account.provider !== "credentials" && profile?.name && user.id) {
+          await syncUserNameFromProvider(user.id, profile.name);
+        }
+      }
       return token;
     },
     async session({ session, token }) {
@@ -39,6 +52,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // pending. A tela /pending-approval usa getCurrentUserRegistrationStatus (lê status
         // direto), não getCurrentUser, então continua funcionando.
         session.user.status = (await findUserStatusById(session.user.id)) ?? undefined;
+        session.user.provider = typeof token.provider === "string" ? token.provider : undefined;
       }
       return session;
     },
