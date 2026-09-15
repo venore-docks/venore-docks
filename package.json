@@ -29,7 +29,8 @@
     "db:install:fresh": "tsx --env-file=.env scripts/install-fresh.ts",
     "db:update": "tsx --env-file=.env scripts/update-instance.ts",
     "db:bootstrap-superadmin": "tsx --env-file=.env scripts/bootstrap-superadmin.ts",
-    "db:apply-plugin-migrations": "tsx --env-file=.env scripts/apply-plugin-migrations.ts"
+    "db:apply-plugin-migrations": "tsx --env-file=.env scripts/apply-plugin-migrations.ts",
+    "db:migrate-nestpro-data": "tsx --env-file=.env scripts/migrate-nestpro-data.ts"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.3",
@@ -47,10 +48,12 @@
     "@tiptap/react": "^3.29.2",
     "@tiptap/starter-kit": "^3.29.2",
     "@tiptap/static-renderer": "^3.29.2",
+    "@venore/plugin-disc": "file:../venore-plugin-disc",
     "@venore/theme-academy": "git+https://github.com/venore-docks/venore-theme-academy.git#v1.0.0",
     "@venore/theme-druids": "git+https://github.com/venore-docks/venore-theme-druids.git#v1.0.0",
     "@venore/theme-fearless": "git+https://github.com/venore-docks/venore-theme-fearless.git#v1.0.0",
     "@venore/theme-knights": "git+https://github.com/venore-docks/venore-theme-knights.git#v1.0.0",
+    "@venore/theme-nestpro": "file:../venore-theme-nestpro",
     "@venore/theme-nite": "git+https://github.com/venore-docks/venore-theme-nite.git#v1.0.0",
     "@venore/theme-paladins": "git+https://github.com/venore-docks/venore-theme-paladins.git#v1.0.0",
     "@venore/theme-sorcerers": "git+https://github.com/venore-docks/venore-theme-sorcerers.git#v1.0.0",
