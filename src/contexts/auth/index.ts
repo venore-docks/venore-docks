@@ -21,6 +21,11 @@ export type { UpdateOwnAvatarInput, UpdateOwnAvatarResult } from "./features/ide
 // gravam auth.users.password_hash no formato scrypt$<salt>$<hash> que o login lê.
 export { setOwnPasswordHandler as setOwnPassword } from "./features/identity/set-own-password/handler";
 export type { SetOwnPasswordInput, SetOwnPasswordResult } from "./features/identity/set-own-password/types";
+// Self-service, mesmo racional de setOwnPassword acima — mas só aceita quando authProvider da
+// sessão atual é "credentials" (ver handler): conta OAuth recebe o nome do provedor a cada login
+// (auth.config.ts jwt() callback), editar aqui seria sobrescrito de qualquer forma.
+export { setOwnNameHandler as setOwnName } from "./features/identity/set-own-name/handler";
+export type { SetOwnNameInput, SetOwnNameResult } from "./features/identity/set-own-name/types";
 export { adminSetUserPasswordHandler as adminSetUserPassword } from "./features/identity/admin-set-user-password/handler";
 export type {
   AdminSetUserPasswordInput,
