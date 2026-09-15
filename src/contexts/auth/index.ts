@@ -21,6 +21,11 @@ export type { UpdateOwnAvatarInput, UpdateOwnAvatarResult } from "./features/ide
 // gravam auth.users.password_hash no formato scrypt$<salt>$<hash> que o login lê.
 export { setOwnPasswordHandler as setOwnPassword } from "./features/identity/set-own-password/handler";
 export type { SetOwnPasswordInput, SetOwnPasswordResult } from "./features/identity/set-own-password/types";
+// Self-service, mesmo racional de setOwnPassword acima — mas só aceita quando authProvider da
+// sessão atual é "credentials" (ver handler): conta OAuth recebe o nome do provedor a cada login
+// (auth.config.ts jwt() callback), editar aqui seria sobrescrito de qualquer forma.
+export { setOwnNameHandler as setOwnName } from "./features/identity/set-own-name/handler";
+export type { SetOwnNameInput, SetOwnNameResult } from "./features/identity/set-own-name/types";
 export { adminSetUserPasswordHandler as adminSetUserPassword } from "./features/identity/admin-set-user-password/handler";
 export type {
   AdminSetUserPasswordInput,
@@ -41,6 +46,12 @@ export type { UnfreezeUserInput, UnfreezeUserResult } from "./features/identity/
 // (mais restrita que rbac.users.manage, mesmo padrão de media.purge vs media.manage).
 export { removeUserHandler as removeUser } from "./features/identity/remove-user/handler";
 export type { RemoveUserInput, RemoveUserResult } from "./features/identity/remove-user/types";
+
+// Hard delete real — só age sobre conta já "removed". Fora do barrel usado direto por Server
+// Action: quem chama é platform/identity-lifecycle/purge-user-safely.ts, que reconfirma ausência
+// de conteúdo (cms/media) antes. Gated por rbac.users.purge no próprio handler (superadmin only).
+export { purgeUserHandler as purgeUser } from "./features/identity/purge-user/handler";
+export type { PurgeUserInput, PurgeUserResult } from "./features/identity/purge-user/types";
 
 // Criação de conta pelo admin — nasce "approved" (default do schema), diferente do autorregistro
 // que rebaixa pra "pending" via provisionUser. Gated por rbac.users.manage.

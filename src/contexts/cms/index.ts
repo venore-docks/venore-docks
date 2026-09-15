@@ -29,6 +29,13 @@ export {
 // Consumida por platform/media-usage/media-usage-registry.ts (regra 12/14 — composição fora de
 // cms e media, pra evitar ciclo com a validação de mediaId em create-entry/update-entry).
 export { findMediaUsageHandler as findCmsMediaUsage } from "./features/entries/find-media-usage/handler";
+// Consumida por platform/identity-lifecycle/purge-user-safely.ts — mesma composição fora de cms e
+// auth (auth não pode importar cms).
+export { countEntriesByAuthorHandler as countCmsEntriesByAuthor } from "./features/entries/count-entries-by-author/handler";
+export type {
+  CountEntriesByAuthorQuery,
+  CountEntriesByAuthorResult,
+} from "./features/entries/count-entries-by-author/types";
 
 export { createMenuHandler as createMenu } from "./features/menus/create-menu/handler";
 export { updateMenuHandler as updateMenu } from "./features/menus/update-menu/handler";

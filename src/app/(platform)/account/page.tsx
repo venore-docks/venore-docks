@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/contexts/auth";
 import { getMediaAsset } from "@/contexts/media";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AvatarForm } from "./_components/avatar-form";
+import { NameForm } from "./_components/name-form";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +32,15 @@ export default async function AccountPage() {
         <h1 className="text-3xl font-semibold tracking-tight text-foreground">Minha conta</h1>
         <p className="mt-2 text-sm text-muted-foreground">{user.name ?? user.email}</p>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Nome</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <NameForm name={user.name} editable={user.authProvider === "credentials"} />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

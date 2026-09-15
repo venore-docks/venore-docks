@@ -30,7 +30,7 @@ type UserMenuProps = {
 // o dropdown). Sem mais reação ao scroll do header — no refator premium o header não inverte de
 // cor, então o user-menu não precisa de variantes `group-data-[scrolled=true]/header:`.
 const menuItemClass =
-  "rounded-lg px-2.5 py-2 text-sm text-muted-foreground ui-motion-base outline-none hover:bg-muted hover:text-foreground active:bg-muted active:text-foreground focus-visible:ring-2 focus-visible:ring-ring";
+  "cursor-pointer rounded-lg px-2.5 py-2 text-sm text-muted-foreground ui-motion-base outline-none hover:bg-muted hover:text-foreground active:bg-muted active:text-foreground focus-visible:ring-2 focus-visible:ring-ring";
 
 export function UserMenu({ user, canAccessAdmin, onSignOut, userNavItems = [] }: UserMenuProps) {
   const firstName = user.displayName.split(/\s+/)[0];

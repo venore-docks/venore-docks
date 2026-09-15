@@ -14,6 +14,9 @@ export const RBAC_PERMISSIONS: PermissionDefinition[] = [
   // restrita, de propósito fora de ADMIN_BASE_PERMISSION_KEYS (mesmo padrão de media.purge vs
   // media.manage): só superadmin, que authorize-actor.ts libera incondicional.
   { key: "rbac.users.remove", label: "Remover contas de usuário" },
+  // Hard delete real — só age sobre conta já removida (rbac.users.remove). Fora de
+  // ADMIN_BASE_PERMISSION_KEYS, mesmo padrão de media.purge vs media.manage: só superadmin.
+  { key: "rbac.users.purge", label: "Apagar contas de usuário definitivamente" },
   // Pertence conceitualmente a contexts/settings — mora aqui porque ainda não existe agregação
   // de permissions entre contexts (docs/venore-docks.md — Modelo de RBAC).
   { key: "settings.manage", label: "Alterar configurações do site" },
