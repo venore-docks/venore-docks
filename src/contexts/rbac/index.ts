@@ -45,6 +45,7 @@ export { grantSuperadminHandler as grantSuperadmin } from "./features/role-assig
 // (scripts/install-fresh.ts) poder semear numa ordem determinística antes de registerPlugins().
 export { ensureBaseRbacDataSeeded } from "./ensure-base-rbac-data";
 export { approveRegistrationHandler as approveRegistration } from "./features/registration-approval/approve-registration/handler";
+export { rejectRegistrationHandler as rejectRegistration } from "./features/registration-approval/reject-registration/handler";
 export { listPendingRegistrationsHandler as listPendingRegistrations } from "./features/registration-approval/list-pending-registrations/handler";
 
 export { rbacAdminNavigationItems } from "./admin-navigation";
@@ -90,4 +91,5 @@ export type { GrantDefaultRoleInput, GrantDefaultRoleResult } from "./features/r
 export type { CheckSuperadminExistsResult } from "./features/role-assignment/check-superadmin-exists/types";
 export type { GrantSuperadminInput, GrantSuperadminResult } from "./features/role-assignment/grant-superadmin/types";
 export type { ApproveRegistrationInput, ApproveRegistrationResult } from "./features/registration-approval/approve-registration/types";
+export type { RejectRegistrationInput, RejectRegistrationResult } from "./features/registration-approval/reject-registration/types";
 export type { ListPendingRegistrationsResult, PendingRegistrationView } from "./features/registration-approval/list-pending-registrations/types";

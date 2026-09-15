@@ -63,6 +63,22 @@ npm run dev
 
 Abre em [http://localhost:3000](http://localhost:3000).
 
+## Atualizando uma instância
+
+Cada site é um fork do boilerplate (ver `VENORE-DOCKS.md` do workspace) que traz melhorias via
+`git fetch upstream && git merge upstream/main`. Depois de todo merge:
+
+```bash
+npm install       # instala dependências novas/atualizadas (plugins/temas incluídos)
+npm run db:update # aplica tudo que o merge pode ter trazido de banco
+```
+
+`db:update` roda, nesta ordem: migrations do core, papéis/permissions base do RBAC (qualquer
+permission nova que o merge tenha adicionado já é concedida ao papel `admin` aqui — não precisa de
+comando extra por permission), defaults de settings de plugin, e migrations pendentes de cada
+plugin com schema já instalado. Todas as etapas são idempotentes — rodar de novo sem nada pendente
+não faz mal. Depois é só (re)deployar/reiniciar o servidor normalmente.
+
 ## Plugins
 
 O `vercel-build` e o `npm run db:migrate` cobrem só as migrations do core. **As migrations de cada
@@ -84,3 +100,4 @@ Referência completa em [`AGENTS.md`](AGENTS.md) seção 5. Os mais usados:
 | `npm run test:integration` | Vitest de integração (`*.integration.test.ts`, exige `TEST_DATABASE_URL`) |
 | `npm run db:generate` / `npm run db:migrate` | Drizzle Kit — schema do core |
 | `npm run db:install:fresh` | Instalação inicial (ver acima) |
+| `npm run db:update` | Atualizar uma instância existente depois de um merge (ver acima) |

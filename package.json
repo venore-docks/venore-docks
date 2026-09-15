@@ -23,16 +23,13 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:plugins": "vitest run --config vitest.plugins.config.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:seed:admin-access": "node --env-file=.env scripts/seed-admin-access-permission.mjs",
-    "db:seed:media-manage": "node --env-file=.env scripts/seed-media-manage-permission.mjs",
-    "db:seed:cms-menus-manage": "node --env-file=.env scripts/seed-cms-menus-permission.mjs",
-    "db:seed:observability-logs-view": "node --env-file=.env scripts/seed-observability-logs-permission.mjs",
-    "db:seed:observability-logs-clear": "node --env-file=.env scripts/seed-observability-logs-clear-permission.mjs",
-    "db:seed:observability-audit-view": "node --env-file=.env scripts/seed-observability-audit-view-permission.mjs",
     "db:install:fresh": "tsx --env-file=.env scripts/install-fresh.ts",
-    "db:bootstrap-superadmin": "tsx --env-file=.env scripts/bootstrap-superadmin.ts"
+    "db:update": "tsx --env-file=.env scripts/update-instance.ts",
+    "db:bootstrap-superadmin": "tsx --env-file=.env scripts/bootstrap-superadmin.ts",
+    "db:apply-plugin-migrations": "tsx --env-file=.env scripts/apply-plugin-migrations.ts"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.3",

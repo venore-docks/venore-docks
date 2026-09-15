@@ -294,7 +294,7 @@ logBuffer.push({ message, level });
 | `npm run test:integration` | Vitest com `vitest.integration.config.ts` — só `*.integration.test.ts` |
 | `npm run db:generate` / `npm run db:migrate` | Drizzle Kit — schema de core/contexts (não plugin). `db:migrate` é o único passo de migration do `vercel-build` |
 | `npm run db:generate:<plugin>` / `npm run db:migrate:<plugin>` | Idem para a árvore própria de cada plugin com schema (`academy`, `birthdays`, `broadcast`, `enrollment-dashboard`). Uso local — em produção a migration do plugin roda no **install** (`platform/plugin-engine/run-plugin-migrations.ts`), não no `vercel-build` |
-| `npm run db:seed:admin-access` / `db:seed:media-manage` / `db:seed:cms-menus-manage` | Seeds de permission pontuais (`scripts/*.mjs`) |
+| `npm run db:update` | **Rodar depois de todo `git merge upstream/main`.** Consolida migrations do core + `ensureBaseRbacDataSeeded` (papéis/permissions base do "admin", cobre qualquer chave nova em `contracts/base-role-permissions.ts` sem precisar de script próprio) + `registerPlugins` + migrations de cada plugin com schema já resolvido no registro. Idempotente — seguro rodar mesmo sem nada novo pra aplicar (`scripts/update-instance.ts`). Substituiu os antigos `db:seed:<permission>` pontuais (removidos) — uma permission nova só precisa entrar em `contracts/base-role-permissions.ts`, nunca de um script novo. |
 | `npm run db:bootstrap-superadmin` | Promove usuário existente a `superadmin` fora do fluxo automático |
 
 O job `check` do CI (`.github/workflows/ci.yml`) roda `lint` → `typecheck` → `test`, sem banco. O

@@ -1,6 +1,6 @@
 // Gera src/plugins/{registry,route-registry,contributions,contributions.client,plugin-keys,
-// plugin-barrels}.generated.ts (gitignored). Roda em postinstall / predev / prebuild /
-// pretypecheck / pretest.
+// plugin-barrels}.generated.ts + plugin-sources.generated.css (gitignored). Roda em postinstall /
+// predev / prebuild / pretypecheck / pretest.
 //
 // MODELO DE PACOTE (docs/plugins-repos-separados-plano.md): cada plugin é um pacote npm
 // `@venore/plugin-<key>` listado nas `dependencies` do package.json do venore-docks. O codegen
@@ -95,12 +95,31 @@ const pluginBarrels =
   keys.map((key) => `  "${key}": () => import("${pkgFor(key)}"),`).join("\n") +
   `\n};\n`;
 
+// Tailwind v4 nunca escaneia node_modules por padrão (mesmo se não estivesse em .gitignore) —
+// sem isso, qualquer classe usada SÓ dentro de um pacote de plugin (nunca replicada em src/)
+// simplesmente não é gerada no CSS final: a estrutura HTML renderiza, mas padding/gap/margin/
+// radius daquela classe ficam mudos. Achado real: view de saída do broadcast "com o layout todo
+// quebrado, sumiram os espaçamentos". `@source` resolvido via require.resolve (não um caminho
+// relativo fixo) — sobrevive a hoisting/estrutura de node_modules diferente. Consumido por
+// globals.css (@import "../plugins/plugin-sources.generated.css").
+const pluginSourcesCss =
+  `/* GERADO por scripts/gen-plugin-registry.ts — NÃO editar à mão (gitignored). */\n` +
+  keys
+    .map((key) => {
+      const pluginDir = path.dirname(require.resolve(`${pkgFor(key)}/manifest`));
+      const relativePath = path.relative(PLUGINS_DIR, pluginDir).split(path.sep).join("/");
+      return `@source "${relativePath}";`;
+    })
+    .join("\n") +
+  (keys.length > 0 ? "\n" : "");
+
 writeFileSync(path.join(PLUGINS_DIR, "registry.generated.ts"), registry);
 writeFileSync(path.join(PLUGINS_DIR, "route-registry.generated.ts"), routeRegistry);
 writeFileSync(path.join(PLUGINS_DIR, "contributions.generated.ts"), contributionsRegistry);
 writeFileSync(path.join(PLUGINS_DIR, "contributions.client.generated.ts"), clientContributionsRegistry);
 writeFileSync(path.join(PLUGINS_DIR, "plugin-keys.generated.ts"), pluginKeys);
 writeFileSync(path.join(PLUGINS_DIR, "plugin-barrels.generated.ts"), pluginBarrels);
+writeFileSync(path.join(PLUGINS_DIR, "plugin-sources.generated.css"), pluginSourcesCss);
 
 console.log(
   `gen-plugin-registry: ${keys.length} plugin(s) [${keys.join(", ")}]; ` +

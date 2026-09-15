@@ -8,7 +8,10 @@ export type AuthenticatedUser = {
   avatarMediaId: string | null;
 };
 
-export type UserRegistrationStatus = "pending" | "approved";
+// "approved" é o único estado "bom" — pending (aguardando aprovação), rejected (cadastro
+// recusado), frozen (congelado por admin) e removed (conta removida/anonimizada) bloqueiam login
+// igualmente (ver get-current-user/service.ts e providers.ts).
+export type UserRegistrationStatus = "pending" | "approved" | "rejected" | "frozen" | "removed";
 
 export type AuthProviderDescriptor = {
   key: "github" | "google" | "microsoft-entra-id" | "credentials" | "password";

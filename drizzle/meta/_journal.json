@@ -271,8 +271,15 @@
     {
       "idx": 38,
       "version": "7",
+      "when": 1789421839871,
+      "tag": "0038_auth_users_last_login_at",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
       "when": 1788959966536,
-      "tag": "0038_neutralize_extension_state_backfill",
+      "tag": "0039_neutralize_extension_state_backfill",
       "breakpoints": true
     }
   ]
