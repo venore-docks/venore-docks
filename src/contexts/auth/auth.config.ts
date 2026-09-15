@@ -7,6 +7,7 @@ import * as schema from "./database/schema";
 // `./database/schema` direto): este arquivo não pode passar pelo barrel `./index.ts` sem ciclo,
 // então lê o status de registro pelo store da feature diretamente.
 import { findUserStatusById } from "./features/session/get-current-user-registration-status/store";
+import { recordUserLogin } from "./features/session/record-user-login/store";
 import { buildAuthProviders } from "./providers";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -49,6 +50,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         email: user.email ?? null,
         name: user.name ?? null,
       });
+    },
+    // Alimenta a aba de atividade do perfil admin (/admin/community/[userId]) — dispara em todo
+    // login bem-sucedido (credentials ou OAuth), não a cada request como o callback session()
+    // acima, então não pesa.
+    async signIn({ user }) {
+      if (user.id) await recordUserLogin(user.id);
     },
   },
 });

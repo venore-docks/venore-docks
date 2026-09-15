@@ -17,9 +17,15 @@ export const users = authSchema.table("users", {
   // exibição (get-current-user/service.ts). Sem FK pra media.files: mesma regra de isolamento de
   // schema entre contexts já usada em cms.entries.mediaId — validado via getMedia() na aplicação.
   avatarMediaId: text("avatar_media_id"),
-  // "pending" | "approved" — ver contracts/registration.ts. Escrita por provision-user/approve-user-registration.
+  // "pending" | "approved" | "rejected" | "frozen" | "removed" — ver contracts/types.ts
+  // (UserRegistrationStatus). Escrita por provision-user/approve-user-registration/
+  // reject-user-registration/freeze-user/unfreeze-user/remove-user.
   status: text("status").notNull().default("approved"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  // Atualizado no evento signIn do Auth.js (auth.config.ts) — só existe pra alimentar a aba de
+  // atividade do perfil admin (/admin/community/[userId]), não é usado por nenhuma checagem de
+  // autorização.
+  lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
 });
 
 export const accounts = authSchema.table(

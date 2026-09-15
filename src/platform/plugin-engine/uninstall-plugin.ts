@@ -16,11 +16,20 @@ import { PLUGIN_ENGINE_REPORT_CACHE_KEY, registerPlugins } from "./register-plug
 import { resolvePluginDataSchema } from "./resolve-plugin-data-schema";
 import { resolveMigrationsSchema } from "./run-plugin-migrations";
 
-export type UninstallPluginInput = { pluginKey: string };
+export type UninstallPluginInput = {
+  pluginKey: string;
+  // true  = "modo B destrutivo": além de desregistrar, APAGA o rastro do plugin no banco
+  //         (schema de dados + schema de migrations + settings + concessões de permission).
+  // false = "modo B não-destrutivo": só desregistra (installed_at nulo). Schema, dados e o
+  //         histórico de migrations continuam intactos — reinstalar roda só as migrations novas.
+  purgeData: boolean;
+};
 
 // Desinstalação "modo B" (docs/issues.md — "Plugins e Temas"): diferente de desativar
-// (togglePluginEnabled(false), que não apaga nada e é reversível), isto APAGA de vez o rastro do
-// plugin no banco. É destrutivo e irreversível — a UI exige confirmação digitando a key.
+// (togglePluginEnabled(false), que não apaga nada e é reversível), isto tira o plugin do ar
+// (installed_at nulo). Com purgeData=true APAGA de vez o rastro do plugin no banco — destrutivo
+// e irreversível, a UI exige confirmação digitando a key. Com purgeData=false o banco fica
+// intacto: uma reinstalação futura aplica só as migrations pendentes, sem zerar dados.
 //
 // Composição do ponto de wiring (docs/venore-docks.md — regra 12): conhecer PLUGIN_REGISTRY,
 // derivar os schemas do plugin e orquestrar a transação é papel de platform/. authorizeActor
@@ -31,7 +40,11 @@ export async function uninstallPlugin(command: UninstallPluginInput): Promise<Op
   if (!authz.authorized) {
     return { success: false, error: authz.error };
   }
-  return performPluginUninstall({ pluginKey: command.pluginKey, actorId: authz.actorId });
+  return performPluginUninstall({
+    pluginKey: command.pluginKey,
+    purgeData: command.purgeData,
+    actorId: authz.actorId,
+  });
 }
 
 // Núcleo sem authorizeActor — separado de uninstallPlugin pelo mesmo motivo que os service.ts dos
@@ -40,9 +53,10 @@ export async function uninstallPlugin(command: UninstallPluginInput): Promise<Op
 // nos *.integration.test.ts). NÃO exportar pelo barrel de nada; só uninstallPlugin é a porta pública.
 export async function performPluginUninstall(command: {
   pluginKey: string;
+  purgeData: boolean;
   actorId: string;
 }): Promise<OperationResult<void>> {
-  const { pluginKey, actorId } = command;
+  const { pluginKey, purgeData, actorId } = command;
 
   const manifest = PLUGIN_REGISTRY.find((entry) => entry.key === pluginKey);
   if (!manifest) {
@@ -97,33 +111,39 @@ export async function performPluginUninstall(command: {
   try {
     // Uma transação só (docs/issues.md — pedido literal): ou todo o rastro some, ou nada muda.
     // DDL (DROP SCHEMA) é transacional no Postgres, então um erro no meio faz rollback completo.
+    // Sem purgeData a transação só faz o UPDATE em extension_state — o banco do plugin fica igual.
     const purged = await db.transaction(async (tx) => {
-      if (dataSchema) {
-        await tx.execute(sql.raw(`DROP SCHEMA IF EXISTS "${dataSchema}" CASCADE`));
-      }
-      if (migrationsSchema) {
-        await tx.execute(sql.raw(`DROP SCHEMA IF EXISTS "${migrationsSchema}" CASCADE`));
+      let settingsDeleted = 0;
+      let permissionsDeleted = 0;
+
+      if (purgeData) {
+        if (dataSchema) {
+          await tx.execute(sql.raw(`DROP SCHEMA IF EXISTS "${dataSchema}" CASCADE`));
+        }
+        if (migrationsSchema) {
+          await tx.execute(sql.raw(`DROP SCHEMA IF EXISTS "${migrationsSchema}" CASCADE`));
+        }
+
+        const settingsResult = await tx.execute(
+          sql`delete from settings.settings where key like ${namespacePrefix}`,
+        );
+        const permissionsResult = await tx.execute(
+          sql`delete from rbac.role_permissions where permission_key like ${namespacePrefix}`,
+        );
+        settingsDeleted = settingsResult.rowCount ?? 0;
+        permissionsDeleted = permissionsResult.rowCount ?? 0;
       }
 
-      const settingsResult = await tx.execute(
-        sql`delete from settings.settings where key like ${namespacePrefix}`,
-      );
-      const permissionsResult = await tx.execute(
-        sql`delete from rbac.role_permissions where permission_key like ${namespacePrefix}`,
-      );
-
-      // extension_state volta pro estado "disponível" (installed_at nulo) e enabled=true, pra uma
-      // reinstalação futura começar do zero (não herdar um enabled=false de antes).
+      // Sempre: extension_state volta pro estado "disponível" (installed_at nulo) e enabled=true,
+      // pra uma reinstalação futura começar do zero (não herdar um enabled=false de antes). Com
+      // purgeData=false, o schema de migrations sobrou — reinstalar aplica só as pendentes.
       await tx.execute(sql`
         update extensions.extension_state
         set installed_at = null, enabled = true, updated_by_user_id = ${actorId}, updated_at = now()
         where kind = 'plugin' and key = ${pluginKey}
       `);
 
-      return {
-        settingsDeleted: settingsResult.rowCount ?? 0,
-        permissionsDeleted: permissionsResult.rowCount ?? 0,
-      };
+      return { settingsDeleted, permissionsDeleted };
     });
 
     // Quem escreve invalida (docs/venore-docks.md — Cache). O UPDATE em extension_state foi por
@@ -132,10 +152,12 @@ export async function performPluginUninstall(command: {
     invalidateExtensionStateCaches("plugin", pluginKey);
     invalidateCache(PLUGIN_ENGINE_REPORT_CACHE_KEY);
 
-    const summary =
-      `Plugin "${pluginKey}" desinstalado (limpeza de banco): ` +
-      `${dataSchema ? `schema "${dataSchema}" removido, ` : "sem schema próprio, "}` +
-      `${purged.settingsDeleted} configuração(ões) e ${purged.permissionsDeleted} concessão(ões) de permission apagadas.`;
+    const summary = purgeData
+      ? `Plugin "${pluginKey}" desinstalado (limpeza de banco): ` +
+        `${dataSchema ? `schema "${dataSchema}" removido, ` : "sem schema próprio, "}` +
+        `${purged.settingsDeleted} configuração(ões) e ${purged.permissionsDeleted} concessão(ões) de permission apagadas.`
+      : `Plugin "${pluginKey}" desinstalado (banco preservado): schema, dados e histórico de ` +
+        `migrations mantidos — reinstalar aplica só as migrations pendentes.`;
 
     endOperation(handle, { success: true, summary });
     await recordAuditEvent({
@@ -143,7 +165,7 @@ export async function performPluginUninstall(command: {
       actor: { id: actorId, type: "user" },
       outcome: "success",
       summary,
-      detail: { pluginKey, dataSchema, migrationsSchema, ...purged },
+      detail: { pluginKey, purgeData, dataSchema, migrationsSchema, ...purged },
     });
 
     return { success: true, data: undefined };

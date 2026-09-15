@@ -83,6 +83,16 @@ const CORE_PERMISSION_COPY: Record<string, { groupId: string; title: string; des
     title: "Ver histórico de atividades do sistema",
     description: "Permite consultar os registros técnicos de eventos e erros do sistema.",
   },
+  "content-feed.connections.manage": {
+    groupId: "content",
+    title: "Gerenciar quem assina o feed de conteúdo",
+    description: "Permite criar chaves de conexão e escolher quais categorias outras instâncias podem receber daqui.",
+  },
+  "content-feed.sources.manage": {
+    groupId: "content",
+    title: "Gerenciar de onde este site assina conteúdo",
+    description: "Permite cadastrar outras instâncias como fonte de conteúdo e sincronizar o que elas publicam.",
+  },
 };
 
 export function buildPermissionGroups(

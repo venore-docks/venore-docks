@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+/* Tailwind nunca escaneia node_modules por padrão — sem isto, classes usadas só dentro de um
+   pacote de plugin (@venore/plugin-<key>, nunca replicadas em src/) não são geradas no CSS final:
+   a estrutura HTML renderiza, mas padding/gap/margin/radius daquela classe ficam mudos (achado
+   real: view de saída do Broadcast "com o layout todo quebrado"). Um @source por plugin instalado,
+   gerado a partir das deps do package.json — scripts/gen-plugin-registry.ts, mesmo mecanismo de
+   registro/route-table/etc., ver o comentário lá. */
+@import "../plugins/plugin-sources.generated.css";
+
 /* Tokens de identidade de cada tema instalado (docs/venore-docks.md — "Sobre temas"). Importado
    aqui, no único stylesheet global carregado pelo RootLayout, e não via import direto num layout
    ou componente, por dois motivos: (1) passa pelo mesmo pipeline PostCSS/Tailwind deste arquivo

@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, lt, lte } from "drizzle-orm";
+import { and, desc, eq, gte, lt, lte, sql } from "drizzle-orm";
 import { db } from "@/infrastructure/database/client";
 import { securityAuditEvents } from "../../database/schema";
 import type { AuditEventSummary, ListAuditEventsQuery } from "./types";
@@ -13,6 +13,11 @@ export async function findAuditEvents(
 
   const conditions = [];
   if (query.actorId) conditions.push(eq(securityAuditEvents.actorId, query.actorId));
+  // detail é jsonb — ->> extrai o campo como texto pra comparar. Coluna não indexada (volume de
+  // auditoria por usuário é baixo o suficiente pra não justificar um índice funcional ainda).
+  if (query.targetUserId) {
+    conditions.push(sql`${securityAuditEvents.detail} ->> 'targetUserId' = ${query.targetUserId}`);
+  }
   if (query.outcome) conditions.push(eq(securityAuditEvents.outcome, query.outcome));
   if (query.from) conditions.push(gte(securityAuditEvents.occurredAt, query.from));
   if (query.to) conditions.push(lte(securityAuditEvents.occurredAt, query.to));

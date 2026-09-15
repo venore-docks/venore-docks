@@ -14,6 +14,7 @@ export const ADMIN_BASE_PERMISSION_KEYS = [
   "rbac.roles.manage",
   "rbac.roles.assign",
   "rbac.registrations.approve",
+  "rbac.users.manage",
   "settings.manage",
   "cms.content-types.manage",
   "cms.categories.manage",
