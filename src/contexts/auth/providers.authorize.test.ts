@@ -60,6 +60,16 @@ describe("credentials provider authorize", () => {
     expect(result).toEqual({ id: "u1", name: "U", email: "u@e.com" });
   });
 
+  it("normalizes the username to lowercase before the lookup (email is always stored lowercase)", async () => {
+    findUserByEmailHandler.mockResolvedValue({ success: true, data: APPROVED_USER });
+    verifyPasswordHash.mockResolvedValue(true);
+
+    const authorize = await getAuthorize();
+    await authorize({ username: "U@E.com", password: "secret" });
+
+    expect(findUserByEmailHandler).toHaveBeenCalledWith({ email: "u@e.com" });
+  });
+
   it("returns null when the password does not match", async () => {
     findUserByEmailHandler.mockResolvedValue({ success: true, data: APPROVED_USER });
     verifyPasswordHash.mockResolvedValue(false);
