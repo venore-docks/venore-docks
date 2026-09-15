@@ -34,8 +34,7 @@
     "db:seed:observability-audit-view": "node --env-file=.env scripts/seed-observability-audit-view-permission.mjs",
     "db:install:fresh": "tsx --env-file=.env scripts/install-fresh.ts",
     "db:bootstrap-superadmin": "tsx --env-file=.env scripts/bootstrap-superadmin.ts",
-    "db:apply-plugin-migrations": "tsx --env-file=.env scripts/apply-plugin-migrations.ts",
-    "db:seed:aprenda-musica": "tsx --env-file=.env scripts/seed-aprenda-musica.ts"
+    "db:apply-plugin-migrations": "tsx --env-file=.env scripts/apply-plugin-migrations.ts"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.3",
