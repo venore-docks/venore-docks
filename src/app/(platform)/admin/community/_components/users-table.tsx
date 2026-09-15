@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import type { UserRegistrationStatus, UserSummary } from "@/contexts/auth";
 import { ApproveUserButton } from "./approve-user-button";
 import { FreezeUserDialog } from "./freeze-user-dialog";
+import { PurgeUserDialog } from "./purge-user-dialog";
 import { RejectUserDialog } from "./reject-user-dialog";
 import { RemoveUserDialog } from "./remove-user-dialog";
 import { UnfreezeUserButton } from "./unfreeze-user-button";
@@ -24,7 +25,15 @@ export const USER_STATUS_BADGE_CLASS: Record<UserRegistrationStatus, string> = {
   removed: "bg-muted text-muted-foreground/56",
 };
 
-export function UsersTable({ users, canRemove }: { users: UserSummary[]; canRemove: boolean }) {
+export function UsersTable({
+  users,
+  canRemove,
+  canPurge,
+}: {
+  users: UserSummary[];
+  canRemove: boolean;
+  canPurge: boolean;
+}) {
   return (
     <div className="overflow-x-auto rounded-md border border-border">
       <Table>
@@ -71,6 +80,7 @@ export function UsersTable({ users, canRemove }: { users: UserSummary[]; canRemo
                   {user.status === "approved" && <FreezeUserDialog userId={user.id} />}
                   {user.status === "frozen" && <UnfreezeUserButton userId={user.id} />}
                   {canRemove && user.status !== "removed" && <RemoveUserDialog userId={user.id} />}
+                  {canPurge && user.status === "removed" && <PurgeUserDialog userId={user.id} />}
                 </div>
               </TableCell>
             </TableRow>

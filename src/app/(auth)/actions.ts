@@ -2,9 +2,33 @@
 
 import { AuthError } from "next-auth";
 import { redirect } from "next/navigation";
-import { getCurrentUser, registerWithPassword, signIn, signOut } from "@/contexts/auth";
+import { findUserByEmail, getCurrentUser, registerWithPassword, signIn, signOut } from "@/contexts/auth";
+import type { UserRegistrationStatus } from "@/contexts/auth";
 import { grantSuperadmin, superadminExists } from "@/contexts/rbac";
 import { handleUserRegistered } from "@/platform/registration/handle-user-registered";
+
+// Mensagem específica por status "não aprovado" — sem isso, congelado/rejeitado/removido caem no
+// mesmo "Usuário ou senha inválidos" de senha errada, o que deixa a pessoa (e quem dá suporte)
+// sem pista nenhuma do que aconteceu. Só "approved" não entra aqui: só existe motivo pra revelar o
+// status quando ele É a causa do bloqueio, nunca quando a causa é só senha errada.
+const LOGIN_BLOCKED_STATUS_MESSAGE: Partial<Record<UserRegistrationStatus, string>> = {
+  pending: "Cadastro aguardando aprovação de um administrador.",
+  rejected: "Cadastro rejeitado. Fale com um administrador se acha que isso é engano.",
+  frozen: "Conta congelada por um administrador. Fale com um administrador para reativar.",
+  removed: "Conta removida.",
+};
+
+// Consultado ANTES de signIn(): authorize() em providers.ts já recusa qualquer status != approved
+// devolvendo null, mas isso vira um AuthError genérico indistinguível de senha errada (mesmo
+// findUserByEmail que providers.ts usa — não é um uso novo do "regra 14", só adiantado pra decidir
+// a mensagem antes de tentar autenticar de verdade). Email inexistente devolve null aqui de
+// propósito: não é revelado "essa conta não existe", só "essa conta existe e está bloqueada".
+async function resolveLoginBlockMessage(email: string): Promise<string | null> {
+  if (!email) return null;
+  const found = await findUserByEmail({ email });
+  if (!found.success) return null;
+  return LOGIN_BLOCKED_STATUS_MESSAGE[found.data.status] ?? null;
+}
 
 export async function signInWithProviderAction(formData: FormData) {
   const provider = String(formData.get("provider") ?? "");
@@ -16,6 +40,11 @@ export async function signInWithProviderAction(formData: FormData) {
 export async function signInWithPasswordAction(formData: FormData) {
   const username = String(formData.get("username") ?? "");
   const password = String(formData.get("password") ?? "");
+
+  const blockMessage = await resolveLoginBlockMessage(username);
+  if (blockMessage) {
+    redirect(`/login?error=${encodeURIComponent(blockMessage)}`);
+  }
 
   try {
     await signIn("credentials", { username, password, redirect: false });
