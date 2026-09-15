@@ -8,5 +8,6 @@ export function toAuthenticatedUser(user: Session["user"], avatarMediaId: string
     name: user.name ?? null,
     image: user.image ?? null,
     avatarMediaId,
+    authProvider: user.provider ?? null,
   };
 }

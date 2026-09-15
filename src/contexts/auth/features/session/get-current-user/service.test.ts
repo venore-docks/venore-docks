@@ -46,7 +46,7 @@ describe("getCurrentUserService", () => {
 
   it("returns the authenticated user for an approved session", async () => {
     getSession.mockResolvedValue({
-      user: { id: "u1", email: "u@e.com", name: "U", image: null, status: "approved" },
+      user: { id: "u1", email: "u@e.com", name: "U", image: null, status: "approved", provider: "credentials" },
     });
     findAvatarMediaId.mockResolvedValue("media-1");
 
@@ -55,7 +55,22 @@ describe("getCurrentUserService", () => {
 
     expect(result).toEqual({
       success: true,
-      data: { id: "u1", email: "u@e.com", name: "U", image: null, avatarMediaId: "media-1" },
+      data: { id: "u1", email: "u@e.com", name: "U", image: null, avatarMediaId: "media-1", authProvider: "credentials" },
+    });
+  });
+
+  it("falls back authProvider to null for a session created before this field existed", async () => {
+    getSession.mockResolvedValue({
+      user: { id: "u1", email: "u@e.com", name: "U", image: null, status: "approved" },
+    });
+    findAvatarMediaId.mockResolvedValue(null);
+
+    const { getCurrentUserService } = await import("./service");
+    const result = await getCurrentUserService();
+
+    expect(result).toEqual({
+      success: true,
+      data: { id: "u1", email: "u@e.com", name: "U", image: null, avatarMediaId: null, authProvider: null },
     });
   });
 });
