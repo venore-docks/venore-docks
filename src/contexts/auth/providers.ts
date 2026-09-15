@@ -142,8 +142,10 @@ export function buildAuthProviders() {
         const found = await findUserByEmail({ email: username });
         if (found.success && found.data.passwordHash) {
           if (!(await verifyPasswordHash(password, found.data.passwordHash))) return null;
-          // P9 — usuário pending não autentica (nem por senha).
-          if (found.data.status === "pending") return null;
+          // P9 (generalizado) — só "approved" autentica por senha; pending/rejected/frozen/removed
+          // são todos recusados aqui (ver get-current-user/service.ts pro mesmo racional do lado
+          // de sessão já estabelecida).
+          if (found.data.status !== "approved") return null;
 
           return {
             id: found.data.id,

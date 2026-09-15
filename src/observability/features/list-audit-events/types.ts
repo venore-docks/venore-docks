@@ -3,6 +3,10 @@ import type { EventOutcome } from "../../contracts/types";
 
 export type ListAuditEventsQuery = {
   actorId?: string;
+  // Filtra por `detail.targetUserId` — a maioria dos eventos privilegiados sobre uma conta (ver
+  // auth.freeze-user, auth.remove-user, rbac.approve-registration etc.) grava o alvo aí, não como
+  // actor. Usado pela aba de atividade do perfil admin (/admin/community/[userId]).
+  targetUserId?: string;
   outcome?: EventOutcome;
   from?: Date;
   to?: Date;

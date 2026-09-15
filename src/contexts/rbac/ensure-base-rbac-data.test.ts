@@ -59,10 +59,12 @@ describe("ensureBaseRbacDataSeeded", () => {
     await ensureBaseRbacDataSeeded();
 
     const adminPerms = insertValues.mock.calls[1][0] as RolePermissionValues[];
-    expect(adminPerms).toHaveLength(15);
+    expect(adminPerms).toHaveLength(16);
     expect(adminPerms.every((row) => row.roleId === "admin-role-id")).toBe(true);
     expect(adminPerms.map((row) => row.permissionKey)).toContain("platform.admin.access");
+    expect(adminPerms.map((row) => row.permissionKey)).toContain("rbac.users.manage");
     expect(adminPerms.map((row) => row.permissionKey)).not.toContain("media.purge");
+    expect(adminPerms.map((row) => row.permissionKey)).not.toContain("rbac.users.remove");
 
     const editorPerms = insertValues.mock.calls[2][0] as RolePermissionValues[];
     expect(editorPerms.every((row) => row.roleId === "editor-role-id")).toBe(true);
