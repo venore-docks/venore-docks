@@ -43,6 +43,7 @@ export default async function CommunityAdminPage({
   const resolvedSearchParams = await searchParams;
   const canManage = gate.actor.isSuperadmin || gate.actor.permissions.includes("rbac.users.manage");
   const canRemove = gate.actor.isSuperadmin || gate.actor.permissions.includes("rbac.users.remove");
+  const canPurge = gate.actor.isSuperadmin || gate.actor.permissions.includes("rbac.users.purge");
 
   const result = await searchUsers({
     search: resolvedSearchParams.search || undefined,
@@ -90,7 +91,7 @@ export default async function CommunityAdminPage({
         </Button>
       </form>
 
-      <UsersTable users={entries} canRemove={canRemove} />
+      <UsersTable users={entries} canRemove={canRemove} canPurge={canPurge} />
 
       {hasMore && lastEntry && (
         <div className="text-center">

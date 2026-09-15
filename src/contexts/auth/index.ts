@@ -42,6 +42,12 @@ export type { UnfreezeUserInput, UnfreezeUserResult } from "./features/identity/
 export { removeUserHandler as removeUser } from "./features/identity/remove-user/handler";
 export type { RemoveUserInput, RemoveUserResult } from "./features/identity/remove-user/types";
 
+// Hard delete real — só age sobre conta já "removed". Fora do barrel usado direto por Server
+// Action: quem chama é platform/identity-lifecycle/purge-user-safely.ts, que reconfirma ausência
+// de conteúdo (cms/media) antes. Gated por rbac.users.purge no próprio handler (superadmin only).
+export { purgeUserHandler as purgeUser } from "./features/identity/purge-user/handler";
+export type { PurgeUserInput, PurgeUserResult } from "./features/identity/purge-user/types";
+
 // Criação de conta pelo admin — nasce "approved" (default do schema), diferente do autorregistro
 // que rebaixa pra "pending" via provisionUser. Gated por rbac.users.manage.
 export { adminCreateUserHandler as adminCreateUser } from "./features/identity/admin-create-user/handler";

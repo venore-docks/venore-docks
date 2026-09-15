@@ -32,6 +32,13 @@ export { deleteMediaAssetHandler as deleteMediaAsset } from "./features/assets/d
 // platform/media-lifecycle/purge-media-safely.ts, não este export direto.
 export { purgeMediaAssetHandler as purgeMediaAsset } from "./features/assets/purge-media-asset/handler";
 export { listDeletedMediaAssetsHandler as listDeletedMediaAssets } from "./features/assets/list-deleted-media-assets/handler";
+// Consumida por platform/identity-lifecycle/purge-user-safely.ts — mesma composição fora de media
+// e auth (auth não pode importar media).
+export { countAssetsByUploaderHandler as countAssetsByUploader } from "./features/assets/count-assets-by-uploader/handler";
+export type {
+  CountAssetsByUploaderQuery,
+  CountAssetsByUploaderResult,
+} from "./features/assets/count-assets-by-uploader/types";
 // Exports "de sistema" (sem authorizeActor) — só pro sweep de autopurge
 // (platform/media-lifecycle/sweep-soft-deleted-media.ts), que roda como processo de sistema, sem
 // ator humano por trás (mesmo raciocínio de getMediaAssetForTrustedReview acima e
