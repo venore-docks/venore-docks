@@ -39,6 +39,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // — se a pessoa mudar o nome no Google/GitHub/Microsoft, reflete aqui no próximo login.
         if (account.provider !== "credentials" && profile?.name && user.id) {
           await syncUserNameFromProvider(user.id, profile.name);
+          // Sem isso o token.name fica congelado no valor de quando a sessão JWT foi emitida —
+          // syncUserNameFromProvider corrige o banco, mas session() só repassa token.name adiante
+          // sem reler o banco (só status é revalidado ali), então a tela /account continuaria
+          // mostrando o nome velho (às vezes o e-mail, se foi o valor original) pelo resto da
+          // validade do JWT.
+          token.name = profile.name;
         }
       }
       return token;
