@@ -3,7 +3,17 @@ import type { PermissionDefinition } from "./types";
 export const RBAC_PERMISSIONS: PermissionDefinition[] = [
   { key: "rbac.roles.manage", label: "Gerenciar papéis e permissions" },
   { key: "rbac.roles.assign", label: "Atribuir papéis a usuários" },
-  { key: "rbac.registrations.approve", label: "Aprovar registros pendentes" },
+  // Cobre também REJEITAR um cadastro pendente — mesma decisão binária sobre a mesma fila, não
+  // ganha permission própria (mesmo racional de reaproveitar uma permission ampla já existente
+  // em vez de multiplicar chaves pra cada verbo de uma mesma tela).
+  { key: "rbac.registrations.approve", label: "Aprovar ou rejeitar registros pendentes" },
+  // Gerenciar o ciclo de vida de uma conta já aprovada: ver perfil/atividade, congelar, reativar.
+  // Pertence conceitualmente a contexts/auth — mesmo stopgap de settings.manage acima.
+  { key: "rbac.users.manage", label: "Gerenciar contas de usuário (ver, congelar, reativar)" },
+  // Remover conta é irreversível na prática (anonimiza o registro) — permission própria e mais
+  // restrita, de propósito fora de ADMIN_BASE_PERMISSION_KEYS (mesmo padrão de media.purge vs
+  // media.manage): só superadmin, que authorize-actor.ts libera incondicional.
+  { key: "rbac.users.remove", label: "Remover contas de usuário" },
   // Pertence conceitualmente a contexts/settings — mora aqui porque ainda não existe agregação
   // de permissions entre contexts (docs/venore-docks.md — Modelo de RBAC).
   { key: "settings.manage", label: "Alterar configurações do site" },

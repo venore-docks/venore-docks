@@ -27,6 +27,32 @@ export type {
   AdminSetUserPasswordResult,
 } from "./features/identity/admin-set-user-password/types";
 
+// Ciclo de vida de conta já aprovada — congelar bloqueia login (o mesmo choque P9 do status
+// "pending", ver get-current-user/service.ts) sem precisar revogar sessão à parte (estratégia é
+// JWT, status é revalidado no banco a cada request). Gated por rbac.users.manage no próprio handler
+// (mesmo padrão de adminSetUserPassword).
+export { freezeUserHandler as freezeUser } from "./features/identity/freeze-user/handler";
+export type { FreezeUserInput, FreezeUserResult } from "./features/identity/freeze-user/types";
+export { unfreezeUserHandler as unfreezeUser } from "./features/identity/unfreeze-user/handler";
+export type { UnfreezeUserInput, UnfreezeUserResult } from "./features/identity/unfreeze-user/types";
+
+// Remoção é soft-delete/anonimização, nunca DELETE físico — cms.entries.authorId e
+// media.assets.uploadedBy referenciam auth.users.id sem onDelete. Gated por rbac.users.remove
+// (mais restrita que rbac.users.manage, mesmo padrão de media.purge vs media.manage).
+export { removeUserHandler as removeUser } from "./features/identity/remove-user/handler";
+export type { RemoveUserInput, RemoveUserResult } from "./features/identity/remove-user/types";
+
+// Criação de conta pelo admin — nasce "approved" (default do schema), diferente do autorregistro
+// que rebaixa pra "pending" via provisionUser. Gated por rbac.users.manage.
+export { adminCreateUserHandler as adminCreateUser } from "./features/identity/admin-create-user/handler";
+export type { AdminCreateUserInput, AdminCreateUserResult, CreatedUser } from "./features/identity/admin-create-user/types";
+
+// Diretório de usuários com busca/filtro/paginação, para a tela /admin/community — sem
+// verificação de autorização própria, mesmo racional de listUsers (regra 10): quem autoriza é o
+// loader de página, já gated por rbac.users.manage.
+export { searchUsersHandler as searchUsers } from "./features/identity/search-users/handler";
+export type { SearchUsersQuery, SearchUsersResult, UserSummary } from "./features/identity/search-users/types";
+
 // Lookup por email, sem verificação de autorização própria — destinado a ferramentas
 // administrativas/scripts (ex: scripts/bootstrap-superadmin.mjs), não para uso geral por
 // plugin/tema (docs/venore-docks.md — regra 14: expõe usuário por email sem checagem de ator).
@@ -54,5 +80,7 @@ export type {
 // eles (contexts/rbac/features/registration-approval/*), via este barrel (regra 10).
 export { listPendingUsersHandler as listPendingUsers } from "./features/registration/list-pending-users/handler";
 export { approveUserRegistrationHandler as approveUserRegistration } from "./features/registration/approve-user-registration/handler";
+export { rejectUserRegistrationHandler as rejectUserRegistration } from "./features/registration/reject-user-registration/handler";
 export type { PendingUserRef, ListPendingUsersResult } from "./features/registration/list-pending-users/types";
 export type { ApproveUserRegistrationInput, ApproveUserRegistrationResult } from "./features/registration/approve-user-registration/types";
+export type { RejectUserRegistrationInput, RejectUserRegistrationResult } from "./features/registration/reject-user-registration/types";

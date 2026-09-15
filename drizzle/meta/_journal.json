@@ -267,6 +267,13 @@
       "when": 1788551138079,
       "tag": "0037_smart_william_stryker",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1789421839871,
+      "tag": "0038_auth_users_last_login_at",
+      "breakpoints": true
     }
   ]
 }
