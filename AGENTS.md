@@ -391,6 +391,32 @@ continua sendo a lista geral, derivada da leitura do código:
   list` já foi implementado e revisado — ver `docs/issues.md` G6). Detalhado com contexto e
   dependências em `docs/issues.md`.
 
+## 8. Branches: `main` (core) vs branches de instância
+
+`main` é o branch canônico do **core** do Venore Docks — toda atualização de core (contexts,
+platform, themes/registry padrão, `AGENTS.md`/docs) entra por `main` primeiro, nunca direto num
+branch de instância. Uma feature ou fix só nasce fora de `main` quando é genuinamente específico
+de uma instância (ver abaixo); qualquer coisa que faria sentido em qualquer deploy do Venore Docks
+é core e vai pra `main`.
+
+Um branch de instância (`broadcast-fem`, `aprenda-musica`, `erasto-league`, `nestpro`, etc.)
+diverge de `main` **só** no conjunto de pacotes `@venore/plugin-*`/`@venore/theme-*` que declara em
+`package.json` (`git+https://...#vX.Y.Z`) — nunca em código de `src/`. `broadcast-fem`, por
+exemplo, existe só porque instala `@venore/plugin-broadcast`, `@venore/plugin-scoreboard` e
+`@venore/theme-fearless`; todo o resto do branch é `main`. Um commit de instância legítimo é
+sempre um bump de versão desses pacotes (`chore(<plugin>): bump @venore/plugin-<nome> para
+vX.Y.Z`) — nunca um `.ts`/`.tsx` de `src/` fora de `package.json`/`package-lock.json`.
+
+**Direção do merge é sempre `main` → instância, nunca instância → `main`.** Um fix ou feature de
+core encontrado enquanto o checkout está num branch de instância não é commitado ali: troca pra
+`main`, commita/push lá, e só depois faz `git merge main` de volta no branch de instância pra
+propagar. Nunca faz o caminho inverso (commit na instância + merge/cherry-pick pra `main`) — isso
+inverteria a direção de propagação e faria `main` depender do histórico de uma instância
+específica. Se um fix de core acabar commitado por engano direto num branch de instância (antes de
+notar o erro), a correção é: cherry-pick o commit pra `main`, dar `git revert` dele na instância, e
+então `git merge main` na instância — igual ao fluxo normal, só com um passo a mais pra desfazer o
+commit fora de lugar.
+
 ## Preferências de UI: nav-mode (cookie) vs color-mode (localStorage) — assimetria intencional
 `nav-mode` (`src/platform/nav-mode`) continua em cookie porque o servidor precisa saber qual
 sidebar montar (main-nav vs admin-nav) no primeiro render; `color-mode` vive em `localStorage`
