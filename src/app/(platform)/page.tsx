@@ -96,7 +96,9 @@ export default async function HomePage() {
     const composition = compositionResult.success ? compositionResult.data : null;
 
     return composition ? (
-      <BlockRenderer blocks={composition} mode="published" />
+      <div className="space-y-6">
+        <BlockRenderer blocks={composition} mode="published" />
+      </div>
     ) : (
       <article>
         <h1 className="text-3xl font-semibold tracking-tight text-foreground">{entry.title}</h1>
