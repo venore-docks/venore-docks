@@ -215,4 +215,28 @@ describe("updateEntry", () => {
     expect(result.success).toBe(true);
     expect(findOtherEntryByCategoryAndSlug).toHaveBeenCalledWith("entry-1", existingEntry.categoryId, existingEntry.slug);
   });
+
+  it("preserves existing data.blocks when only metadata fields are patched (regression for CMS clobber bug)", async () => {
+    const compositionBlocks = [{ id: "b1", key: "core.content.heading", slot: "", htmlId: null, data: {}, areas: [] }];
+    findEntryById.mockResolvedValue({ ...existingEntry, data: { blocks: compositionBlocks } });
+    updateEntryFields.mockResolvedValue({ ...existingEntry, title: "Updated" });
+
+    const { updateEntry } = await import("./service");
+    await updateEntry({ id: "entry-1", title: "Updated", data: { body: "novo texto" }, actorId: "actor-1" });
+
+    expect(updateEntryFields).toHaveBeenCalledWith(
+      "entry-1",
+      expect.objectContaining({ data: { blocks: compositionBlocks, body: "novo texto" } }),
+    );
+  });
+
+  it("does not touch data at all when the update has no data patch", async () => {
+    findEntryById.mockResolvedValue({ ...existingEntry, data: { blocks: [] } });
+    updateEntryFields.mockResolvedValue({ ...existingEntry, title: "Updated" });
+
+    const { updateEntry } = await import("./service");
+    await updateEntry({ id: "entry-1", title: "Updated", actorId: "actor-1" });
+
+    expect(updateEntryFields).toHaveBeenCalledWith("entry-1", expect.objectContaining({ data: undefined }));
+  });
 });
