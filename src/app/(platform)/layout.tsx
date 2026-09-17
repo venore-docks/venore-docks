@@ -1,9 +1,12 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { getCurrentUserRegistrationStatus } from "@/contexts/auth";
+import { getContextualMenu } from "@/contexts/cms";
 import { resolveActiveTheme } from "@/platform/theme-rendering/resolve-active-theme";
 import { resolveThemeSlotProps } from "@/platform/theme-rendering/resolve-theme-slot-props";
 import { hasSidebarContextualContent } from "@/platform/theme-rendering/has-sidebar-contextual-content";
+import { resolveContextualBarSource } from "@/platform/theme-rendering/resolve-contextual-bar-source";
+import { ContextualMenuNav } from "@/components/contextual-menu-nav";
 import { resolveBreadcrumbs } from "@/platform/breadcrumbs/resolve-breadcrumbs";
 import { BREADCRUMB_PATHNAME_HEADER } from "@/platform/breadcrumbs/pathname-header";
 import { RouteChangeRefresher } from "@/platform/breadcrumbs/route-change-refresher";
@@ -49,7 +52,16 @@ export default async function PlatformLayout({
   // `sidebarContextual` em si, que não reflete com confiança nem "tem conteúdo" nem "é da rota
   // atual" (ver has-sidebar-contextual-content.ts).
   const pathname = (await headers()).get(BREADCRUMB_PATHNAME_HEADER);
-  const sidebarContextualEnabled = hasSidebarContextualContent(pathname);
+  const pluginHasContextualContent = hasSidebarContextualContent(pathname);
+
+  // Menu Contextual do CMS (/admin/cms/menus, location "contextual", scopePath) — Known Gap
+  // documentado em resolve-theme-slot-props.ts até esta sessão: getContextualMenu já existia e
+  // tinha UI completa, mas nenhum consumidor. resolveContextualBarSource decide a precedência
+  // entre isto e o conteúdo de plugin (Mecanismo A acima).
+  const contextualMenuResult = pathname ? await getContextualMenu({ path: pathname }) : { success: true as const, data: [] };
+  const contextualMenuItems = contextualMenuResult.success ? contextualMenuResult.data : [];
+  const contextualBarSource = resolveContextualBarSource(pluginHasContextualContent, contextualMenuItems.length);
+  const sidebarContextualEnabled = contextualBarSource !== "none";
 
   const adminGate = await getAdminPageData();
   const canToggleAdminNav = adminGate.granted;
@@ -76,7 +88,13 @@ export default async function PlatformLayout({
         footer={props.footer}
         sidebarLeft={props.sidebarLeft}
         sidebarContextualEnabled={sidebarContextualEnabled}
-        sidebarContextual={sidebarContextualEnabled ? sidebarContextual : null}
+        sidebarContextual={
+          contextualBarSource === "plugin" ? (
+            sidebarContextual
+          ) : contextualBarSource === "menu" ? (
+            <ContextualMenuNav items={contextualMenuItems} />
+          ) : null
+        }
         breadcrumbs={breadcrumbs.items}
         breadcrumbsJsonLd={breadcrumbs.jsonLd}
       >
