@@ -21,6 +21,10 @@ import { createAccordionItemBlockDefinition } from "./blocks/accordion-item";
 import { tabsBlockDefinition } from "./blocks/tabs";
 import { createTabsItemBlockDefinition } from "./blocks/tabs-item";
 import { cardGridBlockDefinition } from "./blocks/card-grid";
+import { heroBlockDefinition } from "./blocks/hero";
+import { ctaBlockDefinition } from "./blocks/cta";
+import { galleryBlockDefinition } from "./blocks/gallery";
+import { carouselBlockDefinition } from "./blocks/carousel";
 
 const CORE_LEAF_BLOCKS: BlockDefinition[] = [
   headingBlockDefinition,
@@ -37,6 +41,8 @@ const CORE_LEAF_BLOCKS: BlockDefinition[] = [
   progressBlockDefinition,
   cardBlockDefinition,
   audioBlockDefinition,
+  heroBlockDefinition,
+  ctaBlockDefinition,
 ];
 
 // contexts/cms não conhece plugin nenhum (regra de boundary da sessão) — este registry mora em
@@ -108,6 +114,8 @@ const structuralItemBlocks: BlockDefinition[] = [
   tabsBlockDefinition,
   tabsItemBlockDefinition,
   cardGridBlockDefinition,
+  galleryBlockDefinition,
+  carouselBlockDefinition,
 ];
 
 // 4) row — "tudo menos row" (mesma regra de sempre), agora incluindo os blocos estruturais do

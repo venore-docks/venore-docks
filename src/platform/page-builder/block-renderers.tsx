@@ -2,31 +2,10 @@ import "server-only";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { hasRichTextContent, renderRichTextContent, RICH_TEXT_INLINE_CLASSES } from "./rich-text/render";
-import {
-  Star,
-  Heart,
-  Check,
-  ArrowRight,
-  Info,
-  AlertTriangle,
-  CheckCircle,
-  Mail,
-  Phone,
-  MapPin,
-  Calendar,
-  Clock,
-  User,
-  Users,
-  Settings,
-  Search,
-  Download,
-  Award,
-  BookOpen,
-  Zap,
-  type LucideIcon,
-} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import type { Block, Composition } from "@/contexts/cms";
 import { getMediaAsset } from "@/contexts/media";
+import { NAV_ICON_BY_KEY } from "@/platform/nav-icons/registry";
 import { Button, type buttonVariants } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardFooter, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -39,6 +18,11 @@ import { cn } from "@/lib/utils";
 import type { VariantProps } from "class-variance-authority";
 import { PLUGIN_CONTRIBUTIONS } from "@/plugins/contributions";
 import { ROW_BLOCK_KEY, resolveRowColumns, resolveRowGridClasses } from "./row-columns";
+import { CarouselBlockClient } from "./carousel-block-client";
+import { HERO_BLOCK_KEY } from "./blocks/hero";
+import { CTA_BLOCK_KEY } from "./blocks/cta";
+import { GALLERY_BLOCK_KEY } from "./blocks/gallery";
+import { CAROUSEL_BLOCK_KEY } from "./blocks/carousel";
 
 type ButtonVariant = NonNullable<VariantProps<typeof buttonVariants>["variant"]>;
 
@@ -53,7 +37,10 @@ export type BlockRenderMode = "edit" | "published";
 export type BlockRendererProps = {
   block: Block;
   mode: BlockRenderMode;
-  renderBlocks: (blocks: Composition) => Promise<ReactNode>;
+  // Devolve um array (um ReactNode por bloco filho, já com key), não um nó mesclado — a maioria
+  // dos renderers só empilha `{content}` direto (ReactNode[] é um ReactNode válido), mas
+  // CarouselBlock precisa envolver cada item individualmente em CarouselItem.
+  renderBlocks: (blocks: Composition) => Promise<ReactNode[]>;
 };
 export type BlockRendererComponent = (props: BlockRendererProps) => ReactNode | Promise<ReactNode>;
 
@@ -69,10 +56,29 @@ const ALIGN_CLASSES: Record<string, string> = {
   stretch: "items-stretch",
 };
 
+// Sempre escuro nos dois modos: foreground é escuro no claro e claro no escuro (convenção shadcn
+// padrão), então bg-foreground/dark:bg-background cobre os dois casos sem nenhum hex novo — ver
+// theme.css do venore-slime (--background/--foreground invertem entre :root e .dark).
+const HERO_OVERLAY_CLASSES: Record<string, string> = {
+  none: "",
+  dark: "bg-foreground/50 dark:bg-background/60",
+  gradient: "bg-gradient-to-t from-foreground/70 dark:from-background/80 via-foreground/20 dark:via-background/30 to-transparent",
+};
+
+const CTA_BACKGROUND_CLASSES: Record<string, string> = {
+  muted: "bg-muted",
+  primary: "bg-primary text-primary-foreground",
+  panel: "bg-card border border-border",
+};
+
+// shadow-panel/shadow-float (não shadow-sm/shadow-md genéricos do Tailwind) — mesmo vocabulário
+// de elevação já usado no resto do app (login/error pages, UserMenu, cards de listagem pública em
+// [...slug]/page.tsx), orientado pelos tokens --shadow-panel/--shadow-float que cada tema define
+// (theme.css) — reage a troca de tema como qualquer outro token, nunca um valor novo hardcoded.
 const SURFACE_CLASSES: Record<string, string> = {
   none: "",
-  panel: "rounded-panel bg-card p-4",
-  elevated: "rounded-panel bg-muted p-4",
+  panel: "rounded-panel border border-border bg-card p-4 shadow-panel",
+  elevated: "rounded-panel bg-muted p-4 shadow-float",
 };
 
 const WIDTH_CLASSES: Record<string, string> = {
@@ -158,30 +164,6 @@ const ICON_TONE_CLASSES: Record<string, string> = {
   primary: "text-primary",
 };
 
-// Mesmas chaves de ICON_NAMES em blocks/icon.ts — nome dinâmico de ícone não é bundlable sem mapa
-// fixo (mesmo motivo de GAP_CLASSES).
-const ICON_COMPONENTS: Record<string, LucideIcon> = {
-  star: Star,
-  heart: Heart,
-  check: Check,
-  "arrow-right": ArrowRight,
-  info: Info,
-  "alert-triangle": AlertTriangle,
-  "check-circle": CheckCircle,
-  mail: Mail,
-  phone: Phone,
-  "map-pin": MapPin,
-  calendar: Calendar,
-  clock: Clock,
-  user: User,
-  users: Users,
-  settings: Settings,
-  search: Search,
-  download: Download,
-  award: Award,
-  "book-open": BookOpen,
-  zap: Zap,
-};
 
 const SECTION_BACKGROUND_CLASSES: Record<string, string> = {
   none: "",
@@ -261,7 +243,7 @@ async function RowBlock({ block, renderBlocks }: BlockRendererProps) {
   );
 
   return (
-    <div className={cn("grid", resolveRowGridClasses(block.data, columns), gap, align, surface)}>
+    <div id={block.htmlId ?? undefined} className={cn("grid", resolveRowGridClasses(block.data, columns), gap, align, surface)}>
       {areas.map(({ key, content }) => (
         // space-y-4: cada coluna nunca tinha espaçamento próprio entre os blocos empilhados
         // dentro dela (bug — heading/texto/botão renderizavam colados). Mesmo passo de
@@ -287,10 +269,11 @@ function HeadingBlock({ block }: BlockRendererProps) {
   const uppercase = data.uppercase === true;
   const className = cn("font-semibold text-foreground", size, fontFamily, tracking, uppercase && "uppercase", align);
 
-  if (level === 1) return <h1 className={className}>{text}</h1>;
-  if (level === 3) return <h3 className={className}>{text}</h3>;
-  if (level === 4) return <h4 className={className}>{text}</h4>;
-  return <h2 className={className}>{text}</h2>;
+  const id = block.htmlId ?? undefined;
+  if (level === 1) return <h1 id={id} className={className}>{text}</h1>;
+  if (level === 3) return <h3 id={id} className={className}>{text}</h3>;
+  if (level === 4) return <h4 id={id} className={className}>{text}</h4>;
+  return <h2 id={id} className={className}>{text}</h2>;
 }
 
 const RICHTEXT_CLASSES = cn(
@@ -353,7 +336,7 @@ function DividerBlock({ block }: BlockRendererProps) {
 
 function IconBlock({ block }: BlockRendererProps) {
   const name = readString(block.data, "name", "star");
-  const IconComponent = ICON_COMPONENTS[name] ?? Star;
+  const IconComponent = NAV_ICON_BY_KEY[name] ?? NAV_ICON_BY_KEY.star;
   const size = ICON_SIZE_CLASSES[readString(block.data, "size", "md")] ?? ICON_SIZE_CLASSES.md;
   const tone = ICON_TONE_CLASSES[readString(block.data, "tone", "foreground")] ?? ICON_TONE_CLASSES.foreground;
   return <IconComponent className={cn(size, tone)} strokeWidth={1.75} />;
@@ -425,7 +408,7 @@ function AlertBlockRenderer({ block }: BlockRendererProps) {
   const requestedVariant = readString(block.data, "variant", "default") as AlertVariant;
   const tone = ALERT_VARIANTS.has(requestedVariant) ? requestedVariant : "default";
   const iconName = readString(block.data, "icon");
-  const IconComponent = iconName ? ICON_COMPONENTS[iconName] : null;
+  const IconComponent = iconName ? NAV_ICON_BY_KEY[iconName] : null;
   const titleAlign = readString(block.data, "titleAlign", "start");
 
   return (
@@ -503,7 +486,7 @@ async function CardBlock({ block }: BlockRendererProps) {
   }
 
   return (
-    <Card className="h-full">
+    <Card className="h-full ui-motion-base hover:shadow-float">
       {mediaUrl && (
         // Card (ui/card.tsx) já trata <img> como primeiro filho: remove o padding-top e arredonda
         // o topo sozinho (has-[>img:first-child]:pt-0, *:[img:first-child]:rounded-t-xl).
@@ -544,7 +527,7 @@ async function AudioBlock({ block }: BlockRendererProps) {
   const media = mediaResult.data;
 
   return (
-    <Card>
+    <Card className="shadow-panel">
       <CardContent className="space-y-2">
         {title && <p className="text-sm font-medium text-foreground">{title}</p>}
         <audio controls src={media.url} className="w-full" />
@@ -565,13 +548,13 @@ async function SectionBlock({ block, renderBlocks }: BlockRendererProps) {
   const paddingX = SECTION_PADDING_X_CLASSES[readString(block.data, "paddingX", "md")] ?? SECTION_PADDING_X_CLASSES.md;
   const title = readString(block.data, "title");
   const iconName = readString(block.data, "icon");
-  const IconComponent = iconName ? ICON_COMPONENTS[iconName] : null;
+  const IconComponent = iconName ? NAV_ICON_BY_KEY[iconName] : null;
   const titleAlign = readString(block.data, "titleAlign", "start");
   const area = readArea(block, "content");
   const content = area ? await renderBlocks(area.blocks) : null;
 
   return (
-    <section className={cn(background, paddingY, paddingX)}>
+    <section id={block.htmlId ?? undefined} className={cn(background, paddingY, paddingX)}>
       {/* space-y-6 (não -4): uma seção empilha blocos estruturalmente distintos (um heading, um
           card-grid inteiro, um botão) — pede mais respiro que o ritmo interno de uma coluna de
           row (RowBlock, mais acima) ou de parágrafos do mesmo texto corrido (RICHTEXT_CLASSES,
@@ -595,7 +578,7 @@ async function AccordionBlock({ block, renderBlocks }: BlockRendererProps) {
   const items = area ? await renderBlocks(area.blocks) : null;
 
   return (
-    <Card>
+    <Card className="shadow-panel">
       <CardContent>
         {allowMultiple ? (
           <Accordion type="multiple">{items}</Accordion>
@@ -632,7 +615,7 @@ async function TabsBlock({ block, renderBlocks }: BlockRendererProps) {
   }
 
   return (
-    <Card>
+    <Card className="shadow-panel">
       <CardContent>
         <Tabs defaultValue={children[0].id} className="w-full">
           <TabsList className="w-full">
@@ -678,6 +661,129 @@ function ButtonBlock({ block }: BlockRendererProps) {
   );
 }
 
+async function HeroBlock({ block }: BlockRendererProps) {
+  const data = block.data;
+  const eyebrow = readString(data, "eyebrow");
+  const title = readString(data, "title");
+  const subtitle = readString(data, "subtitle");
+  const mediaId = readString(data, "mediaId");
+  const align = readString(data, "align", "start");
+  const overlay = HERO_OVERLAY_CLASSES[readString(data, "overlay", "none")] ?? "";
+  const primaryLabel = readString(data, "primaryLabel");
+  const primaryHref = readString(data, "primaryHref");
+  const secondaryLabel = readString(data, "secondaryLabel");
+  const secondaryHref = readString(data, "secondaryHref");
+
+  let mediaUrl: string | null = null;
+  if (mediaId) {
+    const mediaResult = await getMediaAsset({ id: mediaId });
+    if (mediaResult.success && mediaResult.data) {
+      mediaUrl = mediaResult.data.url;
+    }
+  }
+
+  // Texto sobre imagem usa o par primary/primary-foreground (não foreground/background) — mesmo
+  // raciocínio do overlay acima: é o par de tokens já pensado pra "conteúdo sobre uma superfície
+  // forte", garantido legível nos dois modos, em vez de inventar uma variante nova.
+  const onMedia = Boolean(mediaUrl);
+  const textToneClass = onMedia ? "text-primary-foreground" : "text-foreground";
+  const mutedToneClass = onMedia ? "text-primary-foreground/80" : "text-muted-foreground";
+
+  return (
+    <div id={block.htmlId ?? undefined} className="relative overflow-hidden rounded-panel">
+      {mediaUrl && (
+        // eslint-disable-next-line @next/next/no-img-element -- mesmo padrão do resto do page-builder, sem domínio remoto configurado pra next/image
+        <img src={mediaUrl} alt="" aria-hidden className="absolute inset-0 h-full w-full object-cover" />
+      )}
+      {mediaUrl && overlay && <div aria-hidden className={cn("absolute inset-0", overlay)} />}
+      <div
+        className={cn(
+          "relative flex flex-col gap-4 px-6 py-16 sm:px-10 sm:py-24",
+          align === "center" ? "items-center text-center" : "items-start text-start",
+          textToneClass,
+        )}
+      >
+        {eyebrow && <p className={cn("text-xs font-semibold uppercase tracking-caps", mutedToneClass)}>{eyebrow}</p>}
+        <h1 className="text-4xl font-semibold tracking-display sm:text-5xl">{title}</h1>
+        {subtitle && <p className={cn("max-w-2xl text-base sm:text-lg", mutedToneClass)}>{subtitle}</p>}
+        {(primaryLabel || secondaryLabel) && (
+          <div className="mt-2 flex flex-wrap gap-3">
+            {primaryLabel && primaryHref && (
+              <Button asChild size="lg">
+                <Link href={primaryHref}>{primaryLabel}</Link>
+              </Button>
+            )}
+            {secondaryLabel && secondaryHref && (
+              <Button asChild size="lg" variant={onMedia ? "secondary" : "outline"}>
+                <Link href={secondaryHref}>{secondaryLabel}</Link>
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CTABlock({ block }: BlockRendererProps) {
+  const data = block.data;
+  const title = readString(data, "title");
+  const description = readString(data, "description");
+  const buttonLabel = readString(data, "buttonLabel");
+  const buttonHref = readString(data, "buttonHref");
+  const background = CTA_BACKGROUND_CLASSES[readString(data, "background", "muted")] ?? CTA_BACKGROUND_CLASSES.muted;
+  const onPrimary = readString(data, "background", "muted") === "primary";
+
+  return (
+    <div className={cn("flex flex-col items-start gap-4 rounded-panel p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8", background)}>
+      <div className="space-y-1">
+        <h2 className="text-xl font-semibold tracking-display sm:text-2xl">{title}</h2>
+        {description && (
+          <p className={cn("max-w-xl text-sm sm:text-base", onPrimary ? "text-primary-foreground/80" : "text-muted-foreground")}>
+            {description}
+          </p>
+        )}
+      </div>
+      <Button asChild size="lg" variant={onPrimary ? "secondary" : "default"} className="shrink-0">
+        <Link href={buttonHref}>{buttonLabel}</Link>
+      </Button>
+    </div>
+  );
+}
+
+async function GalleryBlock({ block, renderBlocks }: BlockRendererProps) {
+  const requestedColumns = Number(block.data.columns) || 3;
+  const columns = CARD_GRID_COLUMN_CLASSES[requestedColumns] ? requestedColumns : 3;
+  const gap = GAP_CLASSES[readString(block.data, "gap", "md")] ?? GAP_CLASSES.md;
+  const area = readArea(block, "items");
+  const content = area ? await renderBlocks(area.blocks) : [];
+
+  return (
+    <div id={block.htmlId ?? undefined} className={cn("grid", CARD_GRID_COLUMN_CLASSES[columns], gap)}>
+      {content}
+    </div>
+  );
+}
+
+async function CarouselBlock({ block, renderBlocks }: BlockRendererProps) {
+  const area = readArea(block, "items");
+  const slides = area ? await renderBlocks(area.blocks) : [];
+  if (slides.length === 0) {
+    return null;
+  }
+
+  return (
+    <CarouselBlockClient
+      slides={slides}
+      autoplay={block.data.autoplay === true}
+      interval={Number(block.data.interval) || 5}
+      loop={block.data.loop !== false}
+      showDots={block.data.showDots !== false}
+      htmlId={block.htmlId}
+    />
+  );
+}
+
 const CORE_BLOCK_RENDERERS: Record<string, BlockRendererComponent> = {
   [ROW_BLOCK_KEY]: RowBlock,
   "core.content.heading": HeadingBlock,
@@ -700,6 +806,10 @@ const CORE_BLOCK_RENDERERS: Record<string, BlockRendererComponent> = {
   "core.layout.tabs": TabsBlock,
   "core.layout.tabs-item": TabsItemBlock,
   "core.layout.card-grid": CardGridBlock,
+  [HERO_BLOCK_KEY]: HeroBlock,
+  [CTA_BLOCK_KEY]: CTABlock,
+  [GALLERY_BLOCK_KEY]: GalleryBlock,
+  [CAROUSEL_BLOCK_KEY]: CarouselBlock,
 };
 
 // Renderers de plugin vêm de PLUGIN_CONTRIBUTIONS[key].blockRenderers — um LOADER preguiçoso
