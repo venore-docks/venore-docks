@@ -1,7 +1,6 @@
 import { sql } from "drizzle-orm";
-import { invalidateExtensionStateCaches, listExtensionStates } from "@/contexts/extensions";
+import { listExtensionStates } from "@/contexts/extensions";
 import { authorizeActor } from "@/contexts/rbac";
-import { invalidateCache } from "@/infrastructure/cache/memory-cache";
 // Import direto do client de infra (não de um store de context): a operação é atômica por
 // natureza — DROP SCHEMA do plugin + limpeza de settings/rbac/extension_state numa transação só —
 // e não existe um context "dono" de "apagar todo o rastro de um plugin". Mesma natureza de
@@ -12,7 +11,7 @@ import { beginOperation, endOperation, recordAuditEvent } from "@/observability"
 import type { OperationResult } from "@/shared/types";
 import { PLUGIN_REGISTRY } from "@/plugins/registry";
 import { findEnabledDependents } from "./find-dependent-plugins";
-import { PLUGIN_ENGINE_REPORT_CACHE_KEY, registerPlugins } from "./register-plugins";
+import { registerPlugins } from "./register-plugins";
 import { resolvePluginDataSchema } from "./resolve-plugin-data-schema";
 import { resolveMigrationsSchema } from "./run-plugin-migrations";
 
@@ -145,12 +144,6 @@ export async function performPluginUninstall(command: {
 
       return { settingsDeleted, permissionsDeleted };
     });
-
-    // Quem escreve invalida (docs/venore-docks.md — Cache). O UPDATE em extension_state foi por
-    // fora dos handlers de contexts/extensions (pra caber na transação), então os caches de
-    // leitura daquele context são invalidados aqui explicitamente.
-    invalidateExtensionStateCaches("plugin", pluginKey);
-    invalidateCache(PLUGIN_ENGINE_REPORT_CACHE_KEY);
 
     const summary = purgeData
       ? `Plugin "${pluginKey}" desinstalado (limpeza de banco): ` +

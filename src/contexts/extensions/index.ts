@@ -3,10 +3,6 @@ export { listExtensionStatesHandler as listExtensionStates } from "./features/li
 export { setExtensionEnabledHandler as setExtensionEnabled } from "./features/set-extension-enabled/handler";
 export { setExtensionInstalledHandler as setExtensionInstalled } from "./features/set-extension-installed/handler";
 
-// Só para o ponto de composição que muta extension_state fora dos handlers numa transação
-// própria — src/platform/plugin-engine/uninstall-plugin.ts. Ver cache.ts.
-export { invalidateExtensionStateCaches } from "./cache";
-
 export type { ExtensionKind, ExtensionStateRecord } from "./contracts/types";
 export type { GetExtensionStateQuery, GetExtensionStateResult } from "./features/get-extension-state/types";
 export type {
