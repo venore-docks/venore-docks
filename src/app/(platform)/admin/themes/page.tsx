@@ -7,6 +7,7 @@ import { CUSTOM_COLOR_PALETTE_ID } from "@/platform/theme-engine/custom-color-pa
 import { getHeaderBehavior } from "@/platform/header-behavior/get-header-behavior";
 import { ActivateThemeButton } from "./_components/activate-theme-button";
 import { ToggleThemeControl } from "./_components/toggle-theme-control";
+import { ThemeUpdatePanel } from "./_components/theme-update-panel";
 import { ActivateColorPaletteButton } from "./_components/activate-color-palette-button";
 import { CustomColorPaletteForm } from "./_components/custom-color-palette-form";
 import { HeaderBehaviorForm } from "./_components/header-behavior-form";
@@ -48,6 +49,11 @@ export default async function ThemesAdminPage() {
   const customPalette = colorPaletteStates.palettes.find((palette) => palette.id === CUSTOM_COLOR_PALETTE_ID);
   const activeTheme = themes.find((theme) => theme.isActive);
   const activeThemeSupportsHeaderBehavior = activeTheme?.manifest.capabilities?.headerBehavior ?? false;
+  // Mais sensível que settings.manage (que já libera esta página inteira): "Atualizar" comita
+  // no repo do site e aciona um deploy de verdade. Fora de ADMIN_BASE_PERMISSION_KEYS de
+  // propósito — só aparece pra quem recebeu a permission explicitamente (docs/venore-docks.md,
+  // mesmo padrão de media.purge).
+  const canUpdateThemes = gate.actor.isSuperadmin || gate.actor.permissions.includes("platform.extensions.update");
 
   return (
     <div className="space-y-8">
@@ -62,12 +68,13 @@ export default async function ThemesAdminPage() {
       <section className="rounded-panel border border-border bg-card ui-panel-padding-roomy">
         <ul className="space-y-3">
           {themes.map(({ manifest, enabled, isActive, canDisable, disableBlockedReason }) => (
-            <li key={manifest.key} className="flex items-center justify-between gap-4 text-sm text-muted-foreground">
+            <li key={manifest.key} className="flex flex-wrap items-center justify-between gap-4 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
                 <span className="font-medium text-foreground">{manifest.name}</span>
                 {isActive && <Badge variant="secondary">Ativo</Badge>}
               </div>
               <div className="flex items-center gap-2">
+                {canUpdateThemes && <ThemeUpdatePanel themeKey={manifest.key} themeName={manifest.name} />}
                 {!isActive && enabled && <ActivateThemeButton themeKey={manifest.key} />}
                 <ToggleThemeControl
                   themeKey={manifest.key}
