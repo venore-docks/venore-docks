@@ -48,7 +48,7 @@ describe("getEntryComposition", () => {
   });
 
   it("returns the composition when data.blocks is present", async () => {
-    const composition = [{ id: "b1", key: "text", slot: "main", data: {}, areas: [] }];
+    const composition = [{ id: "b1", key: "text", slot: "main", htmlId: null, data: {}, areas: [] }];
     findEntryById.mockResolvedValue({ ...baseEntry, data: { blocks: composition } });
 
     const { getEntryComposition } = await import("./service");

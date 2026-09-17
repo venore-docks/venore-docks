@@ -173,6 +173,10 @@ export const menuItems = cmsSchema.table(
     // a montagem do menu" — mesma decisão de entries.mediaId acima. Resolvido por id em tempo de
     // leitura; ausência vira pendência no admin, item some do público.
     contentId: text("content_id"),
+    // Só usado com targetType "content" — id de âncora (Block.htmlId) dentro da página apontada.
+    // Fora do check constraint abaixo de propósito: opcional em qualquer targetType, mesmo
+    // tratamento de `icon`, não um par obrigatório de contentId.
+    anchor: text("anchor"),
     routePath: text("route_path"),
     // Só item "route" pode exigir permission — filtrada pela permission do ator no servidor.
     requiredPermissionKey: text("required_permission_key"),

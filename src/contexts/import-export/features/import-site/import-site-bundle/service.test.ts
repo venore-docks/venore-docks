@@ -200,7 +200,7 @@ describe("importSiteBundle", () => {
     );
     expect(publishEntry).toHaveBeenCalledWith({ id: "entry-new", resolveDefinition });
     expect(createMenuItem).toHaveBeenCalledWith(
-      expect.objectContaining({ menuId: "menu-new", target: { targetType: "content", contentId: "entry-new" } }),
+      expect.objectContaining({ menuId: "menu-new", target: { targetType: "content", contentId: "entry-new", anchor: null } }),
     );
   });
 

@@ -15,9 +15,9 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { IconPicker } from "@/components/icon-picker";
 import { useActionToast } from "@/hooks/use-action-toast";
 import { NAV_ICON_KEYS } from "@/platform/nav-icons/registry";
-import { NavIcon } from "@/platform/nav-icons/NavIcon";
 import type { AdminResolvedMenuItem } from "@/contexts/cms";
 import { updateMenuItemAction, type MenuActionState } from "../actions";
 import { ContentPicker } from "./content-picker";
@@ -32,8 +32,7 @@ const TARGET_TYPE_OPTIONS = [
   { value: "label", label: "Rótulo sem link (agrupador)" },
 ];
 
-// Mesmo sentinela de add-menu-item-dialog.tsx — <Select> do shadcn não aceita item com value vazio.
-const NO_ICON_VALUE = "none";
+const ICON_OPTIONS = [{ value: "", label: "Sem ícone" }, ...NAV_ICON_KEYS.map((key) => ({ value: key, label: key }))];
 
 // Item já apontando pra um conteúdo publicado: sintetiza o shape que ContentPicker espera a partir
 // do que o admin já carrega (AdminResolvedMenuItem — contentTitle, resolveAdminMenuTree). Não
@@ -57,7 +56,7 @@ export function EditMenuItemDialog({
   const [targetType, setTargetType] = useState<string>(item.targetType);
   const [selectedContent, setSelectedContent] = useState<ContentSearchResult | null>(initialSelectedContent(item));
   const [label, setLabel] = useState(item.label);
-  const [icon, setIcon] = useState(item.icon ?? NO_ICON_VALUE);
+  const [icon, setIcon] = useState(item.icon ?? "");
   const [state, formAction, pending] = useActionState(updateMenuItemAction, initialState);
 
   useActionToast({ pending, error: state.error, successMessage: "Item atualizado.", onSuccess: () => setOpen(false) });
@@ -73,7 +72,7 @@ export function EditMenuItemDialog({
           setTargetType(item.targetType);
           setSelectedContent(initialSelectedContent(item));
           setLabel(item.label);
-          setIcon(item.icon ?? NO_ICON_VALUE);
+          setIcon(item.icon ?? "");
         }
       }}
     >
@@ -90,7 +89,7 @@ export function EditMenuItemDialog({
           <input type="hidden" name="menuId" value={menuId} />
           <input type="hidden" name="menuItemId" value={item.id} />
           <input type="hidden" name="targetType" value={targetType} />
-          <input type="hidden" name="icon" value={icon === NO_ICON_VALUE ? "" : icon} />
+          <input type="hidden" name="icon" value={icon} />
           {targetType === "content" && selectedContent && (
             <input type="hidden" name="contentId" value={selectedContent.id} />
           )}
@@ -112,7 +111,21 @@ export function EditMenuItemDialog({
           </div>
 
           {targetType === "content" && (
-            <ContentPicker selected={selectedContent} onSelect={setSelectedContent} />
+            <>
+              <ContentPicker selected={selectedContent} onSelect={setSelectedContent} />
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground">Âncora (opcional)</label>
+                <Input
+                  name="anchor"
+                  className="mt-1"
+                  placeholder="ex: sobre-nos"
+                  defaultValue={(item.targetType === "content" && item.anchor) || ""}
+                />
+                <p className="mt-1 text-xs text-muted-foreground/56">
+                  Id de âncora de um bloco da página (definido no Editor visual) — o link aponta para /pagina#âncora.
+                </p>
+              </div>
+            </>
           )}
 
           {targetType === "route" && (
@@ -157,22 +170,9 @@ export function EditMenuItemDialog({
 
           <div>
             <label className="block text-xs font-medium text-muted-foreground">Ícone (opcional)</label>
-            <Select value={icon} onValueChange={setIcon}>
-              <SelectTrigger className="mt-1 w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={NO_ICON_VALUE}>Sem ícone</SelectItem>
-                {NAV_ICON_KEYS.map((key) => (
-                  <SelectItem key={key} value={key}>
-                    <span className="flex items-center gap-2">
-                      <NavIcon iconKey={key} className="size-4" />
-                      {key}
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="mt-1">
+              <IconPicker value={icon} onChange={setIcon} options={ICON_OPTIONS} />
+            </div>
           </div>
 
           <div>

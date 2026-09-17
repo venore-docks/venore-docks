@@ -72,7 +72,11 @@ export type MenuRecord = {
 // partir da rota atual daquela entry, mesmo princípio de mediaId (ver comentário em EntryRecord
 // acima e no schema). "label" é rótulo sem link — agrupador, usado em sitemap/submenu.
 export type MenuItemTarget =
-  | { targetType: "content"; contentId: string }
+  // anchor: id de âncora opcional (Block.htmlId) dentro da página apontada — vira /slug#anchor em
+  // tempo de leitura (contentHref em menu-resolution.ts). "route" já resolve isso com o próprio
+  // texto livre de routePath (ex: "/pagina#id"); "content" precisava de um campo dedicado porque
+  // seu href é derivado da entry, não digitado.
+  | { targetType: "content"; contentId: string; anchor: string | null }
   | { targetType: "route"; routePath: string; requiredPermissionKey: string | null }
   | { targetType: "external"; externalUrl: string }
   | { targetType: "label" };

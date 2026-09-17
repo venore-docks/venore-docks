@@ -66,8 +66,10 @@ describe("updateMenuItem", () => {
     expect(updateMenuItemFields).toHaveBeenCalledWith("item-1", {
       label: undefined,
       isVisible: undefined,
+      icon: undefined,
       targetType: "external",
       contentId: null,
+      anchor: null,
       routePath: null,
       requiredPermissionKey: null,
       externalUrl: "https://example.com",

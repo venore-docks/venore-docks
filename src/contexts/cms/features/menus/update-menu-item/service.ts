@@ -39,6 +39,7 @@ export async function updateMenuItem(command: UpdateMenuItemCommand): Promise<Up
       ? {
           targetType: command.target.targetType,
           contentId: command.target.targetType === "content" ? command.target.contentId : null,
+          anchor: command.target.targetType === "content" ? command.target.anchor : null,
           routePath: command.target.targetType === "route" ? command.target.routePath : null,
           requiredPermissionKey: command.target.targetType === "route" ? command.target.requiredPermissionKey : null,
           externalUrl: command.target.targetType === "external" ? command.target.externalUrl : null,
