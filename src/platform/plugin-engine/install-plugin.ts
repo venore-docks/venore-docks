@@ -1,9 +1,7 @@
 import { listExtensionStates, setExtensionInstalled } from "@/contexts/extensions";
 import { grantPermissionsToRole } from "@/contexts/rbac";
-import { invalidateCache } from "@/infrastructure/cache/memory-cache";
 import type { OperationResult } from "@/shared/types";
 import { PLUGIN_REGISTRY } from "@/plugins/registry";
-import { PLUGIN_ENGINE_REPORT_CACHE_KEY } from "./register-plugins";
 import { runPluginMigrations } from "./run-plugin-migrations";
 
 export type InstallPluginInput = { pluginKey: string };
@@ -61,10 +59,6 @@ export async function installPlugin(command: InstallPluginInput): Promise<Operat
       return { success: false, error: grant.error };
     }
   }
-
-  // Navegação, permission e blocos vêm do relatório cacheado (register-plugins.ts) — invalidar
-  // essa entrada faz o plugin recém-instalado passar a contribuir (docs/venore-docks.md — Cache).
-  invalidateCache(PLUGIN_ENGINE_REPORT_CACHE_KEY);
 
   return { success: true, data: undefined };
 }

@@ -7,7 +7,7 @@ import type { ExtensionKind, ExtensionStateRecord } from "../../contracts/types"
 // (COALESCE preserva o timestamp original numa reinstalação). Nunca limpa `installed_at` — a
 // desinstalação "modo B" (limpar banco) é atômica com o DROP SCHEMA do plugin e mora no ponto de
 // composição src/platform/plugin-engine/uninstall-plugin.ts, que faz o UPDATE de "não instalado"
-// por fora deste store (numa transação) e chama `invalidateExtensionStateCaches` (ver cache.ts).
+// por fora deste store (numa transação).
 export async function upsertExtensionInstalled(
   kind: ExtensionKind,
   key: string,
