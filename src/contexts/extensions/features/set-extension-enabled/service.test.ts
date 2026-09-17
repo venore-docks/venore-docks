@@ -11,19 +11,12 @@ vi.mock("./store", () => ({
   upsertExtensionState: (...args: unknown[]) => upsertExtensionState(...args),
 }));
 
-const invalidateCache = vi.fn();
-
-vi.mock("@/infrastructure/cache/memory-cache", () => ({
-  invalidateCache: (...args: unknown[]) => invalidateCache(...args),
-}));
-
 describe("setExtensionEnabled", () => {
   beforeEach(() => {
     upsertExtensionState.mockReset();
-    invalidateCache.mockReset();
   });
 
-  it("persists the new state and invalidates the get + list caches for that kind/key", async () => {
+  it("persists the new state", async () => {
     const record = { kind: "plugin" as const, key: "birthdays", enabled: false, updatedAt: new Date("2026-01-01"), updatedByUserId: "actor-1" };
     upsertExtensionState.mockResolvedValue(record);
 
@@ -31,8 +24,6 @@ describe("setExtensionEnabled", () => {
     const result = await setExtensionEnabled({ kind: "plugin", key: "birthdays", enabled: false, actorId: "actor-1" });
 
     expect(upsertExtensionState).toHaveBeenCalledWith("plugin", "birthdays", false, "actor-1");
-    expect(invalidateCache).toHaveBeenCalledWith("extensions:plugin:birthdays");
-    expect(invalidateCache).toHaveBeenCalledWith("extensions:list:plugin");
     expect(result).toEqual({ success: true, data: record });
   });
 });

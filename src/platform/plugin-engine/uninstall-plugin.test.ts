@@ -6,15 +6,8 @@ vi.mock("@/contexts/rbac", () => ({
 }));
 
 const listExtensionStates = vi.fn();
-const invalidateExtensionStateCaches = vi.fn();
 vi.mock("@/contexts/extensions", () => ({
   listExtensionStates: (...args: unknown[]) => listExtensionStates(...args),
-  invalidateExtensionStateCaches: (...args: unknown[]) => invalidateExtensionStateCaches(...args),
-}));
-
-const invalidateCache = vi.fn();
-vi.mock("@/infrastructure/cache/memory-cache", () => ({
-  invalidateCache: (...args: unknown[]) => invalidateCache(...args),
 }));
 
 const recordAuditEvent = vi.fn();
@@ -27,7 +20,6 @@ vi.mock("@/observability", () => ({
 const registerPlugins = vi.fn();
 vi.mock("./register-plugins", () => ({
   registerPlugins: (...args: unknown[]) => registerPlugins(...args),
-  PLUGIN_ENGINE_REPORT_CACHE_KEY: "plugin-engine:report",
 }));
 
 vi.mock("./run-plugin-migrations", () => ({
@@ -61,8 +53,6 @@ describe("uninstallPlugin / performPluginUninstall", () => {
   beforeEach(() => {
     authorizeActor.mockReset();
     listExtensionStates.mockReset();
-    invalidateExtensionStateCaches.mockReset();
-    invalidateCache.mockReset();
     recordAuditEvent.mockReset();
     registerPlugins.mockReset();
     transaction.mockReset();
@@ -139,7 +129,7 @@ describe("uninstallPlugin / performPluginUninstall", () => {
     expect(transaction).not.toHaveBeenCalled();
   });
 
-  it("drops the schemas, purges the namespace, invalidates caches and audits on success", async () => {
+  it("drops the schemas, purges the namespace and audits on success", async () => {
     const { performPluginUninstall } = await import("./uninstall-plugin");
     const result = await performPluginUninstall({ pluginKey: "enrollment-dashboard", purgeData: true, actorId: "actor-1" });
 
@@ -148,8 +138,6 @@ describe("uninstallPlugin / performPluginUninstall", () => {
     // 2 DROP SCHEMA (dado + tracking) + DELETE settings + DELETE role_permissions + UPDATE extension_state.
     expect(txExecute).toHaveBeenCalledTimes(5);
 
-    expect(invalidateExtensionStateCaches).toHaveBeenCalledWith("plugin", "enrollment-dashboard");
-    expect(invalidateCache).toHaveBeenCalledWith("plugin-engine:report");
     expect(recordAuditEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         action: "plugin-engine.uninstall-plugin",
@@ -175,7 +163,6 @@ describe("uninstallPlugin / performPluginUninstall", () => {
     expect(recordAuditEvent).toHaveBeenCalledWith(
       expect.objectContaining({ action: "plugin-engine.uninstall-plugin", outcome: "failure" }),
     );
-    expect(invalidateCache).not.toHaveBeenCalled();
   });
 
   it("skips the schema drop for a settings-only plugin but still purges the namespace", async () => {
@@ -202,8 +189,6 @@ describe("uninstallPlugin / performPluginUninstall", () => {
     // Nenhum DROP SCHEMA, nenhum DELETE: só o UPDATE em extensions.extension_state.
     expect(txExecute).toHaveBeenCalledTimes(1);
 
-    expect(invalidateExtensionStateCaches).toHaveBeenCalledWith("plugin", "enrollment-dashboard");
-    expect(invalidateCache).toHaveBeenCalledWith("plugin-engine:report");
     expect(recordAuditEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         action: "plugin-engine.uninstall-plugin",

@@ -1,8 +1,7 @@
 import { setExtensionEnabled } from "@/contexts/extensions";
-import { invalidateCache } from "@/infrastructure/cache/memory-cache";
 import type { OperationResult } from "@/shared/types";
 import { findEnabledDependents } from "./find-dependent-plugins";
-import { PLUGIN_ENGINE_REPORT_CACHE_KEY, registerPlugins } from "./register-plugins";
+import { registerPlugins } from "./register-plugins";
 
 export type TogglePluginEnabledInput = { pluginKey: string; enabled: boolean };
 
@@ -30,10 +29,6 @@ export async function togglePluginEnabled(command: TogglePluginEnabledInput): Pr
   if (!result.success) {
     return result;
   }
-
-  // Navegação, permission e blocos vêm todos do mesmo relatório cacheado (register-plugins.ts) —
-  // invalidar essa única entrada cobre os três (docs/venore-docks.md — Cache: quem escreve invalida).
-  invalidateCache(PLUGIN_ENGINE_REPORT_CACHE_KEY);
 
   return { success: true, data: undefined };
 }
