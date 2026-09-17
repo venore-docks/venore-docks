@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { invalidateCache } from "@/infrastructure/cache/memory-cache";
 
 const findExtensionStatesByKind = vi.fn();
 
@@ -10,7 +9,6 @@ vi.mock("./store", () => ({
 describe("listExtensionStates", () => {
   beforeEach(() => {
     findExtensionStatesByKind.mockReset();
-    invalidateCache("extensions:list:plugin");
   });
 
   it("maps the rows to a key -> { installed, enabled } record", async () => {
@@ -34,13 +32,13 @@ describe("listExtensionStates", () => {
     });
   });
 
-  it("does not hit the store again on a cache hit", async () => {
+  it("reads fresh from the store on every call (no cache, by design — see service.ts)", async () => {
     findExtensionStatesByKind.mockResolvedValue([]);
 
     const { listExtensionStates } = await import("./service");
     await listExtensionStates({ kind: "plugin" });
     await listExtensionStates({ kind: "plugin" });
 
-    expect(findExtensionStatesByKind).toHaveBeenCalledTimes(1);
+    expect(findExtensionStatesByKind).toHaveBeenCalledTimes(2);
   });
 });

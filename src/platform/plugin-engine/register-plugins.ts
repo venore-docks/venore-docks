@@ -1,7 +1,6 @@
 import { RBAC_PERMISSIONS } from "@/contexts/rbac";
 import { registerDefaultSetting } from "@/contexts/settings";
 import { listExtensionStates } from "@/contexts/extensions";
-import { getCache, setCache } from "@/infrastructure/cache/memory-cache";
 import { beginOperation, endOperation } from "@/observability";
 import { PLUGIN_REGISTRY } from "@/plugins/registry";
 import { isCoreVersionCompatible } from "./check-compatibility";
@@ -9,12 +8,6 @@ import type { PluginManifest } from "./manifest-schema";
 import { resolveDependencies } from "./resolve-dependencies";
 import type { PluginRegistrationEntry, PluginRegistrationReport } from "./types";
 import { validateManifest } from "./validate-manifest";
-
-// Cache só se aplica à chamada "padrão" (sem override de manifests) — chamada explícita com
-// array (usada em teste, e potencialmente por uma composição que queira simular um registro
-// hipotético) nunca é cacheada, pra não vazar resultado de uma chamada pra outra.
-const PLUGIN_ENGINE_REPORT_CACHE_KEY = "plugin-engine:report";
-const PLUGIN_ENGINE_REPORT_CACHE_TTL_SECONDS = 30;
 
 // Motor de plugins (docs/venore-docks.md — "Sistema de plugins"): lê os manifestos declarados em
 // src/plugins/registry.ts e checa o estado de extensão (contexts/extensions) ANTES de
@@ -27,16 +20,15 @@ const PLUGIN_ENGINE_REPORT_CACHE_TTL_SECONDS = 30;
 // Depois valida, checa compatibilidade de versão, resolve dependências e monta o relatório de
 // registro. Roda no bootstrap, sem ator humano — por isso actor "system" no log, mesmo espírito
 // de contexts/rbac/features/role-assignment/assign-default-role.
+//
+// Sem cache (havia um TTL de 30s aqui antes, num Map em globalThis): o app roda como funções
+// serverless (Vercel), cada instância com sua própria memória de processo, então instalar/
+// desinstalar/(des)habilitar um plugin numa instância não invalidava o cache das outras — o
+// sintoma era um plugin aparecer "instalado" na tela, "desinstalado" ao navegar, e rota do
+// plugin dando 404, até o TTL expirar em todas as instâncias que ficaram com a versão velha.
+// listExtensionStates() por baixo também não cacheia mais, pelo mesmo motivo.
 export async function registerPlugins(manifests?: unknown[]): Promise<PluginRegistrationReport> {
-  const usingDefaultRegistry = manifests === undefined;
   const inputManifests = manifests ?? PLUGIN_REGISTRY;
-
-  if (usingDefaultRegistry) {
-    const cached = getCache<PluginRegistrationReport>(PLUGIN_ENGINE_REPORT_CACHE_KEY);
-    if (cached) {
-      return cached;
-    }
-  }
 
   const handle = beginOperation({
     useCase: "platform.plugin-engine.register-plugins",
@@ -116,11 +108,5 @@ export async function registerPlugins(manifests?: unknown[]): Promise<PluginRegi
 
   endOperation(handle, { success: true });
 
-  if (usingDefaultRegistry) {
-    setCache(PLUGIN_ENGINE_REPORT_CACHE_KEY, report, PLUGIN_ENGINE_REPORT_CACHE_TTL_SECONDS);
-  }
-
   return report;
 }
-
-export { PLUGIN_ENGINE_REPORT_CACHE_KEY };
