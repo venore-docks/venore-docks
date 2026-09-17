@@ -1,7 +1,9 @@
 import type { BlockDefinition } from "@/contexts/cms";
 
+export const IMAGE_BLOCK_KEY = "core.content.image";
+
 export const imageBlockDefinition: BlockDefinition = {
-  key: "core.content.image",
+  key: IMAGE_BLOCK_KEY,
   label: "Imagem",
   category: "conteúdo",
   structure: "leaf",

@@ -66,8 +66,9 @@ function buildChildrenIndex<T extends TreeNode>(items: T[]): Map<string | null, 
   return byParent;
 }
 
-function contentHref(entry: EntryRouteInfo): string {
-  return entry.categorySlug ? `/${entry.categorySlug}/${entry.slug}` : `/${entry.slug}`;
+function contentHref(entry: EntryRouteInfo, anchor: string | null): string {
+  const path = entry.categorySlug ? `/${entry.categorySlug}/${entry.slug}` : `/${entry.slug}`;
+  return anchor ? `${path}#${anchor}` : path;
 }
 
 // Resolução PÚBLICA (fase 1, cacheável): item cujo conteúdo não existe (apagado) ou não está
@@ -91,7 +92,7 @@ export function resolvePublicMenuTree(
     if (item.targetType === "content") {
       const entry = entriesById.get(item.contentId);
       if (!entry || entry.status !== "published") return null;
-      href = contentHref(entry);
+      href = contentHref(entry, item.anchor);
     } else if (item.targetType === "route") {
       href = item.routePath;
     } else if (item.targetType === "external") {
@@ -166,7 +167,7 @@ export function resolveAdminMenuTree(
           status = "inactive-unpublished";
           reason = "O conteúdo apontado por este item ainda não foi publicado.";
         } else {
-          resolvedHref = contentHref(entry);
+          resolvedHref = contentHref(entry, item.anchor);
         }
       }
     } else if (item.targetType === "route") {

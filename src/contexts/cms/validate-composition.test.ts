@@ -48,7 +48,7 @@ function resolveDefinition(key: string): BlockDefinition | null {
 }
 
 function block(overrides: Partial<Block>): Block {
-  return { id: "b1", key: "text", slot: "main", data: {}, areas: [], ...overrides };
+  return { id: "b1", key: "text", slot: "main", htmlId: null, data: {}, areas: [], ...overrides };
 }
 
 describe("validateComposition", () => {

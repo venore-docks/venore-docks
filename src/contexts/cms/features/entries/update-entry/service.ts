@@ -62,6 +62,12 @@ export async function updateEntry(command: UpdateEntryCommand): Promise<UpdateEn
     }
   }
 
+  // command.data (ex: { body } vindo da tela de metadados) nunca pode substituir a coluna `data`
+  // inteira — isso apagaria data.blocks (Editor Visual). Faz o mesmo merge raso que
+  // update-entry-composition já faz do outro lado (blocks sobre body).
+  const existingData = existing.data && typeof existing.data === "object" ? (existing.data as Record<string, unknown>) : {};
+  const mergedData = command.data !== undefined ? { ...existingData, ...(command.data as Record<string, unknown>) } : undefined;
+
   const entry = await updateEntryFields(command.id, {
     title: command.title,
     slug: command.slug,
@@ -69,7 +75,7 @@ export async function updateEntry(command: UpdateEntryCommand): Promise<UpdateEn
     contentTypeIds: command.contentTypeIds,
     visibility: command.visibility,
     scheduledArchiveAt: command.scheduledArchiveAt,
-    data: command.data,
+    data: mergedData,
     mediaId: command.mediaId,
   });
 

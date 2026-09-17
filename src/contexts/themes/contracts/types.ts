@@ -151,6 +151,10 @@ export type HeaderSlotProps = {
   // Extensão aditiva do contrato, mesmo critério de `messageAlert` acima: tema que não renderiza
   // user-nav simplesmente ignora. Lista vazia / undefined = nada a acrescentar.
   userNavItems?: NavItem[];
+  // contexts/settings (nav.hideLoginLink) — esconde o link de "Entrar" do userbar sem bloquear a
+  // rota /login em si (continua acessível por URL direta). Default `true` (comportamento atual
+  // sem a setting ligada) — extensão aditiva do contrato, mesmo critério de `userNavItems` acima.
+  showLoginLink: boolean;
 };
 
 // Mesma forma de HeaderBrand (permite renderizar a marca no footer com o PlatformBrand real, não
@@ -168,6 +172,11 @@ export type FooterSlotProps = {
   brand: FooterBrand;
   sitemapItems: SitemapItem[];
   creditsEnabled: boolean;
+  // contexts/settings (nav.hideLoginLink + nav.showLoginInFooter) — só não-null quando o admin
+  // escondeu "Entrar" do header E pediu pra manter um link explícito no rodapé em vez disso.
+  // null = tema não renderiza nada aqui (extensão aditiva do contrato, mesmo critério de
+  // HeaderSlotProps.showLoginLink).
+  loginLinkHref: string | null;
 };
 
 export type ContentSlotProps = {

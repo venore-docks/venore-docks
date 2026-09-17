@@ -21,6 +21,7 @@ export async function updateMenuItemFields(
     icon?: string | null;
     targetType?: string;
     contentId?: string | null;
+    anchor?: string | null;
     routePath?: string | null;
     requiredPermissionKey?: string | null;
     externalUrl?: string | null;

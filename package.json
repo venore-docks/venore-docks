@@ -57,6 +57,7 @@
     "dompurify": "^3.4.13",
     "drizzle-kit": "^0.31.10",
     "drizzle-orm": "^0.45.2",
+    "embla-carousel-react": "^8.6.0",
     "fflate": "^0.8.3",
     "jsdom": "26.1.0",
     "lucide-react": "^1.27.0",

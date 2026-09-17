@@ -59,6 +59,9 @@ const exportedMenuItemSchema = z.object({
   icon: z.string().nullable(),
   targetType: menuItemTargetTypeSchema,
   contentRef: z.string().nullable(),
+  // .default(null): bundles exportados antes deste campo existir não têm a chave — sem default a
+  // importação de um pacote antigo falharia na validação por uma chave ausente e irrelevante.
+  anchor: z.string().nullable().default(null),
   routePath: z.string().nullable(),
   requiredPermissionKey: z.string().nullable(),
   externalUrl: z.string().nullable(),
