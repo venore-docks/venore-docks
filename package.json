@@ -48,7 +48,7 @@
     "@tiptap/starter-kit": "^3.29.2",
     "@tiptap/static-renderer": "^3.29.2",
     "@venore/plugin-erasto-league": "github:venore-docks/venore-plugin-erasto-league#v0.22.0",
-    "@venore/theme-erasto-league": "github:venore-docks/venore-theme-erasto-league#v0.2.0",
+    "@venore/theme-erasto-league": "github:venore-docks/venore-theme-erasto-league#v0.3.0",
     "@venore/theme-fearless": "git+https://github.com/venore-docks/venore-theme-fearless.git#v1.0.0",
     "@vercel/blob": "^2.6.1",
     "@vercel/functions": "^3.7.5",
