@@ -6,10 +6,13 @@ import { activateTheme } from "@/platform/theme-engine/activate-theme";
 import { toggleThemeEnabled } from "@/platform/theme-engine/toggle-theme-enabled";
 import { activateColorPalette } from "@/platform/theme-engine/activate-color-palette";
 import { setCustomColorPalette } from "@/platform/theme-engine/custom-color-palette";
+import { getThemeUpdateStatus, type ThemeUpdateStatus } from "@/platform/theme-engine/theme-update-status";
+import { applyThemeUpdate } from "@/platform/theme-engine/apply-theme-update";
 import { resolveActiveTheme } from "@/platform/theme-rendering/resolve-active-theme";
 import { HEADER_BEHAVIOR_SETTING_KEYS } from "@/platform/header-behavior/get-header-behavior";
 
 export type ThemesActionState = { error: string | null };
+export type ThemeUpdateCheckState = { status: ThemeUpdateStatus | null; error: string | null };
 
 const THEMES_PATH = "/admin/themes";
 
@@ -132,5 +135,39 @@ export async function updateCustomColorPaletteAction(
   }
 
   revalidateEverywhere();
+  return { error: null };
+}
+
+// Consulta a versão instalada (código já bundlado, THEME_REGISTRY) contra a última tag do repo
+// do tema no GitHub — sob demanda (botão "Verificar atualização"), nunca no load da página: é
+// uma chamada de rede externa por tema, sem motivo pra pagar isso sempre.
+export async function checkThemeUpdateAction(
+  _prevState: ThemeUpdateCheckState,
+  formData: FormData,
+): Promise<ThemeUpdateCheckState> {
+  const themeKey = String(formData.get("themeKey") ?? "");
+
+  const result = await getThemeUpdateStatus(themeKey);
+  if (!result.success) {
+    return { status: null, error: result.error.message };
+  }
+  return { status: result.data, error: null };
+}
+
+// Dispara a atualização de verdade (commit + push, que aciona o deploy da Vercel) — não muda
+// nada em cache/DB local, então sem revalidatePath: a versão instalada só reflete depois do
+// próximo build (novo processo, novo THEME_REGISTRY).
+export async function applyThemeUpdateAction(
+  _prevState: ThemesActionState,
+  formData: FormData,
+): Promise<ThemesActionState> {
+  const themeKey = String(formData.get("themeKey") ?? "");
+  const targetTag = String(formData.get("targetTag") ?? "");
+
+  const result = await applyThemeUpdate({ themeKey, targetTag });
+  if (!result.success) {
+    return { error: result.error.message };
+  }
+
   return { error: null };
 }
