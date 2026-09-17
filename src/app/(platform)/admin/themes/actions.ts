@@ -6,10 +6,14 @@ import { activateTheme } from "@/platform/theme-engine/activate-theme";
 import { toggleThemeEnabled } from "@/platform/theme-engine/toggle-theme-enabled";
 import { activateColorPalette } from "@/platform/theme-engine/activate-color-palette";
 import { setCustomColorPalette } from "@/platform/theme-engine/custom-color-palette";
+import { getThemeUpdateStatus, type ThemeUpdateStatus } from "@/platform/theme-engine/theme-update-status";
+import { applyThemeUpdate } from "@/platform/theme-engine/apply-theme-update";
 import { resolveActiveTheme } from "@/platform/theme-rendering/resolve-active-theme";
 import { HEADER_BEHAVIOR_SETTING_KEYS } from "@/platform/header-behavior/get-header-behavior";
+import { NAV_VISIBILITY_SETTING_KEYS } from "@/platform/nav-visibility/get-nav-visibility";
 
 export type ThemesActionState = { error: string | null };
+export type ThemeUpdateCheckState = { status: ThemeUpdateStatus | null; error: string | null };
 
 const THEMES_PATH = "/admin/themes";
 
@@ -94,6 +98,29 @@ export async function updateHeaderBehaviorAction(
   return { error: null };
 }
 
+// Genérico (não amarrado a manifest.capabilities de tema nenhum): esconder "Entrar" da navegação
+// é uma decisão de instância (ex: Erasto League), não uma capability que só um tema declara — por
+// isso este form é renderizado sempre em page.tsx, ao contrário de HeaderBehaviorForm acima.
+export async function updateNavVisibilityAction(
+  _prevState: ThemesActionState,
+  formData: FormData,
+): Promise<ThemesActionState> {
+  const entries: Array<{ key: string; value: unknown }> = [
+    { key: NAV_VISIBILITY_SETTING_KEYS.hideLoginLink, value: formData.get("hideLoginLink") === "on" },
+    { key: NAV_VISIBILITY_SETTING_KEYS.showLoginInFooter, value: formData.get("showLoginInFooter") === "on" },
+  ];
+
+  for (const entry of entries) {
+    const result = await setSetting(entry);
+    if (!result.success) {
+      return { error: result.error.message };
+    }
+  }
+
+  revalidateEverywhere();
+  return { error: null };
+}
+
 // Cor personalizada (pedido desta sessão): salva os 4 tokens (primary/secondary/background/text)
 // pros dois modos e já ativa "custom" como paleta corrente — o admin não precisa de um segundo
 // clique em "Usar" depois de salvar. Campo vazio (input type=color sempre manda algo, mas o campo
@@ -132,5 +159,39 @@ export async function updateCustomColorPaletteAction(
   }
 
   revalidateEverywhere();
+  return { error: null };
+}
+
+// Consulta a versão instalada (código já bundlado, THEME_REGISTRY) contra a última tag do repo
+// do tema no GitHub — sob demanda (botão "Verificar atualização"), nunca no load da página: é
+// uma chamada de rede externa por tema, sem motivo pra pagar isso sempre.
+export async function checkThemeUpdateAction(
+  _prevState: ThemeUpdateCheckState,
+  formData: FormData,
+): Promise<ThemeUpdateCheckState> {
+  const themeKey = String(formData.get("themeKey") ?? "");
+
+  const result = await getThemeUpdateStatus(themeKey);
+  if (!result.success) {
+    return { status: null, error: result.error.message };
+  }
+  return { status: result.data, error: null };
+}
+
+// Dispara a atualização de verdade (commit + push, que aciona o deploy da Vercel) — não muda
+// nada em cache/DB local, então sem revalidatePath: a versão instalada só reflete depois do
+// próximo build (novo processo, novo THEME_REGISTRY).
+export async function applyThemeUpdateAction(
+  _prevState: ThemesActionState,
+  formData: FormData,
+): Promise<ThemesActionState> {
+  const themeKey = String(formData.get("themeKey") ?? "");
+  const targetTag = String(formData.get("targetTag") ?? "");
+
+  const result = await applyThemeUpdate({ themeKey, targetTag });
+  if (!result.success) {
+    return { error: result.error.message };
+  }
+
   return { error: null };
 }

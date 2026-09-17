@@ -3,6 +3,7 @@
 import type { Block, BlockDefinition, EditorField } from "@/contexts/cms";
 import type { JSONContent } from "@tiptap/core";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { IconPicker } from "@/components/icon-picker";
 import { MediaField } from "./media-field";
 import { RichTextField } from "./rich-text-field";
 
@@ -164,6 +165,19 @@ function FieldControl({
               ))}
             </SelectContent>
           </Select>
+        </div>
+      );
+    case "icon":
+      return (
+        <div>
+          {label}
+          <div className="mt-1">
+            <IconPicker
+              value={readSelectValue(block.data, field.name)}
+              onChange={(value) => onChange(field.name, value)}
+              options={field.options ?? []}
+            />
+          </div>
         </div>
       );
     case "image":

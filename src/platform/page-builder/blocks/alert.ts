@@ -1,5 +1,5 @@
 import type { BlockDefinition } from "@/contexts/cms";
-import { ICON_NAMES } from "./icon";
+import { NAV_ICON_KEYS } from "@/platform/nav-icons/registry";
 
 export const alertBlockDefinition: BlockDefinition = {
   key: "core.content.alert",
@@ -29,11 +29,12 @@ export const alertBlockDefinition: BlockDefinition = {
       ],
     },
     {
-      // Mesma allowlist do bloco Ícone (blocks/icon.ts) — reaproveitada, não duplicada.
+      // Mesma allowlist do resto do app (platform/nav-icons/registry.ts) — reaproveitada, não
+      // duplicada.
       name: "icon",
-      type: "select",
+      type: "icon",
       label: "Ícone (opcional)",
-      options: [{ value: "", label: "Nenhum" }, ...ICON_NAMES.map((name) => ({ value: name, label: name }))],
+      options: [{ value: "", label: "Nenhum" }, ...NAV_ICON_KEYS.map((name) => ({ value: name, label: name }))],
     },
     {
       // No desktop o ícone fica ao lado do título (linha); no mobile fica acima (coluna) — este

@@ -29,6 +29,7 @@ const baseProps: HeaderSlotProps = {
   user: null,
   canAccessAdmin: false,
   onSignOut: async () => {},
+  showLoginLink: true,
 };
 
 describe("HeaderSlot — máquina de estados de scroll", () => {
@@ -96,6 +97,12 @@ describe("HeaderSlot — máquina de estados de scroll", () => {
 
     expect(html).not.toContain("Entrar");
     expect(html).toContain("Ada Lovelace");
+  });
+
+  it("com showLoginLink=false, esconde o link 'Entrar' sem exigir usuário logado (nav.hideLoginLink)", () => {
+    const html = renderToStaticMarkup(<HeaderSlot {...baseProps} showLoginLink={false} />);
+
+    expect(html).not.toContain("Entrar");
   });
 
   it("T4: com stickyEnabled=false, não aplica sticky/top-0 nem backdrop-blur no estado top", () => {

@@ -5,11 +5,14 @@ import { listThemeStates } from "@/platform/theme-engine/list-theme-states";
 import { listColorPaletteStates } from "@/platform/theme-engine/list-color-palette-states";
 import { CUSTOM_COLOR_PALETTE_ID } from "@/platform/theme-engine/custom-color-palette";
 import { getHeaderBehavior } from "@/platform/header-behavior/get-header-behavior";
+import { getNavVisibility } from "@/platform/nav-visibility/get-nav-visibility";
 import { ActivateThemeButton } from "./_components/activate-theme-button";
 import { ToggleThemeControl } from "./_components/toggle-theme-control";
+import { ThemeUpdatePanel } from "./_components/theme-update-panel";
 import { ActivateColorPaletteButton } from "./_components/activate-color-palette-button";
 import { CustomColorPaletteForm } from "./_components/custom-color-palette-form";
 import { HeaderBehaviorForm } from "./_components/header-behavior-form";
+import { NavVisibilityForm } from "./_components/nav-visibility-form";
 import type { PaletteColorTokens } from "@/contexts/themes";
 
 // Tira de amostras da paleta (primary/accent/background/text que ela define). "Padrão do tema"
@@ -40,14 +43,20 @@ export default async function ThemesAdminPage() {
     );
   }
 
-  const [themes, colorPaletteStates, headerBehavior] = await Promise.all([
+  const [themes, colorPaletteStates, headerBehavior, navVisibility] = await Promise.all([
     listThemeStates(),
     listColorPaletteStates(),
     getHeaderBehavior(),
+    getNavVisibility(),
   ]);
   const customPalette = colorPaletteStates.palettes.find((palette) => palette.id === CUSTOM_COLOR_PALETTE_ID);
   const activeTheme = themes.find((theme) => theme.isActive);
   const activeThemeSupportsHeaderBehavior = activeTheme?.manifest.capabilities?.headerBehavior ?? false;
+  // Mais sensível que settings.manage (que já libera esta página inteira): "Atualizar" comita
+  // no repo do site e aciona um deploy de verdade. Fora de ADMIN_BASE_PERMISSION_KEYS de
+  // propósito — só aparece pra quem recebeu a permission explicitamente (docs/venore-docks.md,
+  // mesmo padrão de media.purge).
+  const canUpdateThemes = gate.actor.isSuperadmin || gate.actor.permissions.includes("platform.extensions.update");
 
   return (
     <div className="space-y-8">
@@ -62,12 +71,13 @@ export default async function ThemesAdminPage() {
       <section className="rounded-panel border border-border bg-card ui-panel-padding-roomy">
         <ul className="space-y-3">
           {themes.map(({ manifest, enabled, isActive, canDisable, disableBlockedReason }) => (
-            <li key={manifest.key} className="flex items-center justify-between gap-4 text-sm text-muted-foreground">
+            <li key={manifest.key} className="flex flex-wrap items-center justify-between gap-4 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
                 <span className="font-medium text-foreground">{manifest.name}</span>
                 {isActive && <Badge variant="secondary">Ativo</Badge>}
               </div>
               <div className="flex items-center gap-2">
+                {canUpdateThemes && <ThemeUpdatePanel themeKey={manifest.key} themeName={manifest.name} />}
                 {!isActive && enabled && <ActivateThemeButton themeKey={manifest.key} />}
                 <ToggleThemeControl
                   themeKey={manifest.key}
@@ -83,6 +93,8 @@ export default async function ThemesAdminPage() {
       </section>
 
       {activeThemeSupportsHeaderBehavior && <HeaderBehaviorForm behavior={headerBehavior} />}
+
+      <NavVisibilityForm visibility={navVisibility} />
 
       <section className="rounded-panel border border-border bg-card ui-panel-padding-roomy">
         <div>

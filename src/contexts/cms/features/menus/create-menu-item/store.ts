@@ -25,6 +25,7 @@ export async function insertMenuItem(input: {
   order: number;
   targetType: string;
   contentId: string | null;
+  anchor: string | null;
   routePath: string | null;
   requiredPermissionKey: string | null;
   externalUrl: string | null;

@@ -19,7 +19,8 @@ function targetFromFormData(formData: FormData): MenuItemTarget | null {
 
   if (targetType === "content") {
     const contentId = String(formData.get("contentId") ?? "").trim();
-    return contentId ? { targetType: "content", contentId } : null;
+    const anchor = String(formData.get("anchor") ?? "").trim();
+    return contentId ? { targetType: "content", contentId, anchor: anchor || null } : null;
   }
 
   if (targetType === "route") {

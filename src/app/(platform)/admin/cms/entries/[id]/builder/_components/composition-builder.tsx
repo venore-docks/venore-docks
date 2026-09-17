@@ -15,6 +15,7 @@ import {
   duplicateBlock,
   removeBlock,
   updateBlockData,
+  updateBlockHtmlId,
 } from "@/platform/page-builder/composition-tree";
 import { blockFieldPanels } from "@/platform/page-builder/block-field-panels";
 import { saveEntryCompositionAction } from "../actions";
@@ -46,6 +47,25 @@ function SelectedBlockFieldPanel({
     return <CustomPanel block={block} definition={definition} errorMessage={errorMessage} onChange={onChange} />;
   }
   return <BlockFieldsPanel block={block} definition={definition} errorMessage={errorMessage} onChange={onChange} />;
+}
+
+// Universal, fora de BlockFieldsPanel/CustomPanel: htmlId vive no bloco (não em `data`), então
+// funciona pra qualquer bloco — inclusive os com painel 100% custom de plugin (blockFieldPanels),
+// sem precisar tocar no contrato BlockFieldPanelComponent que plugins implementam.
+function AnchorIdField({ block, onChange }: { block: Block; onChange: (htmlId: string | null) => void }) {
+  return (
+    <div className="mb-4 border-b border-border pb-4">
+      <label className="block text-xs font-medium text-muted-foreground">ID da âncora (opcional)</label>
+      <input
+        type="text"
+        value={block.htmlId ?? ""}
+        onChange={(event) => onChange(event.target.value.trim() || null)}
+        placeholder="ex: sobre-nos"
+        className="mt-1 w-full rounded-md border border-border px-2 py-1 text-sm"
+      />
+      <p className="mt-1 text-xs text-muted-foreground/56">Usado para links do tipo /pagina#id, no main-nav ou no menu contextual.</p>
+    </div>
+  );
 }
 
 export function CompositionBuilder({
@@ -201,12 +221,18 @@ export function CompositionBuilder({
 
         <div className="rounded-panel border border-border bg-card ui-panel-padding-roomy">
           {selectedBlock && selectedDefinition ? (
-            <SelectedBlockFieldPanel
-              block={selectedBlock}
-              definition={selectedDefinition}
-              errorMessage={saveError?.blockId === selectedBlock.id ? saveError.message : null}
-              onChange={(data) => mutate(updateBlockData(composition, selectedBlock.id, data))}
-            />
+            <>
+              <AnchorIdField
+                block={selectedBlock}
+                onChange={(htmlId) => mutate(updateBlockHtmlId(composition, selectedBlock.id, htmlId))}
+              />
+              <SelectedBlockFieldPanel
+                block={selectedBlock}
+                definition={selectedDefinition}
+                errorMessage={saveError?.blockId === selectedBlock.id ? saveError.message : null}
+                onChange={(data) => mutate(updateBlockData(composition, selectedBlock.id, data))}
+              />
+            </>
           ) : (
             <p className="text-sm text-muted-foreground/56">Selecione um bloco na árvore para editar seus campos.</p>
           )}

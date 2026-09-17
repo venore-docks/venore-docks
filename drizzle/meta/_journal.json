@@ -278,8 +278,15 @@
     {
       "idx": 39,
       "version": "7",
+      "when": 1789666723024,
+      "tag": "0039_cms_menu_items_anchor",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
       "when": 1788959966536,
-      "tag": "0039_neutralize_extension_state_backfill",
+      "tag": "0040_neutralize_extension_state_backfill",
       "breakpoints": true
     }
   ]

@@ -38,6 +38,11 @@ export const RBAC_PERMISSIONS: PermissionDefinition[] = [
   // Habilitar/desabilitar plugin ou tema (contexts/extensions) — ação distinta de
   // platform.admin.access (que só permite ver a tela de diagnóstico dos plugins).
   { key: "platform.extensions.manage", label: "Habilitar ou desabilitar plugins e temas" },
+  // Dispara commit + deploy de verdade (bump da tag git do tema no package.json do site) —
+  // mais sensível que só habilitar/desabilitar. Fora de ADMIN_BASE_PERMISSION_KEYS de propósito,
+  // mesmo padrão de media.purge vs media.manage: só superadmin por padrão, admin precisa ser
+  // concedido explicitamente em /admin/rbac.
+  { key: "platform.extensions.update", label: "Atualizar versão de plugins e temas (dispara deploy)" },
   // Pertence conceitualmente a contexts/media — mesmo stopgap de settings.manage acima.
   { key: "media.manage", label: "Gerenciar arquivos de mídia" },
   // Restrita a superadmin (docs/media/blob-spec.md seção 6) — diferente de media.manage (soft

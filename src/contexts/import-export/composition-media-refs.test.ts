@@ -3,7 +3,7 @@ import type { Composition } from "@/contexts/cms";
 import { remapCompositionMediaIds } from "./composition-media-refs";
 
 function block(overrides: Partial<Composition[number]>): Composition[number] {
-  return { id: "b1", key: "core.content.image", slot: "main", data: {}, areas: [], ...overrides };
+  return { id: "b1", key: "core.content.image", slot: "main", htmlId: null, data: {}, areas: [], ...overrides };
 }
 
 describe("remapCompositionMediaIds", () => {
