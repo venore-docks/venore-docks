@@ -10,6 +10,7 @@ import { getThemeUpdateStatus, type ThemeUpdateStatus } from "@/platform/theme-e
 import { applyThemeUpdate } from "@/platform/theme-engine/apply-theme-update";
 import { resolveActiveTheme } from "@/platform/theme-rendering/resolve-active-theme";
 import { HEADER_BEHAVIOR_SETTING_KEYS } from "@/platform/header-behavior/get-header-behavior";
+import { NAV_VISIBILITY_SETTING_KEYS } from "@/platform/nav-visibility/get-nav-visibility";
 
 export type ThemesActionState = { error: string | null };
 export type ThemeUpdateCheckState = { status: ThemeUpdateStatus | null; error: string | null };
@@ -84,6 +85,29 @@ export async function updateHeaderBehaviorAction(
   const entries: Array<{ key: string; value: unknown }> = [
     { key: HEADER_BEHAVIOR_SETTING_KEYS.sticky, value: formData.get("sticky") === "on" },
     { key: HEADER_BEHAVIOR_SETTING_KEYS.scrollShrink, value: formData.get("scrollShrink") === "on" },
+  ];
+
+  for (const entry of entries) {
+    const result = await setSetting(entry);
+    if (!result.success) {
+      return { error: result.error.message };
+    }
+  }
+
+  revalidateEverywhere();
+  return { error: null };
+}
+
+// Genérico (não amarrado a manifest.capabilities de tema nenhum): esconder "Entrar" da navegação
+// é uma decisão de instância (ex: Erasto League), não uma capability que só um tema declara — por
+// isso este form é renderizado sempre em page.tsx, ao contrário de HeaderBehaviorForm acima.
+export async function updateNavVisibilityAction(
+  _prevState: ThemesActionState,
+  formData: FormData,
+): Promise<ThemesActionState> {
+  const entries: Array<{ key: string; value: unknown }> = [
+    { key: NAV_VISIBILITY_SETTING_KEYS.hideLoginLink, value: formData.get("hideLoginLink") === "on" },
+    { key: NAV_VISIBILITY_SETTING_KEYS.showLoginInFooter, value: formData.get("showLoginInFooter") === "on" },
   ];
 
   for (const entry of entries) {

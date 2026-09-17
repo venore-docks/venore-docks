@@ -4,6 +4,7 @@ import type { ResolvedMenuItem } from "@/contexts/cms";
 import { getMediaAsset } from "@/contexts/media";
 import { getBrandConfig } from "@/platform/brand/get-brand-config";
 import { getHeaderBehavior } from "@/platform/header-behavior/get-header-behavior";
+import { getNavVisibility } from "@/platform/nav-visibility/get-nav-visibility";
 import { collectNotificationAlert } from "@/platform/notifications/notification-registry";
 import { collectUserNavItems } from "@/platform/user-nav/registry";
 import { resolveBrandAesthetics } from "./resolve-brand-aesthetics";
@@ -79,8 +80,11 @@ export async function resolveThemeSlotProps(sidebarNav: {
   // location "main" (não "main-nav") desde a reescrita do subsistema de navegação — modelo de
   // menu/localização documentado em contexts/cms/contracts/types.ts. Árvore inteira é usada agora
   // (MainNavItem suporta aninhamento — toMainNavItems acima): item "label" (href null) vira
-  // agregador/accordion na sidebar em vez de ser descartado. header-nav e contextual continuam
-  // fora desta sessão (Known Gap, AGENTS.md §7).
+  // agregador/accordion na sidebar em vez de ser descartado. header-nav continua fora desta sessão
+  // (Known Gap, AGENTS.md §7) — o Menu Contextual (location "contextual") foi ligado nesta sessão,
+  // mas fora deste função: app/(platform)/layout.tsx é quem chama getContextualMenu e monta
+  // ContentSlotProps.sidebarContextual, não resolveThemeSlotProps (essa função só resolve
+  // header/footer/sidebarLeft).
   // location "sitemap": menu dedicado (contexts/cms/contracts/types.ts — MenuLocation), distinto
   // do "main" acima. Sem menu configurado (instalação nova) ou com leitura falhando, cai num
   // exemplo mínimo (FALLBACK_SITEMAP_ITEMS) — não é derivação de "todo conteúdo publicado" (isso
@@ -89,11 +93,12 @@ export async function resolveThemeSlotProps(sidebarNav: {
   const aesthetics = await resolveBrandAesthetics();
   // messageAlert só é consultado pra quem está logado — visitante anônimo nunca tem thread nenhuma
   // (getMessageAlert já devolveria null de qualquer forma, mas evita a query à toa).
-  const [mainMenu, sitemapMenu, brandConfig, headerBehavior, messageAlert, userNavItems] = await Promise.all([
+  const [mainMenu, sitemapMenu, brandConfig, headerBehavior, navVisibility, messageAlert, userNavItems] = await Promise.all([
     getMenuByLocation({ location: "main" }),
     getMenuByLocation({ location: "sitemap" }),
     getBrandConfig(aesthetics.mode),
     getHeaderBehavior(),
+    getNavVisibility(),
     user ? collectNotificationAlert() : Promise.resolve(null),
     user ? collectUserNavItems() : Promise.resolve([]),
   ]);
@@ -125,6 +130,7 @@ export async function resolveThemeSlotProps(sidebarNav: {
       onSignOut: sidebarNav.onSignOut,
       messageAlert,
       userNavItems,
+      showLoginLink: !navVisibility.hideLoginLink,
     },
     footer: {
       brand: {
@@ -140,6 +146,7 @@ export async function resolveThemeSlotProps(sidebarNav: {
       },
       sitemapItems,
       creditsEnabled: THEME_SLOT_DEFAULTS.footerCreditsEnabled,
+      loginLinkHref: navVisibility.hideLoginLink && navVisibility.showLoginInFooter && !user ? "/login" : null,
     },
     sidebarLeft: {
       enabled: THEME_SLOT_DEFAULTS.sidebarLeftEnabled,
