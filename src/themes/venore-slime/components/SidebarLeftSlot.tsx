@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { ChevronLeft, ChevronRight, Globe2, ShieldCheck } from "lucide-react";
+import { useFormStatus } from "react-dom";
+import { ChevronLeft, ChevronRight, Globe2, Loader2, ShieldCheck, type LucideIcon } from "lucide-react";
 import type { SidebarLeftSlotProps } from "@/contexts/themes/contracts/types";
 import { cn } from "@/lib/utils";
 import { MobileNavDrawer } from "./MobileNavDrawer";
@@ -158,16 +159,7 @@ function SidebarSurfaceSwitch({
           collapsed=true, por isso este bloco só aparece via `lg:flex` quando de fato colapsada,
           nunca por padrão (mobile-first). */}
       <form action={onToggleNavMode} className={cn("hidden justify-center", collapsed && "lg:flex")}>
-        <button
-          type="submit"
-          aria-label={label}
-          className="group/sidebar-collapse-target relative flex size-11 items-center justify-center rounded-xl border border-border bg-muted text-foreground shadow-panel ui-motion-base outline-none hover:border-ring active:border-ring focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          {isAdmin ? <ShieldCheck className="size-4" aria-hidden="true" /> : <Globe2 className="size-4" aria-hidden="true" />}
-          <span className={cn("max-w-0 overflow-hidden whitespace-nowrap opacity-0", SIDEBAR_COLLAPSE_TOOLTIP_COLLAPSED_CLASSES)}>
-            {label}
-          </span>
-        </button>
+        <NavModeIconButton isAdmin={isAdmin} label={label} />
       </form>
 
       {/* Pill de dois segmentos — versão padrão (mobile e desktop expandido); some só em
@@ -185,31 +177,68 @@ function SidebarSurfaceSwitch({
           isAdmin ? "left-[calc(50%+0.125rem)]" : "left-1",
         )}
       />
-      <button
-        type="submit"
-        disabled={!isAdmin}
-        aria-current={!isAdmin ? true : undefined}
-        className={cn(
-          "relative z-10 flex h-9 items-center justify-center gap-2 rounded-lg text-xs font-semibold uppercase tracking-caps ui-motion-base outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default",
-          !isAdmin ? "text-foreground" : "text-muted-foreground hover:text-foreground",
-        )}
-      >
-        <Globe2 className="size-4" aria-hidden="true" />
-        Site
-      </button>
-      <button
-        type="submit"
-        disabled={isAdmin}
-        aria-current={isAdmin ? true : undefined}
-        className={cn(
-          "relative z-10 flex h-9 items-center justify-center gap-2 rounded-lg text-xs font-semibold uppercase tracking-caps ui-motion-base outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default",
-          isAdmin ? "text-foreground" : "text-muted-foreground hover:text-foreground",
-        )}
-      >
-        <ShieldCheck className="size-4" aria-hidden="true" />
-        Admin
-      </button>
+      <NavModeSegmentButton isActive={!isAdmin} icon={Globe2} text="Site" />
+      <NavModeSegmentButton isActive={isAdmin} icon={ShieldCheck} text="Admin" />
       </form>
     </>
+  );
+}
+
+// A troca de navMode depende de um round-trip de Server Action (cookie só é lido no próximo
+// render do RootLayout — get-nav-mode.ts — então, ao contrário do colapso, não dá pra flipar a
+// navegação otimisticamente no client: navItems/navGroups vêm do servidor já filtrados pelo modo
+// atual). useFormStatus() (react-dom) dá o pending do <form> mais próximo de graça, sem estado
+// extra — troca o ícone do botão alvo (o clicável) por um spinner e trava a interação até o
+// refresh da rota devolver os dados do novo modo, pra latência de rede (notada em instâncias
+// Vercel) parecer carregamento em vez de UI travada.
+function NavModeIconButton({ isAdmin, label }: { isAdmin: boolean; label: string }) {
+  const { pending } = useFormStatus();
+
+  return (
+    <button
+      type="submit"
+      aria-label={label}
+      aria-busy={pending}
+      disabled={pending}
+      className={cn(
+        "group/sidebar-collapse-target relative flex size-11 items-center justify-center rounded-xl border border-border bg-muted text-foreground shadow-panel ui-motion-base outline-none hover:border-ring active:border-ring focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-wait",
+        !pending && "cursor-pointer",
+      )}
+    >
+      {pending ? (
+        <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+      ) : isAdmin ? (
+        <ShieldCheck className="size-4" aria-hidden="true" />
+      ) : (
+        <Globe2 className="size-4" aria-hidden="true" />
+      )}
+      <span className={cn("max-w-0 overflow-hidden whitespace-nowrap opacity-0", SIDEBAR_COLLAPSE_TOOLTIP_COLLAPSED_CLASSES)}>
+        {label}
+      </span>
+    </button>
+  );
+}
+
+function NavModeSegmentButton({ isActive, icon: Icon, text }: { isActive: boolean; icon: LucideIcon; text: string }) {
+  const { pending } = useFormStatus();
+  // O segmento inativo é o alvo do clique (o toggle sempre inverte o modo atual) — só ele vira
+  // spinner; o já-ativo permanece com o próprio ícone porque não é ele que está "carregando".
+  const isTarget = !isActive;
+
+  return (
+    <button
+      type="submit"
+      disabled={isActive || pending}
+      aria-current={isActive ? true : undefined}
+      aria-busy={isTarget && pending ? true : undefined}
+      className={cn(
+        "relative z-10 flex h-9 items-center justify-center gap-2 rounded-lg text-xs font-semibold uppercase tracking-caps ui-motion-base outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default",
+        isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground",
+        isTarget && !pending && "cursor-pointer",
+      )}
+    >
+      {isTarget && pending ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Icon className="size-4" aria-hidden="true" />}
+      {text}
+    </button>
   );
 }
