@@ -15,9 +15,9 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { IconPicker } from "@/components/icon-picker";
 import { useActionToast } from "@/hooks/use-action-toast";
 import { NAV_ICON_KEYS } from "@/platform/nav-icons/registry";
-import { NavIcon } from "@/platform/nav-icons/NavIcon";
 import { createMenuItemAction, type MenuActionState } from "../actions";
 import { ContentPicker } from "./content-picker";
 import type { ContentSearchResult } from "../actions";
@@ -31,9 +31,7 @@ const TARGET_TYPE_OPTIONS = [
   { value: "label", label: "Rótulo sem link (agrupador)" },
 ];
 
-// "none" (não "") porque <Select> do shadcn não aceita item com value vazio — convertido de volta
-// pra string vazia só na hora de montar o hidden input, que é o que createMenuItemAction lê.
-const NO_ICON_VALUE = "none";
+const ICON_OPTIONS = [{ value: "", label: "Sem ícone" }, ...NAV_ICON_KEYS.map((key) => ({ value: key, label: key }))];
 
 export function AddMenuItemDialog({
   menuId,
@@ -50,7 +48,7 @@ export function AddMenuItemDialog({
   const [targetType, setTargetType] = useState("content");
   const [selectedContent, setSelectedContent] = useState<ContentSearchResult | null>(null);
   const [label, setLabel] = useState("");
-  const [icon, setIcon] = useState(NO_ICON_VALUE);
+  const [icon, setIcon] = useState("");
   const [state, formAction, pending] = useActionState(createMenuItemAction, initialState);
 
   useActionToast({
@@ -61,7 +59,7 @@ export function AddMenuItemDialog({
       setOpen(false);
       setSelectedContent(null);
       setLabel("");
-      setIcon(NO_ICON_VALUE);
+      setIcon("");
     },
   });
 
@@ -80,7 +78,7 @@ export function AddMenuItemDialog({
           <input type="hidden" name="menuId" value={menuId} />
           {parentId && <input type="hidden" name="parentId" value={parentId} />}
           <input type="hidden" name="targetType" value={targetType} />
-          <input type="hidden" name="icon" value={icon === NO_ICON_VALUE ? "" : icon} />
+          <input type="hidden" name="icon" value={icon} />
           {targetType === "content" && selectedContent && (
             <input type="hidden" name="contentId" value={selectedContent.id} />
           )}
@@ -102,7 +100,16 @@ export function AddMenuItemDialog({
           </div>
 
           {targetType === "content" && (
-            <ContentPicker selected={selectedContent} onSelect={setSelectedContent} />
+            <>
+              <ContentPicker selected={selectedContent} onSelect={setSelectedContent} />
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground">Âncora (opcional)</label>
+                <Input name="anchor" className="mt-1" placeholder="ex: sobre-nos" />
+                <p className="mt-1 text-xs text-muted-foreground/56">
+                  Id de âncora de um bloco da página (definido no Editor visual) — o link aponta para /pagina#âncora.
+                </p>
+              </div>
+            </>
           )}
 
           {targetType === "route" && (
@@ -129,22 +136,9 @@ export function AddMenuItemDialog({
 
           <div>
             <label className="block text-xs font-medium text-muted-foreground">Ícone (opcional)</label>
-            <Select value={icon} onValueChange={setIcon}>
-              <SelectTrigger className="mt-1 w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={NO_ICON_VALUE}>Sem ícone</SelectItem>
-                {NAV_ICON_KEYS.map((key) => (
-                  <SelectItem key={key} value={key}>
-                    <span className="flex items-center gap-2">
-                      <NavIcon iconKey={key} className="size-4" />
-                      {key}
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="mt-1">
+              <IconPicker value={icon} onChange={setIcon} options={ICON_OPTIONS} />
+            </div>
           </div>
 
           <div>

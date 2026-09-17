@@ -5,12 +5,14 @@ import { listThemeStates } from "@/platform/theme-engine/list-theme-states";
 import { listColorPaletteStates } from "@/platform/theme-engine/list-color-palette-states";
 import { CUSTOM_COLOR_PALETTE_ID } from "@/platform/theme-engine/custom-color-palette";
 import { getHeaderBehavior } from "@/platform/header-behavior/get-header-behavior";
+import { getNavVisibility } from "@/platform/nav-visibility/get-nav-visibility";
 import { ActivateThemeButton } from "./_components/activate-theme-button";
 import { ToggleThemeControl } from "./_components/toggle-theme-control";
 import { ThemeUpdatePanel } from "./_components/theme-update-panel";
 import { ActivateColorPaletteButton } from "./_components/activate-color-palette-button";
 import { CustomColorPaletteForm } from "./_components/custom-color-palette-form";
 import { HeaderBehaviorForm } from "./_components/header-behavior-form";
+import { NavVisibilityForm } from "./_components/nav-visibility-form";
 import type { PaletteColorTokens } from "@/contexts/themes";
 
 // Tira de amostras da paleta (primary/accent/background/text que ela define). "Padrão do tema"
@@ -41,10 +43,11 @@ export default async function ThemesAdminPage() {
     );
   }
 
-  const [themes, colorPaletteStates, headerBehavior] = await Promise.all([
+  const [themes, colorPaletteStates, headerBehavior, navVisibility] = await Promise.all([
     listThemeStates(),
     listColorPaletteStates(),
     getHeaderBehavior(),
+    getNavVisibility(),
   ]);
   const customPalette = colorPaletteStates.palettes.find((palette) => palette.id === CUSTOM_COLOR_PALETTE_ID);
   const activeTheme = themes.find((theme) => theme.isActive);
@@ -90,6 +93,8 @@ export default async function ThemesAdminPage() {
       </section>
 
       {activeThemeSupportsHeaderBehavior && <HeaderBehaviorForm behavior={headerBehavior} />}
+
+      <NavVisibilityForm visibility={navVisibility} />
 
       <section className="rounded-panel border border-border bg-card ui-panel-padding-roomy">
         <div>

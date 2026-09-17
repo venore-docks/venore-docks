@@ -11,6 +11,7 @@ export function createBlock(definition: BlockDefinition): Block {
     id: crypto.randomUUID(),
     key: definition.key,
     slot: "",
+    htmlId: null,
     data: { ...definition.defaultData },
     areas: definition.structure === "areas" ? (definition.areaDefinitions ?? []).map((area) => ({ key: area.key, blocks: [] })) : [],
   };
@@ -142,6 +143,9 @@ function cloneWithNewIds(block: Block): Block {
   return {
     ...block,
     id: crypto.randomUUID(),
+    // Duplicar um bloco não pode duplicar o id de âncora junto — dois elementos com o mesmo `id`
+    // no DOM quebrariam qualquer link que aponte pra ele.
+    htmlId: null,
     areas: block.areas.map((area) => ({ key: area.key, blocks: area.blocks.map(cloneWithNewIds) })),
   };
 }
@@ -156,6 +160,11 @@ export function duplicateBlock(composition: Composition, blockId: string): Compo
 
 export function updateBlockData(composition: Composition, blockId: string, data: Record<string, unknown>): Composition {
   return mapBlockById(composition, blockId, (block) => ({ ...block, data }));
+}
+
+// htmlId vive no bloco, não em `data` — precisa do próprio setter, espelhando updateBlockData.
+export function updateBlockHtmlId(composition: Composition, blockId: string, htmlId: string | null): Composition {
+  return mapBlockById(composition, blockId, (block) => ({ ...block, htmlId }));
 }
 
 // Traduz o `path` de ValidateCompositionError (ex: "$[0].areas[0][1]") de volta pro id do bloco

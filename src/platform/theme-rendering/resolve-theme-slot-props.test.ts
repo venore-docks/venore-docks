@@ -7,6 +7,7 @@ const collectNotificationAlert = vi.fn();
 const resolveBrandAesthetics = vi.fn();
 const getBrandConfig = vi.fn();
 const getHeaderBehavior = vi.fn();
+const getNavVisibility = vi.fn();
 
 vi.mock("@/contexts/auth", () => ({
   getCurrentUser: (...args: unknown[]) => getCurrentUser(...args),
@@ -51,6 +52,12 @@ vi.mock("@/plugins/contributions", () => ({ PLUGIN_CONTRIBUTIONS: {} }));
 
 vi.mock("@/platform/header-behavior/get-header-behavior", () => ({
   getHeaderBehavior: (...args: unknown[]) => getHeaderBehavior(...args),
+}));
+
+// Mesmo motivo de get-header-behavior acima: também lê contexts/settings, sem stub abriria
+// conexão real.
+vi.mock("@/platform/nav-visibility/get-nav-visibility", () => ({
+  getNavVisibility: (...args: unknown[]) => getNavVisibility(...args),
 }));
 
 // Importado uma única vez em beforeAll, não dentro de cada `it`: sob a suíte cheia o custo de
@@ -102,6 +109,8 @@ describe("resolveThemeSlotProps", () => {
     });
     getHeaderBehavior.mockReset();
     getHeaderBehavior.mockResolvedValue({ sticky: true, scrollShrink: true });
+    getNavVisibility.mockReset();
+    getNavVisibility.mockResolvedValue({ hideLoginLink: false, showLoginInFooter: false });
   });
 
   it("resolves header.user as null when there is no authenticated user", async () => {
@@ -154,6 +163,46 @@ describe("resolveThemeSlotProps", () => {
 
     expect(props.header.canAccessAdmin).toBe(true);
     expect(props.header.onSignOut).toBe(onSignOut);
+  });
+
+  it("header.showLoginLink defaults to true (nav.hideLoginLink off)", async () => {
+    getCurrentUser.mockResolvedValue({ success: true, data: null });
+
+    const props = await resolveThemeSlotProps(sidebarNavInput());
+
+    expect(props.header.showLoginLink).toBe(true);
+    expect(props.footer.loginLinkHref).toBeNull();
+  });
+
+  it("header.showLoginLink is false and footer.loginLinkHref is set when hideLoginLink+showLoginInFooter are both on and no user is logged in", async () => {
+    getCurrentUser.mockResolvedValue({ success: true, data: null });
+    getNavVisibility.mockResolvedValue({ hideLoginLink: true, showLoginInFooter: true });
+
+    const props = await resolveThemeSlotProps(sidebarNavInput());
+
+    expect(props.header.showLoginLink).toBe(false);
+    expect(props.footer.loginLinkHref).toBe("/login");
+  });
+
+  it("footer.loginLinkHref stays null when hideLoginLink is on but showLoginInFooter is off", async () => {
+    getCurrentUser.mockResolvedValue({ success: true, data: null });
+    getNavVisibility.mockResolvedValue({ hideLoginLink: true, showLoginInFooter: false });
+
+    const props = await resolveThemeSlotProps(sidebarNavInput());
+
+    expect(props.footer.loginLinkHref).toBeNull();
+  });
+
+  it("footer.loginLinkHref stays null when a user is logged in, even with hideLoginLink+showLoginInFooter on", async () => {
+    getCurrentUser.mockResolvedValue({
+      success: true,
+      data: { id: "user-1", name: "Ada Lovelace", email: "ada@example.com", image: null },
+    });
+    getNavVisibility.mockResolvedValue({ hideLoginLink: true, showLoginInFooter: true });
+
+    const props = await resolveThemeSlotProps(sidebarNavInput());
+
+    expect(props.footer.loginLinkHref).toBeNull();
   });
 
   it("resolves sidebarLeft.navItems from the main-nav menu when navMode is main", async () => {

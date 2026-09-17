@@ -1,30 +1,5 @@
 import type { BlockDefinition } from "@/contexts/cms";
-
-// Allowlist curada de ícones lucide — nome dinâmico de ícone não é bundlable sem mapa fixo (mesmo
-// motivo do GAP_CLASSES em block-renderers.tsx). ICON_COMPONENTS (block-renderers.tsx) precisa
-// conter exatamente estas mesmas chaves.
-export const ICON_NAMES = [
-  "star",
-  "heart",
-  "check",
-  "arrow-right",
-  "info",
-  "alert-triangle",
-  "check-circle",
-  "mail",
-  "phone",
-  "map-pin",
-  "calendar",
-  "clock",
-  "user",
-  "users",
-  "settings",
-  "search",
-  "download",
-  "award",
-  "book-open",
-  "zap",
-] as const;
+import { NAV_ICON_KEYS } from "@/platform/nav-icons/registry";
 
 export const iconBlockDefinition: BlockDefinition = {
   key: "core.content.icon",
@@ -36,9 +11,9 @@ export const iconBlockDefinition: BlockDefinition = {
   editorFields: [
     {
       name: "name",
-      type: "select",
+      type: "icon",
       label: "Ícone",
-      options: ICON_NAMES.map((name) => ({ value: name, label: name })),
+      options: NAV_ICON_KEYS.map((name) => ({ value: name, label: name })),
     },
     {
       name: "size",

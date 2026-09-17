@@ -84,7 +84,7 @@ describe("createMenuItem", () => {
     const result = await createMenuItem({
       menuId: "menu-1",
       label: "Sobre",
-      target: { targetType: "content", contentId: "missing-entry" },
+      target: { targetType: "content", contentId: "missing-entry", anchor: null },
       actorId: "actor-1",
     });
 

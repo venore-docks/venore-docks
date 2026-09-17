@@ -57,6 +57,7 @@ function flattenMenuItems(items: AdminResolvedMenuItem[], entryRefById: Map<stri
       icon: item.icon,
       targetType: item.targetType,
       contentRef,
+      anchor: item.targetType === "content" ? item.anchor : null,
       routePath: item.targetType === "route" ? item.routePath : null,
       requiredPermissionKey: item.targetType === "route" ? item.requiredPermissionKey : null,
       externalUrl: item.targetType === "external" ? item.externalUrl : null,

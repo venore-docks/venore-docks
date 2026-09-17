@@ -15,8 +15,12 @@ export async function updateEntryAction(
   const id = String(formData.get("id") ?? "");
   const mediaId = String(formData.get("mediaId") ?? "").trim();
   const categoryId = String(formData.get("categoryId") ?? "").trim();
-  const body = String(formData.get("body") ?? "");
   const visibility = formData.get("visibility") === "authenticated" ? "authenticated" : "public";
+
+  // O campo "Corpo" some do form assim que a entry já tem composição do Editor Visual
+  // (ver hasComposition em edit-entry-form.tsx) — nesse caso formData não tem "body" e esta tela
+  // não deve mandar nenhum patch de `data`, senão apagaria data.blocks.
+  const data = formData.has("body") ? { body: String(formData.get("body") ?? "") } : undefined;
 
   const result = await updateEntry({
     id,
@@ -25,7 +29,7 @@ export async function updateEntryAction(
     categoryId: categoryId || null,
     contentTypeIds: formData.getAll("contentTypeIds").map(String),
     visibility,
-    data: { body },
+    data,
     mediaId: mediaId || null,
   });
 

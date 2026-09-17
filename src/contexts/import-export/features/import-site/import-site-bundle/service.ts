@@ -47,7 +47,7 @@ function resolveMenuItemTarget(item: ExportedMenuItem, entryIdByRef: Map<string,
   switch (item.targetType) {
     case "content": {
       const contentId = item.contentRef ? entryIdByRef.get(item.contentRef) : undefined;
-      return contentId ? { targetType: "content", contentId } : null;
+      return contentId ? { targetType: "content", contentId, anchor: item.anchor } : null;
     }
     case "route":
       return item.routePath ? { targetType: "route", routePath: item.routePath, requiredPermissionKey: item.requiredPermissionKey } : null;

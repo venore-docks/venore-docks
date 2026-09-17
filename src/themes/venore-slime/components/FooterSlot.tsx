@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Sitemap } from "@/components/sitemap";
 import type { FooterSlotProps } from "@/contexts/themes/contracts/types";
 import { PlatformBrand } from "./PlatformBrand";
@@ -9,7 +10,7 @@ import { PlatformBrand } from "./PlatformBrand";
 // negócio injetada via prop, não um token semântico shadcn (mesma exceção documentada em
 // build-birthday-pdf-html.ts). Server component puro, sem I/O — quem busca dado (getBrandConfig +
 // getMenuByLocation("sitemap")) é platform/theme-rendering/resolve-theme-slot-props.ts.
-export function FooterSlot({ brand, sitemapItems, creditsEnabled }: FooterSlotProps) {
+export function FooterSlot({ brand, sitemapItems, creditsEnabled, loginLinkHref }: FooterSlotProps) {
   return (
     <footer className="mt-auto grid gap-8 border-t border-border px-4 py-12 text-muted-foreground sm:px-6 lg:grid-cols-[max-content_minmax(0,1fr)] lg:gap-12 lg:px-8">
       <div className="w-fit max-w-full justify-self-start space-y-5 rounded-panel border border-border bg-accent/14 px-6 py-6">
@@ -33,8 +34,19 @@ export function FooterSlot({ brand, sitemapItems, creditsEnabled }: FooterSlotPr
         )}
       </div>
 
-      <div className="pt-1">
+      <div className="space-y-4 pt-1">
         <Sitemap items={sitemapItems} />
+        {loginLinkHref && (
+          // Deliberado, separado do sitemap: só aparece quando o admin escondeu "Entrar" do
+          // header (nav.hideLoginLink) e pediu explicitamente pra manter um acesso no rodapé
+          // (nav.showLoginInFooter) — platform/nav-visibility/get-nav-visibility.ts.
+          <Link
+            href={loginLinkHref}
+            className="inline-flex rounded-sm text-xs font-medium uppercase tracking-caps text-muted-foreground/56 outline-none ui-motion-base hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            Entrar
+          </Link>
+        )}
       </div>
 
       {creditsEnabled ? (

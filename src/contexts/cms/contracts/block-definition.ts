@@ -1,4 +1,4 @@
-export type EditorFieldType = "text" | "textarea" | "richtext" | "number" | "boolean" | "select" | "image" | "audio" | "url";
+export type EditorFieldType = "text" | "textarea" | "richtext" | "number" | "boolean" | "select" | "icon" | "image" | "audio" | "url";
 
 export type EditorField = {
   name: string;
