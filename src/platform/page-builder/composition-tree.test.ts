@@ -45,7 +45,7 @@ function resolveDefinition(key: string): BlockDefinition | null {
 }
 
 function block(overrides: Partial<Block>): Block {
-  return { id: "b1", key: "text", slot: "", data: {}, areas: [], ...overrides };
+  return { id: "b1", key: "text", slot: "", htmlId: null, data: {}, areas: [], ...overrides };
 }
 
 describe("createBlock", () => {

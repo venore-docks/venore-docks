@@ -6,3 +6,4 @@ export { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 export { Sitemap } from "@/components/sitemap";
 export { NavIcon } from "@/platform/nav-icons/NavIcon";
 export { ColorModeToggle } from "@/components/color-mode-toggle";
+export { isRecolorableBrandAsset } from "./brand-asset";

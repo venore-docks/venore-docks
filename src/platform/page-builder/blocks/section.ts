@@ -1,5 +1,5 @@
 import type { AreaDefinition, BlockDefinition } from "@/contexts/cms";
-import { ICON_NAMES } from "./icon";
+import { NAV_ICON_KEYS } from "@/platform/nav-icons/registry";
 
 export const SECTION_BLOCK_KEY = "core.layout.section";
 
@@ -30,11 +30,12 @@ export function createSectionBlockDefinition(nestableBlockKeys: string[]): Block
     editorFields: [
       { name: "title", type: "text", label: "Título (opcional)" },
       {
-        // Mesma allowlist do bloco Ícone (blocks/icon.ts) — reaproveitada, não duplicada.
+        // Mesma allowlist do resto do app (platform/nav-icons/registry.ts) — reaproveitada, não
+        // duplicada.
         name: "icon",
-        type: "select",
+        type: "icon",
         label: "Ícone (opcional)",
-        options: [{ value: "", label: "Nenhum" }, ...ICON_NAMES.map((name) => ({ value: name, label: name }))],
+        options: [{ value: "", label: "Nenhum" }, ...NAV_ICON_KEYS.map((name) => ({ value: name, label: name }))],
       },
       {
         // No desktop o ícone fica ao lado do título (linha); no mobile fica acima (coluna) —

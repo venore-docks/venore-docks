@@ -24,6 +24,7 @@ export function EditEntryForm({
   title,
   slug,
   body,
+  hasComposition,
   categoryId,
   contentTypeIds,
   visibility,
@@ -35,6 +36,7 @@ export function EditEntryForm({
   title: string;
   slug: string;
   body: string;
+  hasComposition: boolean;
   categoryId: string | null;
   contentTypeIds: string[];
   visibility: "public" | "authenticated";
@@ -111,10 +113,16 @@ export function EditEntryForm({
         </Select>
       </div>
 
-      <div>
-        <label className="block text-xs font-medium text-muted-foreground">Corpo</label>
-        <Textarea name="body" rows={8} defaultValue={body} className="mt-1" />
-      </div>
+      {hasComposition ? (
+        <p className="text-xs text-muted-foreground/56">
+          O conteúdo desta página é editado no Editor visual — esta tela edita só metadados.
+        </p>
+      ) : (
+        <div>
+          <label className="block text-xs font-medium text-muted-foreground">Corpo</label>
+          <Textarea name="body" rows={8} defaultValue={body} className="mt-1" />
+        </div>
+      )}
 
       <MediaPickerField name="mediaId" initialMedia={media} />
 

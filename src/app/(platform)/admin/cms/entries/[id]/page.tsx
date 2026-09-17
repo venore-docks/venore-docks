@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getCachedEntry, getEntryBody, listCategoriesForAdmin, listContentTypes } from "@/contexts/cms";
+import { extractEntryComposition, getCachedEntry, getEntryBody, listCategoriesForAdmin, listContentTypes } from "@/contexts/cms";
 import { getMediaAsset } from "@/contexts/media";
 import { getCmsPageData } from "@/platform/admin-shell/get-cms-page-data";
 import { EditEntryForm } from "./_components/edit-entry-form";
@@ -74,6 +74,7 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
           title={entry.title}
           slug={entry.slug}
           body={getEntryBody(entry.data)}
+          hasComposition={extractEntryComposition(entry.data) !== null}
           categoryId={entry.categoryId}
           contentTypeIds={entry.contentTypeIds}
           visibility={entry.visibility}

@@ -1,0 +1,1 @@
+ALTER TABLE "cms"."menu_items" ADD COLUMN "anchor" text;

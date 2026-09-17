@@ -64,6 +64,7 @@ export type ExportedMenuItem = {
   icon: string | null;
   targetType: MenuItemTarget["targetType"];
   contentRef: string | null;
+  anchor: string | null;
   routePath: string | null;
   requiredPermissionKey: string | null;
   externalUrl: string | null;
