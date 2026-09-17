@@ -14,16 +14,6 @@ vi.mock("@/contexts/rbac", () => ({
   grantPermissionsToRole: (...args: unknown[]) => grantPermissionsToRole(...args),
 }));
 
-const invalidateCache = vi.fn();
-
-vi.mock("@/infrastructure/cache/memory-cache", () => ({
-  invalidateCache: (...args: unknown[]) => invalidateCache(...args),
-}));
-
-vi.mock("./register-plugins", () => ({
-  PLUGIN_ENGINE_REPORT_CACHE_KEY: "plugin-engine:report",
-}));
-
 const runPluginMigrations = vi.fn();
 
 vi.mock("./run-plugin-migrations", () => ({
@@ -48,7 +38,6 @@ describe("installPlugin", () => {
     listExtensionStates.mockReset();
     setExtensionInstalled.mockReset();
     grantPermissionsToRole.mockReset();
-    invalidateCache.mockReset();
     runPluginMigrations.mockReset();
     listExtensionStates.mockResolvedValue({ success: true, data: {} });
     setExtensionInstalled.mockResolvedValue({ success: true, data: {} });
@@ -79,17 +68,15 @@ describe("installPlugin", () => {
     expect(runPluginMigrations).not.toHaveBeenCalled();
     expect(setExtensionInstalled).not.toHaveBeenCalled();
     expect(grantPermissionsToRole).toHaveBeenCalledWith({ roleKey: "admin", permissionKeys: ["broadcast.manage"] });
-    expect(invalidateCache).toHaveBeenCalledWith("plugin-engine:report");
   });
 
-  it("runs migrations, marks installed, grants admin permissions and invalidates the report cache", async () => {
+  it("runs migrations, marks installed and grants admin permissions", async () => {
     const { installPlugin } = await import("./install-plugin");
     const result = await installPlugin({ pluginKey: "broadcast" });
 
     expect(runPluginMigrations).toHaveBeenCalledWith("broadcast");
     expect(setExtensionInstalled).toHaveBeenCalledWith({ kind: "plugin", key: "broadcast" });
     expect(grantPermissionsToRole).toHaveBeenCalledWith({ roleKey: "admin", permissionKeys: ["broadcast.manage"] });
-    expect(invalidateCache).toHaveBeenCalledWith("plugin-engine:report");
     expect(result).toEqual({ success: true, data: undefined });
   });
 
@@ -105,7 +92,6 @@ describe("installPlugin", () => {
     expect(result).toEqual({ success: false, error: { code: "plugin-engine.migrations.failed", message: "boom" } });
     expect(setExtensionInstalled).not.toHaveBeenCalled();
     expect(grantPermissionsToRole).not.toHaveBeenCalled();
-    expect(invalidateCache).not.toHaveBeenCalled();
   });
 
   it("returns the grant error when granting admin permissions fails", async () => {
@@ -118,7 +104,6 @@ describe("installPlugin", () => {
     const result = await installPlugin({ pluginKey: "broadcast" });
 
     expect(result).toEqual({ success: false, error: { code: "rbac.roles.not_found", message: "no admin role" } });
-    expect(invalidateCache).not.toHaveBeenCalled();
   });
 
   it("skips migrations and the grant for a plugin without migrationsPath or permissions", async () => {

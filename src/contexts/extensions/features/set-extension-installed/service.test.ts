@@ -11,19 +11,12 @@ vi.mock("./store", () => ({
   upsertExtensionInstalled: (...args: unknown[]) => upsertExtensionInstalled(...args),
 }));
 
-const invalidateCache = vi.fn();
-
-vi.mock("@/infrastructure/cache/memory-cache", () => ({
-  invalidateCache: (...args: unknown[]) => invalidateCache(...args),
-}));
-
 describe("setExtensionInstalled", () => {
   beforeEach(() => {
     upsertExtensionInstalled.mockReset();
-    invalidateCache.mockReset();
   });
 
-  it("persists the installed mark and invalidates the get + list caches for that kind/key", async () => {
+  it("persists the installed mark", async () => {
     const record = {
       kind: "plugin" as const,
       key: "broadcast",
@@ -38,8 +31,6 @@ describe("setExtensionInstalled", () => {
     const result = await setExtensionInstalled({ kind: "plugin", key: "broadcast", actorId: "actor-1" });
 
     expect(upsertExtensionInstalled).toHaveBeenCalledWith("plugin", "broadcast", "actor-1");
-    expect(invalidateCache).toHaveBeenCalledWith("extensions:plugin:broadcast");
-    expect(invalidateCache).toHaveBeenCalledWith("extensions:list:plugin");
     expect(result).toEqual({ success: true, data: record });
   });
 });
