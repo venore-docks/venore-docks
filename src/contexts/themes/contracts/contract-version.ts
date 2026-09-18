@@ -42,5 +42,12 @@
 // — mesmo critério dos bumps anteriores. `docs/venore-docks.md` ("Contrato de slot") foi
 // atualizado junto: a frase "o arranjo espacial... é responsabilidade da composição da shell
 // (platform/), não do tema" foi revertida — arranjo agora é sempre do tema.
-export const CURRENT_THEME_CONTRACT_VERSION = "6.0.0";
-export const SUPPORTED_THEME_CONTRACT_RANGE = "^6.0.0";
+// Bump para "7.0.0": `HeaderSlotProps.messageAlert` renomeado pra `notificationAlert` — o nome
+// antigo vazava a origem academy-specific do campo (mensagem não lida) pro contrato compartilhado
+// por todo tema, quando o alerta já cobria também nota/comentário de atividade avaliada. Rename de
+// campo existente, não extensão aditiva — mesmo critério dos bumps anteriores. Os 6 temas
+// publicados (`fearless`, `druids`, `nite`, `knights`, `paladins`, `sorcerers`) já haviam declarado
+// themeContractVersion "7.0.0" antecipando este rename; só `sorcerers` de fato consome o campo em
+// código (badge de notificação no HeaderSlot), os demais só carregavam a declaração adiantada.
+export const CURRENT_THEME_CONTRACT_VERSION = "7.0.0";
+export const SUPPORTED_THEME_CONTRACT_RANGE = "^7.0.0";

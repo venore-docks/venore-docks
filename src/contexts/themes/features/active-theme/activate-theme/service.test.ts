@@ -23,7 +23,7 @@ describe("activateTheme", () => {
     setSetting.mockResolvedValue({ success: true, data: { key: "theme.active", value: "default", updatedAt: new Date("2026-01-01") } });
 
     const { activateTheme } = await import("./service");
-    const result = await activateTheme({ themeKey: "default", themeContractVersion: "6.0.0" });
+    const result = await activateTheme({ themeKey: "default", themeContractVersion: "7.0.0" });
 
     expect(getExtensionState).toHaveBeenCalledWith({ kind: "theme", key: "default" });
     expect(setSetting).toHaveBeenCalledWith({ key: "theme.active", value: "default" });
@@ -45,7 +45,7 @@ describe("activateTheme", () => {
     getExtensionState.mockResolvedValue({ success: true, data: { enabled: false } });
 
     const { activateTheme } = await import("./service");
-    const result = await activateTheme({ themeKey: "venore-basic", themeContractVersion: "6.0.0" });
+    const result = await activateTheme({ themeKey: "venore-basic", themeContractVersion: "7.0.0" });
 
     expect(result).toEqual({
       success: false,
@@ -58,7 +58,7 @@ describe("activateTheme", () => {
     setSetting.mockResolvedValue({ success: false, error: { code: "rbac.authorization.forbidden", message: "nope" } });
 
     const { activateTheme } = await import("./service");
-    const result = await activateTheme({ themeKey: "default", themeContractVersion: "6.0.0" });
+    const result = await activateTheme({ themeKey: "default", themeContractVersion: "7.0.0" });
 
     expect(result).toEqual({ success: false, error: { code: "rbac.authorization.forbidden", message: "nope" } });
   });

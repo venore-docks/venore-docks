@@ -138,18 +138,19 @@ export type HeaderSlotProps = {
   user: HeaderUserInfo | null;
   canAccessAdmin: boolean;
   onSignOut: () => Promise<void>;
-  // Alerta de notificação (mensagem não lida OU atividade avaliada), ao lado do user-nav (pedido
-  // desta sessão: "bolinha de pulse e um texto 'Nova mensagem'", depois estendido pra nota/
-  // comentário de atividade). Extensão aditiva do contrato, mesmo critério de `user` acima — hoje
-  // só o plugin Academy popula isso (platform/notifications/notification-registry.ts), mas o campo
-  // em si é genérico (não amarrado a "academy" no tipo). `label` já vem pronto de quem produziu o
-  // alerta (o tema não decide o texto, só renderiza — mesmo alerta pode ser sobre mensagem ou nota).
-  // null/undefined = nada pra mostrar.
-  messageAlert?: { count: number; href: string; label: string } | null;
+  // Alerta de notificação (mensagem não lida OU atividade avaliada), ao lado do user-nav. Campo
+  // renomeado de `messageAlert` pra `notificationAlert` (bump de contrato pra "7.0.0" — nome
+  // academy-specific vazado pro contrato compartilhado por todo tema; não é extensão aditiva,
+  // é rename de campo existente). Hoje só o plugin Academy popula isso
+  // (platform/notifications/notification-registry.ts), mas o campo em si é genérico (não amarrado
+  // a "academy" no tipo). `label` já vem pronto de quem produziu o alerta (o tema não decide o
+  // texto, só renderiza — mesmo alerta pode ser sobre mensagem ou nota). null/undefined = nada
+  // pra mostrar.
+  notificationAlert?: { count: number; href: string; label: string } | null;
   // Itens que plugins ativos contribuem pro MENU DO USUÁRIO (não pro admin-nav) — ex.: "Mensagens"
   // do Academy. Resolvido em resolveThemeSlotProps a partir de platform/user-nav/registry.ts.
-  // Extensão aditiva do contrato, mesmo critério de `messageAlert` acima: tema que não renderiza
-  // user-nav simplesmente ignora. Lista vazia / undefined = nada a acrescentar.
+  // Extensão aditiva do contrato, mesmo critério de `notificationAlert` acima: tema que não
+  // renderiza user-nav simplesmente ignora. Lista vazia / undefined = nada a acrescentar.
   userNavItems?: NavItem[];
   // contexts/settings (nav.hideLoginLink) — esconde o link de "Entrar" do userbar sem bloquear a
   // rota /login em si (continua acessível por URL direta). Default `true` (comportamento atual
