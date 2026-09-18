@@ -30,7 +30,7 @@ export function HeaderSlot({
   user,
   canAccessAdmin,
   onSignOut,
-  messageAlert,
+  notificationAlert,
   userNavItems,
   showLoginLink,
 }: HeaderSlotProps) {
@@ -79,19 +79,19 @@ export function HeaderSlot({
         {userbarEnabled ? (
           user ? (
             <div className="flex items-center gap-1.5">
-              {messageAlert && (
+              {notificationAlert && (
                 // Alerta de notificação (mensagem não lida ou atividade avaliada) — link/texto já
                 // resolvidos pelo registry (platform/notifications/notification-registry.ts). O
                 // tema só renderiza o `label`.
                 <Link
-                  href={messageAlert.href}
+                  href={notificationAlert.href}
                   className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-muted-foreground ui-motion-base outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring sm:px-2.5"
                 >
                   <span className="relative flex size-2">
                     <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-75" />
                     <span className="relative inline-flex size-2 rounded-full bg-primary" />
                   </span>
-                  <span className="hidden sm:inline">{messageAlert.label}</span>
+                  <span className="hidden sm:inline">{notificationAlert.label}</span>
                 </Link>
               )}
               <UserMenu user={user} canAccessAdmin={canAccessAdmin} onSignOut={onSignOut} userNavItems={userNavItems} />

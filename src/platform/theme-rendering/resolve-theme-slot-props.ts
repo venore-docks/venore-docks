@@ -91,9 +91,10 @@ export async function resolveThemeSlotProps(sidebarNav: {
   // violaria o invariante de contexts/cms de que o sitemap é o que o menu escolheu mostrar), é só
   // um esqueleto estático pra o rodapé não ficar quebrado antes de o admin configurar o menu.
   const aesthetics = await resolveBrandAesthetics();
-  // messageAlert só é consultado pra quem está logado — visitante anônimo nunca tem thread nenhuma
-  // (getMessageAlert já devolveria null de qualquer forma, mas evita a query à toa).
-  const [mainMenu, sitemapMenu, brandConfig, headerBehavior, navVisibility, messageAlert, userNavItems] = await Promise.all([
+  // notificationAlert só é consultado pra quem está logado — visitante anônimo nunca tem thread
+  // nenhuma (collectNotificationAlert já devolveria null de qualquer forma, mas evita a query à
+  // toa).
+  const [mainMenu, sitemapMenu, brandConfig, headerBehavior, navVisibility, notificationAlert, userNavItems] = await Promise.all([
     getMenuByLocation({ location: "main" }),
     getMenuByLocation({ location: "sitemap" }),
     getBrandConfig(aesthetics.mode),
@@ -128,7 +129,7 @@ export async function resolveThemeSlotProps(sidebarNav: {
       user,
       canAccessAdmin: sidebarNav.canAccessAdmin,
       onSignOut: sidebarNav.onSignOut,
-      messageAlert,
+      notificationAlert,
       userNavItems,
       showLoginLink: !navVisibility.hideLoginLink,
     },
