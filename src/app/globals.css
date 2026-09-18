@@ -258,6 +258,22 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Âncora pra outro bloco da MESMA página (Block.htmlId, page-builder/composition-tree.ts) rolava
+   de forma abrupta e escondida atrás do header sticky. `smooth` corrige o salto abrupto (a regra
+   de prefers-reduced-motion no fim do arquivo já reverte pra `auto` quando o usuário pede menos
+   movimento, então isso não regride acessibilidade). `--header-offset` é escrita em runtime por
+   platform/header-behavior/header-offset-sync.tsx (mede o <header> real do tema ativo — cada tema
+   tem uma altura diferente e sticky pode estar desligado pelo admin, nenhuma constante fixa aqui
+   serviria); `[id]` é amplo de propósito, cobre qualquer alvo de âncora sem precisar de uma classe
+   própria por bloco. */
+html {
+  scroll-behavior: smooth;
+}
+
+[id] {
+  scroll-margin-top: var(--header-offset, 0px);
+}
+
 /* Charm dos primitivos shadcn stock, via seletor de atributo sobre data-slot — não editamos
    ui/ diretamente, então isto sobrevive a uma reinstalação (docs — reinstalação de primitivos
    shadcn). Só troca a curva/duração da transição pelo vocabulário --ui-motion-* e --ui-ease-*
