@@ -49,7 +49,7 @@
     "@tiptap/static-renderer": "^3.29.2",
     "@venore/plugin-broadcast": "git+https://github.com/venore-docks/venore-plugin-broadcast.git#v1.9.8",
     "@venore/plugin-scoreboard": "git+https://github.com/venore-docks/venore-plugin-scoreboard.git#v1.2.0",
-    "@venore/theme-fearless": "git+https://github.com/venore-docks/venore-theme-fearless.git#v1.0.0",
+    "@venore/theme-fearless": "git+https://github.com/venore-docks/venore-theme-fearless.git#v1.1.1",
     "@vercel/blob": "^2.6.1",
     "@vercel/functions": "^3.7.5",
     "class-variance-authority": "^0.7.1",
