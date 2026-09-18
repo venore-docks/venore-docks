@@ -1,6 +1,6 @@
 # Contrato de shell
 
-> **STATUS: Abordagem A implementada.** `themeContractVersion` está em `6.0.0`
+> **STATUS: Abordagem A implementada.** `themeContractVersion` está em `7.0.0`
 > (`src/contexts/themes/contracts/contract-version.ts`): cada tema exporta um `Shell` único, dono
 > da árvore/arranjo entre Header/Footer/SidebarLeft/Content, e `src/app/(platform)/layout.tsx` só
 > resolve dados e repassa. As seções 2–4 abaixo eram a comparação de abordagens que levou a essa
