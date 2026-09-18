@@ -10,6 +10,7 @@ import { ContextualMenuNav } from "@/components/contextual-menu-nav";
 import { resolveBreadcrumbs } from "@/platform/breadcrumbs/resolve-breadcrumbs";
 import { BREADCRUMB_PATHNAME_HEADER } from "@/platform/breadcrumbs/pathname-header";
 import { RouteChangeRefresher } from "@/platform/breadcrumbs/route-change-refresher";
+import { HeaderOffsetSync } from "@/platform/header-behavior/header-offset-sync";
 import { getAdminPageData } from "@/platform/admin-shell/get-admin-page-data";
 import { getVisibleAdminNavGroupsForSidebar } from "@/platform/admin-shell/admin-navigation-registry";
 import { getNavMode } from "@/platform/nav-mode/get-nav-mode";
@@ -83,6 +84,7 @@ export default async function PlatformLayout({
   return (
     <>
       <RouteChangeRefresher />
+      <HeaderOffsetSync />
       <Shell
         header={props.header}
         footer={props.footer}
