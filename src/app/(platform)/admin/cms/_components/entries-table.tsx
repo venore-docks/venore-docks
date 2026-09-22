@@ -108,7 +108,7 @@ export function EntriesTable({
           <TableHeader>
             <TableRow>
               <TableHead>Título</TableHead>
-              <TableHead className="hidden md:table-cell">Tags</TableHead>
+              <TableHead className="hidden w-56 md:table-cell">Tags</TableHead>
               <TableHead className="hidden md:table-cell">Categoria</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="hidden text-right lg:table-cell">Acessos</TableHead>
@@ -129,10 +129,18 @@ export function EntriesTable({
                     </Link>
                     <p className="text-xs text-muted-foreground/56">/{entry.slug}</p>
                   </TableCell>
-                  <TableCell className="hidden text-muted-foreground md:table-cell">
-                    {entry.contentTypeIds.length > 0
-                      ? entry.contentTypeIds.map((id) => contentTypeNameById.get(id) ?? "—").join(", ")
-                      : "—"}
+                  <TableCell className="hidden align-top text-muted-foreground md:table-cell">
+                    {entry.contentTypeIds.length > 0 ? (
+                      <div className="flex max-w-56 flex-wrap gap-1">
+                        {entry.contentTypeIds.map((id) => (
+                          <Badge key={id} variant="outline" className="whitespace-nowrap text-muted-foreground">
+                            {contentTypeNameById.get(id) ?? "—"}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      "—"
+                    )}
                   </TableCell>
                   <TableCell className="hidden text-muted-foreground md:table-cell">
                     {entry.categoryId ? (categoryNameById.get(entry.categoryId) ?? "—") : "—"}

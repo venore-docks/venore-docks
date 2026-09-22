@@ -1,4 +1,5 @@
 export { createContentTypeHandler as createContentType } from "./features/content-types/create-content-type/handler";
+export { deleteContentTypeHandler as deleteContentType } from "./features/content-types/delete-content-type/handler";
 export { getOrCreateReservedContentType } from "./get-or-create-reserved-content-type";
 export { listContentTypesHandler as listContentTypes } from "./features/content-types/list-content-types/handler";
 export { createCategoryHandler as createCategory } from "./features/categories/create-category/handler";
@@ -102,6 +103,7 @@ export type {
 } from "./contracts/block-definition";
 
 export type { CreateContentTypeInput, CreateContentTypeResult } from "./features/content-types/create-content-type/types";
+export type { DeleteContentTypeInput, DeleteContentTypeResult } from "./features/content-types/delete-content-type/types";
 export type { ListContentTypesResult } from "./features/content-types/list-content-types/types";
 export type { CreateCategoryInput, CreateCategoryResult } from "./features/categories/create-category/types";
 export type { ListCategoriesResult } from "./features/categories/list-categories/types";
