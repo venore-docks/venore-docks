@@ -61,6 +61,7 @@ function flattenMenuItems(items: AdminResolvedMenuItem[], entryRefById: Map<stri
       routePath: item.targetType === "route" ? item.routePath : null,
       requiredPermissionKey: item.targetType === "route" ? item.requiredPermissionKey : null,
       externalUrl: item.targetType === "external" ? item.externalUrl : null,
+      openInNewTab: item.openInNewTab,
     });
 
     flattenMenuItems(item.children, entryRefById, exportId, counter, out);

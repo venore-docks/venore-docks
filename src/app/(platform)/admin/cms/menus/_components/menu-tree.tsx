@@ -178,6 +178,9 @@ function MenuTreeRow({
           {node.targetType === "content" && node.contentTitle && node.contentTitle !== node.label && (
             <span className="text-xs text-muted-foreground/56">conteúdo: {node.contentTitle}</span>
           )}
+          {(node.targetType === "external" || node.openInNewTab) && (
+            <span className="text-xs text-muted-foreground/56">nova aba</span>
+          )}
         </div>
         {node.reason && <p className="mt-0.5 text-xs text-muted-foreground">{node.reason}</p>}
         {!node.reason && node.resolvedHref && <p className="mt-0.5 text-xs text-muted-foreground/56">{node.resolvedHref}</p>}

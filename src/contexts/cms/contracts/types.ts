@@ -93,6 +93,9 @@ export type MenuItemRecord = {
   // o componente — escolhida por quem monta o menu (editor admin), resolvida pro lucide-react
   // real só dentro do tema (platform/nav-icons/registry.ts). Opcional em qualquer targetType.
   icon: string | null;
+  // Só relevante pra "content"/"route" — o editor escolhe abrir o link interno em nova aba.
+  // "external" ignora este campo e abre em nova aba sempre (regra fixa, ver menu-resolution.ts).
+  openInNewTab: boolean;
   createdAt: Date;
   updatedAt: Date;
 } & MenuItemTarget;

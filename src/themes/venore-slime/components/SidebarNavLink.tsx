@@ -89,25 +89,45 @@ export function SidebarNavLink({ item, collapsed, isAdmin }: { item: MainNavItem
     );
   }
 
-  const isActive = pathname === item.href;
-
-  return (
-    <Link
-      href={item.href}
-      aria-current={isActive ? "page" : undefined}
-      className={cn(
-        "group/sidebar-collapse-target relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm ui-motion-base outline-none focus-visible:ring-2 focus-visible:ring-ring",
-        isActive
-          ? "bg-primary/10 font-semibold text-primary"
-          : "font-medium text-muted-foreground hover:bg-muted hover:text-foreground active:bg-muted active:text-foreground",
-      )}
-    >
+  const isActive = !item.isExternal && pathname === item.href;
+  const linkClassName = cn(
+    "group/sidebar-collapse-target relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm ui-motion-base outline-none focus-visible:ring-2 focus-visible:ring-ring",
+    isActive
+      ? "bg-primary/10 font-semibold text-primary"
+      : "font-medium text-muted-foreground hover:bg-muted hover:text-foreground active:bg-muted active:text-foreground",
+  );
+  const content = (
+    <>
       <span aria-hidden="true" className="inline-flex size-5 shrink-0 items-center justify-center">
         <NavIcon iconKey={item.icon} className="size-4 shrink-0" />
       </span>
       <span className={cn(SIDEBAR_COLLAPSE_TOOLTIP_LABEL_CLASSES, collapsed && SIDEBAR_COLLAPSE_TOOLTIP_COLLAPSED_CLASSES)}>
         {item.label}
       </span>
+    </>
+  );
+
+  // Item externo (menu_items.targetType "external" — contexts/cms) nunca passa pelo router do
+  // Next: <Link> navegaria client-side pra uma URL fora da app. Abre sempre em nova aba (regra de
+  // negócio pedida pro CMS, menu-resolution.ts já resolve isso em opensInNewTab). Item interno com
+  // opensInNewTab (checkbox do editor) continua <Link> — só ganha target/rel.
+  if (item.isExternal) {
+    return (
+      <a href={item.href} target="_blank" rel="noopener noreferrer" className={linkClassName}>
+        {content}
+      </a>
+    );
+  }
+
+  return (
+    <Link
+      href={item.href}
+      aria-current={isActive ? "page" : undefined}
+      target={item.opensInNewTab ? "_blank" : undefined}
+      rel={item.opensInNewTab ? "noopener noreferrer" : undefined}
+      className={linkClassName}
+    >
+      {content}
     </Link>
   );
 }

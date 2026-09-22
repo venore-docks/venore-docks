@@ -70,6 +70,7 @@ export async function createMenuItem(command: CreateMenuItemCommand): Promise<Cr
     requiredPermissionKey: command.target.targetType === "route" ? command.target.requiredPermissionKey : null,
     externalUrl: command.target.targetType === "external" ? command.target.externalUrl : null,
     icon: command.icon ?? null,
+    openInNewTab: command.openInNewTab ?? false,
   });
 
   invalidateCacheByPrefix("cms:navigation");

@@ -11,6 +11,9 @@ export type CreateMenuItemCommand = {
   // dependem de platform/), quem restringe as opções é o <Select> do editor. Chave desconhecida
   // no momento da renderização só cai no fallback genérico do tema, nunca quebra.
   icon?: string | null;
+  // Só tem efeito em target "content"/"route" — "external" abre em nova aba sempre, independente
+  // deste campo (menu-resolution.ts). Ausente == false (link interno abre na mesma aba).
+  openInNewTab?: boolean;
   actorId: string;
 };
 export type CreateMenuItemInput = Omit<CreateMenuItemCommand, "actorId">;

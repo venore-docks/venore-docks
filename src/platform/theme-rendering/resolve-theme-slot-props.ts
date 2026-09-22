@@ -24,7 +24,7 @@ function toMainNavItems(items: ResolvedMenuItem[]): MainNavItem[] {
     if (item.href === null) {
       return children.length > 0 ? [{ key: item.id, label: item.label, href: null, icon, children }] : [];
     }
-    return [{ key: item.id, label: item.label, href: item.href, icon }];
+    return [{ key: item.id, label: item.label, href: item.href, icon, isExternal: item.isExternal, opensInNewTab: item.opensInNewTab }];
   });
 }
 
