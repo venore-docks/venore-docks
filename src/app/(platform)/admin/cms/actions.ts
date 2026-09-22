@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { archiveEntry, createCategory, createContentType, deleteEntry, publishEntry, scheduleEntry } from "@/contexts/cms";
+import { archiveEntry, createCategory, createContentType, deleteContentType, deleteEntry, publishEntry, scheduleEntry } from "@/contexts/cms";
 import { resolveBlockDefinition } from "@/platform/page-builder/block-registry";
 
 export type CmsActionState = { error: string | null };
@@ -98,5 +98,27 @@ export async function deleteEntryAction(_prevState: CmsActionState, formData: Fo
   }
 
   revalidatePath("/admin/cms");
+  return { error: null };
+}
+
+export async function deleteContentTypeAction(_prevState: CmsActionState, formData: FormData): Promise<CmsActionState> {
+  const reassignToId = String(formData.get("reassignToId") ?? "").trim();
+
+  const result = await deleteContentType({
+    id: String(formData.get("id") ?? ""),
+    reassignToId: reassignToId || null,
+  });
+
+  if (!result.success) {
+    return { error: result.error.message };
+  }
+
+  // Mesmo alcance de createContentTypeAction — content-types (tags) aparecem em content-types,
+  // entries (lista/nova/edição), não só em /admin/cms.
+  revalidatePath("/admin/cms");
+  revalidatePath("/admin/cms/content-types");
+  revalidatePath("/admin/cms/entries");
+  revalidatePath("/admin/cms/entries/new");
+  revalidatePath("/admin/cms/entries/[id]", "page");
   return { error: null };
 }
