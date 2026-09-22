@@ -226,7 +226,11 @@ export default async function CatchAllPage({
   const publishedLabel = formatDate(entry.publishedAt);
 
   return (
-    <article className="mx-auto max-w-3xl space-y-6">
+    // Sem max-w/mx-auto próprios: ContentSlot (cada tema) já centra o conteúdo em max-w-6xl e
+    // Breadcrumbs.tsx usa a mesma largura — um max-w mais estreito aqui empurrava título/corpo
+    // pra dentro de uma coluna ainda mais centrada DENTRO da já centrada, desalinhando com a
+    // trilha de breadcrumb acima (a "margem" reportada: título mais à direita que o breadcrumb).
+    <article className="space-y-6">
       <Link
         href={backHref}
         className="inline-flex items-center gap-1 rounded-sm text-xs font-medium text-muted-foreground/56 outline-none ui-motion-base hover:text-foreground hover:underline focus-visible:ring-2 focus-visible:ring-ring"
