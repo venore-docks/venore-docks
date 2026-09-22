@@ -22,8 +22,8 @@ export const THEME_SLOT_DEFAULTS = {
 // (`/`, `/login`), pra nenhum link cair em 404. O admin configura os menus reais em
 // /admin/cms/menus (a partir daí o CMS manda e estes deixam de aparecer).
 export const FALLBACK_MAIN_NAV_ITEMS: MainNavItem[] = [
-  { key: "home", label: "Início", href: "/", icon: "home" },
-  { key: "login", label: "Entrar", href: "/login", icon: "user" },
+  { key: "home", label: "Início", href: "/", icon: "home", isExternal: false, opensInNewTab: false },
+  { key: "login", label: "Entrar", href: "/login", icon: "user", isExternal: false, opensInNewTab: false },
 ];
 
 export const FALLBACK_SITEMAP_ITEMS: SitemapItem[] = [
@@ -32,9 +32,10 @@ export const FALLBACK_SITEMAP_ITEMS: SitemapItem[] = [
     label: "Navegação",
     href: null,
     isExternal: false,
+    opensInNewTab: false,
     children: [
-      { key: "home", label: "Início", href: "/", isExternal: false, children: [] },
-      { key: "login", label: "Entrar", href: "/login", isExternal: false, children: [] },
+      { key: "home", label: "Início", href: "/", isExternal: false, opensInNewTab: false, children: [] },
+      { key: "login", label: "Entrar", href: "/login", isExternal: false, opensInNewTab: false, children: [] },
     ],
   },
 ];

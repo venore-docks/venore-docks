@@ -10,10 +10,11 @@ describe("toSitemapItems", () => {
         label: "Institucional",
         href: null,
         isExternal: false,
+        opensInNewTab: false,
         icon: null,
         children: [
-          { id: "item-1", label: "Sobre", href: "/sobre", isExternal: false, icon: null, children: [] },
-          { id: "item-2", label: "Contato", href: "/contato", isExternal: false, icon: null, children: [] },
+          { id: "item-1", label: "Sobre", href: "/sobre", isExternal: false, opensInNewTab: false, icon: null, children: [] },
+          { id: "item-2", label: "Contato", href: "/contato", isExternal: false, opensInNewTab: false, icon: null, children: [] },
         ],
       },
     ];
@@ -24,9 +25,10 @@ describe("toSitemapItems", () => {
         label: "Institucional",
         href: null,
         isExternal: false,
+        opensInNewTab: false,
         children: [
-          { key: "item-1", label: "Sobre", href: "/sobre", isExternal: false, children: [] },
-          { key: "item-2", label: "Contato", href: "/contato", isExternal: false, children: [] },
+          { key: "item-1", label: "Sobre", href: "/sobre", isExternal: false, opensInNewTab: false, children: [] },
+          { key: "item-2", label: "Contato", href: "/contato", isExternal: false, opensInNewTab: false, children: [] },
         ],
       },
     ]);
@@ -39,8 +41,9 @@ describe("toSitemapItems", () => {
         label: "Recursos",
         href: null,
         isExternal: false,
+        opensInNewTab: false,
         icon: null,
-        children: [{ id: "item-1", label: "Blog", href: "/blog", isExternal: false, icon: null, children: [] }],
+        children: [{ id: "item-1", label: "Blog", href: "/blog", isExternal: false, opensInNewTab: false, icon: null, children: [] }],
       },
     ];
 
@@ -60,11 +63,19 @@ describe("toSitemapItems", () => {
     // test documents that toSitemapItems has no filtering logic of its own to re-derive: what
     // comes in is what goes out, reshaped.
     const menuWithoutTheUnpublishedItem: ResolvedMenuItem[] = [
-      { id: "item-1", label: "Publicado", href: "/publicado", isExternal: false, icon: null, children: [] },
+      { id: "item-1", label: "Publicado", href: "/publicado", isExternal: false, opensInNewTab: false, icon: null, children: [] },
     ];
 
     expect(toSitemapItems(menuWithoutTheUnpublishedItem)).toEqual([
-      { key: "item-1", label: "Publicado", href: "/publicado", isExternal: false, children: [] },
+      { key: "item-1", label: "Publicado", href: "/publicado", isExternal: false, opensInNewTab: false, children: [] },
     ]);
+  });
+
+  it("resolves opensInNewTab true for an external link even when the raw target flag was never set", () => {
+    const menu: ResolvedMenuItem[] = [
+      { id: "item-1", label: "Parceiro", href: "https://parceiro.com", isExternal: true, opensInNewTab: true, icon: null, children: [] },
+    ];
+
+    expect(toSitemapItems(menu)[0]?.opensInNewTab).toBe(true);
   });
 });

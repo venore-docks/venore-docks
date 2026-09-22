@@ -37,7 +37,12 @@ function ContextualMenuItem({ item }: { item: ResolvedMenuItem }) {
           {item.label}
         </a>
       ) : (
-        <Link href={item.href} className={linkClassName}>
+        <Link
+          href={item.href}
+          target={item.opensInNewTab ? "_blank" : undefined}
+          rel={item.opensInNewTab ? "noopener noreferrer" : undefined}
+          className={linkClassName}
+        >
           {item.icon && <NavIcon iconKey={item.icon} className="size-4" />}
           {item.label}
         </Link>

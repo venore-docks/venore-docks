@@ -68,6 +68,7 @@ export type ExportedMenuItem = {
   routePath: string | null;
   requiredPermissionKey: string | null;
   externalUrl: string | null;
+  openInNewTab: boolean;
 };
 
 export type ExportedMenu = {

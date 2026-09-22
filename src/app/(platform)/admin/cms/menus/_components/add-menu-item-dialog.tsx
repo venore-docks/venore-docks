@@ -49,6 +49,7 @@ export function AddMenuItemDialog({
   const [selectedContent, setSelectedContent] = useState<ContentSearchResult | null>(null);
   const [label, setLabel] = useState("");
   const [icon, setIcon] = useState("");
+  const [openInNewTab, setOpenInNewTab] = useState(false);
   const [state, formAction, pending] = useActionState(createMenuItemAction, initialState);
 
   useActionToast({
@@ -60,6 +61,7 @@ export function AddMenuItemDialog({
       setSelectedContent(null);
       setLabel("");
       setIcon("");
+      setOpenInNewTab(false);
     },
   });
 
@@ -79,6 +81,7 @@ export function AddMenuItemDialog({
           {parentId && <input type="hidden" name="parentId" value={parentId} />}
           <input type="hidden" name="targetType" value={targetType} />
           <input type="hidden" name="icon" value={icon} />
+          <input type="hidden" name="openInNewTab" value={openInNewTab ? "true" : "false"} />
           {targetType === "content" && selectedContent && (
             <input type="hidden" name="contentId" value={selectedContent.id} />
           )}
@@ -131,7 +134,20 @@ export function AddMenuItemDialog({
             <div>
               <label className="block text-xs font-medium text-muted-foreground">URL externa</label>
               <Input name="externalUrl" required type="url" className="mt-1" placeholder="https://" />
+              <p className="mt-1 text-xs text-muted-foreground/56">Link externo sempre abre em uma nova aba.</p>
             </div>
+          )}
+
+          {(targetType === "content" || targetType === "route") && (
+            <label className="flex items-center gap-2 text-sm text-foreground">
+              <input
+                type="checkbox"
+                checked={openInNewTab}
+                onChange={(event) => setOpenInNewTab(event.target.checked)}
+                className="size-4"
+              />
+              Abrir em nova aba
+            </label>
           )}
 
           <div>

@@ -178,6 +178,10 @@ export const menuItems = cmsSchema.table(
     // tratamento de `icon`, não um par obrigatório de contentId.
     anchor: text("anchor"),
     routePath: text("route_path"),
+    // Só tem efeito em "content"/"route" — link interno abre em nova aba só quando o editor marcar
+    // (menu-resolution.ts calcula opensInNewTab = isExternal || openInNewTab). "external" já abre
+    // em nova aba sempre, independente deste campo (regra de negócio, não constraint de banco).
+    openInNewTab: boolean("open_in_new_tab").notNull().default(false),
     // Só item "route" pode exigir permission — filtrada pela permission do ator no servidor.
     requiredPermissionKey: text("required_permission_key"),
     externalUrl: text("external_url"),

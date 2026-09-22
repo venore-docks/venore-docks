@@ -65,6 +65,9 @@ const exportedMenuItemSchema = z.object({
   routePath: z.string().nullable(),
   requiredPermissionKey: z.string().nullable(),
   externalUrl: z.string().nullable(),
+  // .default(false): mesmo raciocínio de `anchor` acima — bundle exportado antes deste campo
+  // existir não tem a chave, sem default a importação de um pacote antigo falharia à toa.
+  openInNewTab: z.boolean().default(false),
 });
 
 const exportedMenuSchema = z.object({

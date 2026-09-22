@@ -53,6 +53,7 @@ function SitemapColumnHeading({ item }: { item: SitemapItem }) {
       label={item.label}
       href={item.href}
       isExternal={item.isExternal}
+      opensInNewTab={item.opensInNewTab}
       className={`${className} block rounded-xl ui-motion-base outline-none hover:text-primary focus-visible:ring-2 focus-visible:ring-ring`}
     />
   );
@@ -74,6 +75,7 @@ function SitemapChildrenList({ items, className = "" }: { items: SitemapItem[]; 
               label={child.label}
               href={child.href}
               isExternal={child.isExternal}
+              opensInNewTab={child.opensInNewTab}
               className="block rounded-xl text-sm text-muted-foreground ui-motion-base outline-none hover:text-primary active:text-primary focus-visible:ring-2 focus-visible:ring-ring"
             />
           )}
@@ -87,11 +89,13 @@ function SitemapAnchor({
   label,
   href,
   isExternal,
+  opensInNewTab,
   className,
 }: {
   label: string;
   href: string;
   isExternal: boolean;
+  opensInNewTab: boolean;
   className: string;
 }) {
   if (isExternal) {
@@ -103,7 +107,12 @@ function SitemapAnchor({
   }
 
   return (
-    <Link href={href} className={className}>
+    <Link
+      href={href}
+      target={opensInNewTab ? "_blank" : undefined}
+      rel={opensInNewTab ? "noopener noreferrer" : undefined}
+      className={className}
+    >
       {label}
     </Link>
   );
