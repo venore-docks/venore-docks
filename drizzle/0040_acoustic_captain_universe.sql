@@ -1,0 +1,1 @@
+ALTER TABLE "cms"."menu_items" ADD COLUMN "open_in_new_tab" boolean DEFAULT false NOT NULL;

@@ -25,8 +25,8 @@ const baseProps: SidebarLeftSlotProps = {
   enabled: true,
   navMode: "main",
   navItems: [
-    { key: "home", label: "Home", href: "/", icon: "home" },
-    { key: "academy", label: "Academy", href: "/academy" },
+    { key: "home", label: "Home", href: "/", icon: "home", isExternal: false, opensInNewTab: false },
+    { key: "academy", label: "Academy", href: "/academy", isExternal: false, opensInNewTab: false },
   ],
   navGroups: [],
   canToggleAdminNav: false,
@@ -105,8 +105,8 @@ describe("SidebarLeftSlot — estados de colapso", () => {
             label: "Recursos Humanos",
             href: null,
             children: [
-              { key: "rh.item-1", label: "Item 1", href: "/rh/item-1" },
-              { key: "rh.item-2", label: "Item 2", href: "/rh/item-2" },
+              { key: "rh.item-1", label: "Item 1", href: "/rh/item-1", isExternal: false, opensInNewTab: false },
+              { key: "rh.item-2", label: "Item 2", href: "/rh/item-2", isExternal: false, opensInNewTab: false },
             ],
           },
         ]}
@@ -131,8 +131,8 @@ describe("SidebarLeftSlot — estados de colapso", () => {
             label: "Recursos Humanos",
             href: null,
             children: [
-              { key: "rh.item-1", label: "Item 1", href: "/rh/item-1" },
-              { key: "rh.item-2", label: "Item 2", href: "/rh/item-2" },
+              { key: "rh.item-1", label: "Item 1", href: "/rh/item-1", isExternal: false, opensInNewTab: false },
+              { key: "rh.item-2", label: "Item 2", href: "/rh/item-2", isExternal: false, opensInNewTab: false },
             ],
           },
         ]}

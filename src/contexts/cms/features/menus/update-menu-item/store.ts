@@ -25,6 +25,7 @@ export async function updateMenuItemFields(
     routePath?: string | null;
     requiredPermissionKey?: string | null;
     externalUrl?: string | null;
+    openInNewTab?: boolean;
   },
 ): Promise<MenuItemRecord> {
   const [row] = await db

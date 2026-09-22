@@ -53,6 +53,15 @@ describe("updateMenuItem", () => {
     expect(updateMenuItemFields).toHaveBeenCalledWith("item-1", { label: undefined, isVisible: undefined, icon: null });
   });
 
+  it("passes openInNewTab through to updateMenuItemFields", async () => {
+    updateMenuItemFields.mockResolvedValue({ id: "item-1" });
+
+    const { updateMenuItem } = await import("./service");
+    await updateMenuItem({ id: "item-1", openInNewTab: true, actorId: "actor-1" });
+
+    expect(updateMenuItemFields).toHaveBeenCalledWith("item-1", { label: undefined, isVisible: undefined, icon: undefined, openInNewTab: true });
+  });
+
   it("clears the other target columns when switching targetType", async () => {
     updateMenuItemFields.mockResolvedValue({ id: "item-1" });
 

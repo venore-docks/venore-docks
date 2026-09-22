@@ -66,18 +66,27 @@ export type NavGroup = { key: string; label: string; items: NavItem[] };
 // hoje. União discriminada por href: variante "href: null" carrega children (não-vazio — grupo
 // vazio é filtrado na composição, platform/theme-rendering/resolve-theme-slot-props.ts, nunca
 // chega aqui), variante "href: string" é folha e não tem children.
+// isExternal/opensInNewTab replicam os campos homônimos de ResolvedMenuItem (contexts/cms) —
+// mesmo raciocínio de SitemapItem abaixo: decide <a target=_blank> vs <Link> e se o link interno
+// abre em nova aba (menu-resolution.ts já resolve opensInNewTab = isExternal || openInNewTab, o
+// tema só obedece). Ambos OPCIONAIS (ausente == false), mesmo tratamento de `icon` acima —
+// obrigatórios quebraria a compilação de todo tema publicado (@venore/theme-*) que já constrói
+// item de main-nav sem esses campos (ex: pill "voltar pro site"). Extensão aditiva de verdade só
+// funciona opcional; por isso sem bump de contrato, ver contract-version.ts.
 export type MainNavItem =
-  | { key: string; label: string; href: string; icon?: string }
+  | { key: string; label: string; href: string; icon?: string; isExternal?: boolean; opensInNewTab?: boolean }
   | { key: string; label: string; href: null; icon?: string; children: MainNavItem[] };
 // Árvore, não lista plana: item de primeiro nível é cabeçalho de coluna no footer, filhos são os
 // links daquela coluna. href null é o caso "label" do menu (contexts/cms/contracts/types.ts —
-// MenuItemTarget) — rótulo sem link, cabeçalho de grupo não clicável. isExternal replica o campo
-// homônimo de ResolvedMenuItem (contexts/cms) pra decidir rel/target no componente de sitemap.
+// MenuItemTarget) — rótulo sem link, cabeçalho de grupo não clicável. isExternal/opensInNewTab
+// replicam os campos homônimos de ResolvedMenuItem (contexts/cms) pra decidir rel/target no
+// componente de sitemap.
 export type SitemapItem = {
   key: string;
   label: string;
   href: string | null;
   isExternal: boolean;
+  opensInNewTab: boolean;
   children: SitemapItem[];
 };
 
