@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { ContentTypeRecord } from "@/contexts/cms";
+import { DeleteContentTypeDialog } from "./delete-content-type-dialog";
 
 export function ContentTypesTable({ contentTypes }: { contentTypes: Array<ContentTypeRecord & { entryCount: number }> }) {
   const [search, setSearch] = useState("");
@@ -30,6 +31,7 @@ export function ContentTypesTable({ contentTypes }: { contentTypes: Array<Conten
               <TableHead>Nome</TableHead>
               <TableHead>Descrição</TableHead>
               <TableHead className="text-right">Conteúdos</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -38,11 +40,17 @@ export function ContentTypesTable({ contentTypes }: { contentTypes: Array<Conten
                 <TableCell className="font-medium text-foreground">{contentType.name}</TableCell>
                 <TableCell className="text-muted-foreground">{contentType.description ?? "—"}</TableCell>
                 <TableCell className="text-right text-muted-foreground">{contentType.entryCount}</TableCell>
+                <TableCell className="text-right">
+                  <DeleteContentTypeDialog
+                    contentType={contentType}
+                    otherContentTypes={contentTypes.filter((other) => other.id !== contentType.id)}
+                  />
+                </TableCell>
               </TableRow>
             ))}
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={3} className="text-center text-sm text-muted-foreground">
+                <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
                   Nenhuma tag encontrada para &ldquo;{search}&rdquo;.
                 </TableCell>
               </TableRow>
