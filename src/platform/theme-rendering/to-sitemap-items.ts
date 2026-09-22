@@ -13,6 +13,7 @@ export function toSitemapItems(items: ResolvedMenuItem[]): SitemapItem[] {
     label: item.label,
     href: item.href,
     isExternal: item.isExternal,
+    opensInNewTab: item.opensInNewTab,
     children: toSitemapItems(item.children),
   }));
 }

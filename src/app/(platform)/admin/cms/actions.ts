@@ -23,7 +23,14 @@ export async function createContentTypeAction(
     return { error: result.error.message };
   }
 
+  // Content types (tags) aparecem em três telas além de /admin/cms: a listagem própria, o form de
+  // criação e o de edição de entry (checkbox de tags em ambos) — revalidar só /admin/cms deixava
+  // as outras com a versão em cache até a próxima navegação "fria".
   revalidatePath("/admin/cms");
+  revalidatePath("/admin/cms/content-types");
+  revalidatePath("/admin/cms/entries");
+  revalidatePath("/admin/cms/entries/new");
+  revalidatePath("/admin/cms/entries/[id]", "page");
   return { error: null };
 }
 

@@ -30,6 +30,7 @@ export async function insertMenuItem(input: {
   requiredPermissionKey: string | null;
   externalUrl: string | null;
   icon: string | null;
+  openInNewTab: boolean;
 }): Promise<MenuItemRecord> {
   const [row] = await db.insert(menuItems).values(input).returning();
   return row as MenuItemRecord;

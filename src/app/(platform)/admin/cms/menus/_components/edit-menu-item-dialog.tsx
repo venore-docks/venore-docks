@@ -57,6 +57,7 @@ export function EditMenuItemDialog({
   const [selectedContent, setSelectedContent] = useState<ContentSearchResult | null>(initialSelectedContent(item));
   const [label, setLabel] = useState(item.label);
   const [icon, setIcon] = useState(item.icon ?? "");
+  const [openInNewTab, setOpenInNewTab] = useState(item.openInNewTab);
   const [state, formAction, pending] = useActionState(updateMenuItemAction, initialState);
 
   useActionToast({ pending, error: state.error, successMessage: "Item atualizado.", onSuccess: () => setOpen(false) });
@@ -73,6 +74,7 @@ export function EditMenuItemDialog({
           setSelectedContent(initialSelectedContent(item));
           setLabel(item.label);
           setIcon(item.icon ?? "");
+          setOpenInNewTab(item.openInNewTab);
         }
       }}
     >
@@ -90,6 +92,7 @@ export function EditMenuItemDialog({
           <input type="hidden" name="menuItemId" value={item.id} />
           <input type="hidden" name="targetType" value={targetType} />
           <input type="hidden" name="icon" value={icon} />
+          <input type="hidden" name="openInNewTab" value={openInNewTab ? "true" : "false"} />
           {targetType === "content" && selectedContent && (
             <input type="hidden" name="contentId" value={selectedContent.id} />
           )}
@@ -165,7 +168,20 @@ export function EditMenuItemDialog({
                 placeholder="https://"
                 defaultValue={item.targetType === "external" ? item.externalUrl : ""}
               />
+              <p className="mt-1 text-xs text-muted-foreground/56">Link externo sempre abre em uma nova aba.</p>
             </div>
+          )}
+
+          {(targetType === "content" || targetType === "route") && (
+            <label className="flex items-center gap-2 text-sm text-foreground">
+              <input
+                type="checkbox"
+                checked={openInNewTab}
+                onChange={(event) => setOpenInNewTab(event.target.checked)}
+                className="size-4"
+              />
+              Abrir em nova aba
+            </label>
           )}
 
           <div>
