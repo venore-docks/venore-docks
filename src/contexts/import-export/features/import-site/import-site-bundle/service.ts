@@ -367,6 +367,7 @@ export async function importSiteBundle(command: ImportSiteBundleCommand): Promis
             label: item.label,
             target,
             icon: item.icon,
+            openInNewTab: item.openInNewTab,
           });
           if (!createdItem.success) {
             record("menu-item", itemRef, "failed", createdItem.error.message);

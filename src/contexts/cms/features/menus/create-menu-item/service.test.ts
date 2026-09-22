@@ -77,6 +77,33 @@ describe("createMenuItem", () => {
     expect(insertMenuItem).toHaveBeenCalledWith(expect.objectContaining({ icon: null }));
   });
 
+  it("passes openInNewTab through to insertMenuItem, and defaults to false when omitted", async () => {
+    insertMenuItem.mockResolvedValue(item("new-item", null));
+
+    const { createMenuItem } = await import("./service");
+    await createMenuItem({
+      menuId: "menu-1",
+      label: "Institucional",
+      target: { targetType: "route", routePath: "/sobre", requiredPermissionKey: null },
+      openInNewTab: true,
+      actorId: "actor-1",
+    });
+
+    expect(insertMenuItem).toHaveBeenCalledWith(expect.objectContaining({ openInNewTab: true }));
+
+    insertMenuItem.mockClear();
+    insertMenuItem.mockResolvedValue(item("new-item-2", null));
+
+    await createMenuItem({
+      menuId: "menu-1",
+      label: "Institucional",
+      target: { targetType: "label" },
+      actorId: "actor-1",
+    });
+
+    expect(insertMenuItem).toHaveBeenCalledWith(expect.objectContaining({ openInNewTab: false }));
+  });
+
   it("rejects a content item pointing at a content id that does not exist", async () => {
     findEntryExists.mockResolvedValue(false);
 

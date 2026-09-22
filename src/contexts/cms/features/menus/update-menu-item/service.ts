@@ -33,6 +33,7 @@ export async function updateMenuItem(command: UpdateMenuItemCommand): Promise<Up
     label: command.label,
     isVisible: command.isVisible,
     icon: command.icon,
+    openInNewTab: command.openInNewTab,
     // Troca de alvo sempre reescreve as 4 colunas — evita sobrar contentId/routePath de um
     // targetType anterior (o check constraint do schema já barraria isso, mas erra tarde).
     ...(command.target

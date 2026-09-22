@@ -11,9 +11,10 @@ describe("Sitemap", () => {
         label: "Institucional",
         href: null,
         isExternal: false,
+        opensInNewTab: false,
         children: [
-          { key: "item-1", label: "Sobre", href: "/sobre", isExternal: false, children: [] },
-          { key: "item-2", label: "Contato", href: "/contato", isExternal: false, children: [] },
+          { key: "item-1", label: "Sobre", href: "/sobre", isExternal: false, opensInNewTab: false, children: [] },
+          { key: "item-2", label: "Contato", href: "/contato", isExternal: false, opensInNewTab: false, children: [] },
         ],
       },
     ];
@@ -34,7 +35,8 @@ describe("Sitemap", () => {
         label: "Recursos",
         href: null,
         isExternal: false,
-        children: [{ key: "item-1", label: "Blog", href: "/blog", isExternal: false, children: [] }],
+        opensInNewTab: false,
+        children: [{ key: "item-1", label: "Blog", href: "/blog", isExternal: false, opensInNewTab: false, children: [] }],
       },
     ];
 
@@ -59,7 +61,17 @@ describe("Sitemap", () => {
         label: "Parceiros",
         href: null,
         isExternal: false,
-        children: [{ key: "item-1", label: "Site parceiro", href: "https://parceiro.example", isExternal: true, children: [] }],
+        opensInNewTab: false,
+        children: [
+          {
+            key: "item-1",
+            label: "Site parceiro",
+            href: "https://parceiro.example",
+            isExternal: true,
+            opensInNewTab: true,
+            children: [],
+          },
+        ],
       },
     ];
 
@@ -70,14 +82,15 @@ describe("Sitemap", () => {
     expect(html).toContain('rel="noopener noreferrer"');
   });
 
-  it("does not give an internal item target=_blank/rel", () => {
+  it("does not give an internal item target=_blank/rel by default", () => {
     const items: SitemapItem[] = [
       {
         key: "col-1",
         label: "Institucional",
         href: null,
         isExternal: false,
-        children: [{ key: "item-1", label: "Sobre", href: "/sobre", isExternal: false, children: [] }],
+        opensInNewTab: false,
+        children: [{ key: "item-1", label: "Sobre", href: "/sobre", isExternal: false, opensInNewTab: false, children: [] }],
       },
     ];
 
@@ -87,6 +100,27 @@ describe("Sitemap", () => {
     expect(html).not.toContain("rel=");
   });
 
+  it("gives an internal item target=_blank/rel when opensInNewTab is set (editor opt-in)", () => {
+    const items: SitemapItem[] = [
+      {
+        key: "col-1",
+        label: "Institucional",
+        href: null,
+        isExternal: false,
+        opensInNewTab: false,
+        children: [
+          { key: "item-1", label: "Sobre", href: "/sobre", isExternal: false, opensInNewTab: true, children: [] },
+        ],
+      },
+    ];
+
+    const html = renderToStaticMarkup(<Sitemap items={items} />);
+
+    expect(html).toContain('href="/sobre"');
+    expect(html).toContain('target="_blank"');
+    expect(html).toContain('rel="noopener noreferrer"');
+  });
+
   it("renders both the desktop column grid and the mobile accordion (details/summary) in the same markup", () => {
     const items: SitemapItem[] = [
       {
@@ -94,7 +128,8 @@ describe("Sitemap", () => {
         label: "Institucional",
         href: null,
         isExternal: false,
-        children: [{ key: "item-1", label: "Sobre", href: "/sobre", isExternal: false, children: [] }],
+        opensInNewTab: false,
+        children: [{ key: "item-1", label: "Sobre", href: "/sobre", isExternal: false, opensInNewTab: false, children: [] }],
       },
     ];
 

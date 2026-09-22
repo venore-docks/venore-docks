@@ -29,6 +29,9 @@ export type PreResolvedMenuItem = {
   label: string;
   href: string | null; // null só pro grouper "label" — nunca renderiza como link.
   isExternal: boolean;
+  // Decisão final de renderização, não o campo cru do banco: já é `true` pra todo item "external"
+  // (regra fixa, ignora menu_items.open_in_new_tab) e só reflete o campo pra "content"/"route".
+  opensInNewTab: boolean;
   icon: string | null;
   requiredPermissionKey: string | null;
   children: PreResolvedMenuItem[];
@@ -39,6 +42,7 @@ export type ResolvedMenuItem = {
   label: string;
   href: string | null;
   isExternal: boolean;
+  opensInNewTab: boolean;
   icon: string | null;
   children: ResolvedMenuItem[];
 };
@@ -111,6 +115,9 @@ export function resolvePublicMenuTree(
       label: item.label,
       href,
       isExternal,
+      // "external" sempre abre em nova aba, mesmo que openInNewTab nunca tenha sido marcado pra
+      // esse item (regra de negócio pedida pro CMS: link externo é sempre _blank).
+      opensInNewTab: isExternal || item.openInNewTab,
       icon: item.icon,
       requiredPermissionKey: item.targetType === "route" ? item.requiredPermissionKey : null,
       children,
@@ -136,7 +143,15 @@ export function filterMenuTreeByPermission(
 
     const children = item.children.map(filterNode).filter((child): child is ResolvedMenuItem => child !== null);
 
-    return { id: item.id, label: item.label, href: item.href, isExternal: item.isExternal, icon: item.icon, children };
+    return {
+      id: item.id,
+      label: item.label,
+      href: item.href,
+      isExternal: item.isExternal,
+      opensInNewTab: item.opensInNewTab,
+      icon: item.icon,
+      children,
+    };
   }
 
   return items.map(filterNode).filter((node): node is ResolvedMenuItem => node !== null);

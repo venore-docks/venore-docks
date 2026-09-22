@@ -76,13 +76,21 @@ export async function createMenuItemAction(_prevState: MenuActionState, formData
   const label = String(formData.get("label") ?? "");
   const parentId = String(formData.get("parentId") ?? "").trim();
   const icon = String(formData.get("icon") ?? "").trim();
+  const openInNewTab = formData.get("openInNewTab") === "true";
   const target = targetFromFormData(formData);
 
   if (!target) {
     return { error: "Selecione um destino válido para o item." };
   }
 
-  const result = await createMenuItem({ menuId, label, parentId: parentId || null, target, icon: icon || null });
+  const result = await createMenuItem({
+    menuId,
+    label,
+    parentId: parentId || null,
+    target,
+    icon: icon || null,
+    openInNewTab,
+  });
   if (!result.success) {
     return { error: result.error.message };
   }
@@ -96,13 +104,14 @@ export async function updateMenuItemAction(_prevState: MenuActionState, formData
   const id = String(formData.get("menuItemId") ?? "");
   const label = String(formData.get("label") ?? "");
   const icon = String(formData.get("icon") ?? "").trim();
+  const openInNewTab = formData.get("openInNewTab") === "true";
   const target = targetFromFormData(formData);
 
   if (!target) {
     return { error: "Selecione um destino válido para o item." };
   }
 
-  const result = await updateMenuItem({ id, label, icon: icon || null, target });
+  const result = await updateMenuItem({ id, label, icon: icon || null, target, openInNewTab });
   if (!result.success) {
     return { error: result.error.message };
   }

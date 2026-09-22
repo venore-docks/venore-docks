@@ -209,12 +209,14 @@ describe("resolveThemeSlotProps", () => {
     getCurrentUser.mockResolvedValue({ success: true, data: null });
     getMenuByLocation.mockResolvedValue({
       success: true,
-      data: [{ id: "item-1", label: "Home", href: "/", isExternal: false, children: [] }],
+      data: [{ id: "item-1", label: "Home", href: "/", isExternal: false, opensInNewTab: false, children: [] }],
     });
 
     const props = await resolveThemeSlotProps(sidebarNavInput());
 
-    expect(props.sidebarLeft.navItems).toEqual([{ key: "item-1", label: "Home", href: "/" }]);
+    expect(props.sidebarLeft.navItems).toEqual([
+      { key: "item-1", label: "Home", href: "/", isExternal: false, opensInNewTab: false },
+    ]);
     expect(getMenuByLocation).toHaveBeenCalledWith({ location: "main" });
   });
 
@@ -228,12 +230,13 @@ describe("resolveThemeSlotProps", () => {
           label: "Recursos Humanos",
           href: null,
           isExternal: false,
+          opensInNewTab: false,
           children: [
-            { id: "item-1", label: "Item 1", href: "/rh/item-1", isExternal: false, children: [] },
-            { id: "item-2", label: "Item 2", href: "/rh/item-2", isExternal: false, children: [] },
+            { id: "item-1", label: "Item 1", href: "/rh/item-1", isExternal: false, opensInNewTab: false, children: [] },
+            { id: "item-2", label: "Item 2", href: "/rh/item-2", isExternal: false, opensInNewTab: false, children: [] },
           ],
         },
-        { id: "item-3", label: "Teologia", href: "/teologia/teste", isExternal: false, children: [] },
+        { id: "item-3", label: "Teologia", href: "/teologia/teste", isExternal: false, opensInNewTab: false, children: [] },
       ],
     });
 
@@ -245,11 +248,11 @@ describe("resolveThemeSlotProps", () => {
         label: "Recursos Humanos",
         href: null,
         children: [
-          { key: "item-1", label: "Item 1", href: "/rh/item-1" },
-          { key: "item-2", label: "Item 2", href: "/rh/item-2" },
+          { key: "item-1", label: "Item 1", href: "/rh/item-1", isExternal: false, opensInNewTab: false },
+          { key: "item-2", label: "Item 2", href: "/rh/item-2", isExternal: false, opensInNewTab: false },
         ],
       },
-      { key: "item-3", label: "Teologia", href: "/teologia/teste" },
+      { key: "item-3", label: "Teologia", href: "/teologia/teste", isExternal: false, opensInNewTab: false },
     ]);
   });
 
@@ -272,8 +275,18 @@ describe("resolveThemeSlotProps", () => {
     getMenuByLocation.mockResolvedValue({
       success: true,
       data: [
-        { id: "item-1", label: "Recursos Humanos", href: null, isExternal: false, icon: "users", children: [{ id: "item-2", label: "Item 1", href: "/rh/item-1", isExternal: false, icon: null, children: [] }] },
-        { id: "item-3", label: "Teologia", href: "/teologia", isExternal: false, icon: null, children: [] },
+        {
+          id: "item-1",
+          label: "Recursos Humanos",
+          href: null,
+          isExternal: false,
+          opensInNewTab: false,
+          icon: "users",
+          children: [
+            { id: "item-2", label: "Item 1", href: "/rh/item-1", isExternal: false, opensInNewTab: false, icon: null, children: [] },
+          ],
+        },
+        { id: "item-3", label: "Teologia", href: "/teologia", isExternal: false, opensInNewTab: false, icon: null, children: [] },
       ],
     });
 
@@ -285,9 +298,9 @@ describe("resolveThemeSlotProps", () => {
         label: "Recursos Humanos",
         href: null,
         icon: "users",
-        children: [{ key: "item-2", label: "Item 1", href: "/rh/item-1", icon: undefined }],
+        children: [{ key: "item-2", label: "Item 1", href: "/rh/item-1", icon: undefined, isExternal: false, opensInNewTab: false }],
       },
-      { key: "item-3", label: "Teologia", href: "/teologia", icon: undefined },
+      { key: "item-3", label: "Teologia", href: "/teologia", icon: undefined, isExternal: false, opensInNewTab: false },
     ]);
   });
 
