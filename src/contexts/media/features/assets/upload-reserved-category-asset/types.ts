@@ -18,5 +18,7 @@ export type UploadReservedCategoryAssetInput = {
   // "audio", "video", "document"). Ausente = qualquer tipo de MEDIA_ALLOWED_TYPES.
   allowedMimeCategories?: string[];
 };
-export type UploadReservedCategoryAssetCommand = UploadReservedCategoryAssetInput & { actorId: string };
+// actorId nullable — uploadReservedCategoryAssetPublicHandler (sem sessão) chama com null pra
+// envio anônimo de um plugin público (ex: currículo de candidatura em vagas).
+export type UploadReservedCategoryAssetCommand = UploadReservedCategoryAssetInput & { actorId: string | null };
 export type UploadReservedCategoryAssetResult = OperationResult<MediaAsset>;

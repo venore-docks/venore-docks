@@ -77,6 +77,14 @@ export const pluginManifestSchema = z
     migrationsPath: z.string().min(1).optional(),
     migrationsSchema: z.string().min(1).optional(),
     migrationsTable: z.string().min(1).optional(),
+    // Categorias reservadas (media.uploadReservedCategoryAsset*) do PRÓPRIO plugin que aceitam
+    // upload SEM sessão (uploadReservedCategoryAssetPublic — platform/media-lifecycle/upload-
+    // reserved-category-asset-public-gated.ts). Upload anônimo é uma capacidade sensível (não
+    // existia na plataforma até este campo — todo upload exigia login); sem estar listada aqui,
+    // uma categoria nunca aceita envio anônimo, mesmo que o código do plugin peça. Declarativo de
+    // propósito, mesmo racional de `permissions`: auditável no manifesto, nunca decidido em
+    // runtime por string solta vinda de quem chama.
+    anonymousUploadCategories: z.array(z.string().min(1)).optional(),
   })
   .superRefine((manifest, ctx) => {
     // Namespace de permission (docs/venore-docks.md — "Modelo de RBAC": "<plugin>.<recurso>.<acao>")
