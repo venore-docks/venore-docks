@@ -68,7 +68,11 @@ export function SidebarLeftSlot({
         collapsed && "lg:w-(--sidebar-width-collapsed)",
       )}
     >
-      <div className="absolute top-4 right-0 z-10 hidden translate-x-1/2 lg:block">
+      {/* z-50 (não z-10): esse botão flutua pra fora da sidebar (translate-x-1/2) sobre a coluna
+          de conteúdo, onde o HeaderSlot mora — header é sticky com z-40, e com z-10 o header
+          ficava por cima e cortava a seta ao meio (mesmo bug corrigido nos temas
+          aurora/nebula/vega/halo/harbor — venore-slime tinha a mesma cópia, sem o fix). */}
+      <div className="absolute top-4 right-0 z-50 hidden translate-x-1/2 lg:block">
         <button
           type="button"
           onClick={handleToggleCollapsed}
