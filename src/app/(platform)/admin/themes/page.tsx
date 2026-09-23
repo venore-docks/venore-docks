@@ -72,9 +72,16 @@ export default async function ThemesAdminPage() {
         <ul className="space-y-3">
           {themes.map(({ manifest, enabled, isActive, canDisable, disableBlockedReason }) => (
             <li key={manifest.key} className="flex flex-wrap items-center justify-between gap-4 text-sm text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <span className="font-medium text-foreground">{manifest.name}</span>
-                {isActive && <Badge variant="secondary">Ativo</Badge>}
+              <div className="flex flex-col gap-0.5">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-foreground">{manifest.name}</span>
+                  {isActive && <Badge variant="secondary">Ativo</Badge>}
+                </div>
+                {/* manifest.version é a mesma fonte que getThemeUpdateStatus já trata como
+                    "versão instalada" pra comparar com a última tag do GitHub (theme-update-
+                    status.ts) — não lê package.json de novo aqui, só reflete o que o registro já
+                    carrega. */}
+                <span className="text-xs text-muted-foreground/72">v{manifest.version}</span>
               </div>
               <div className="flex items-center gap-2">
                 {canUpdateThemes && <ThemeUpdatePanel themeKey={manifest.key} themeName={manifest.name} />}
