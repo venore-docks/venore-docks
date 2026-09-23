@@ -40,9 +40,9 @@ export const assets = mediaSchema.table(
     height: integer("height"),
     alt: text("alt"),
     checksum: text("checksum").notNull(),
-    uploadedBy: text("uploaded_by")
-      .notNull()
-      .references(() => users.id),
+    // Nullable — o envio anônimo de currículo em vagas (uploadReservedCategoryAssetPublic) não
+    // tem ator autenticado. FK continua valendo pra todo asset que tiver uploadedBy preenchido.
+    uploadedBy: text("uploaded_by").references(() => users.id),
     // "public" (qualquer ator autenticado vê e usa), "restricted" (só o contexto de origem —
     // enforcement de consumo ainda não implementado, ver Known Gap no roadmap), "private" (só
     // dono + media.manage; avatar sempre nasce assim). Default "private" de propósito — nenhum

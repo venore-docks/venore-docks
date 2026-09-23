@@ -11,7 +11,7 @@ export async function insertAsset(input: {
   checksum: string;
   visibility: MediaVisibility;
   categoryId: string | null;
-  uploadedBy: string;
+  uploadedBy: string | null;
 }): Promise<MediaAsset> {
   const [row] = await db.insert(assets).values(input).returning();
   return row as MediaAsset;

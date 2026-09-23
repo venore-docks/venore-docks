@@ -10,6 +10,14 @@ export { uploadAvatarMediaAssetHandler as uploadAvatarMediaAsset } from "./featu
 // anexos...) — sempre private, nunca a biblioteca geral. Genérico: substitui os antigos
 // upload-activity-submission / upload-ticket-attachment que viviam aqui.
 export { uploadReservedCategoryAssetHandler as uploadReservedCategoryAsset } from "./features/assets/upload-reserved-category-asset/handler";
+// Variante SEM SESSÃO, SEM GATE de categoria — não é exportada por @venore/plugin-sdk/media
+// (ver src/sdk/media.ts, que exporta só a versão gateada de platform/media-lifecycle/upload-
+// reserved-category-asset-public-gated.ts). Fica no barrel só pra esse arquivo de platform
+// conseguir chamá-la (regra 12: platform só importa contexts via barrel, nunca arquivo interno) —
+// nenhum outro lugar deve importar isto por esse nome.
+export {
+  uploadReservedCategoryAssetPublicHandler as uploadReservedCategoryAssetPublicUngated,
+} from "./features/assets/upload-reserved-category-asset/handler-public";
 export type {
   UploadReservedCategoryAssetInput,
   UploadReservedCategoryAssetResult,

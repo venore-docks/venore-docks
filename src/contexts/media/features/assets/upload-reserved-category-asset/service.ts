@@ -22,7 +22,7 @@ export async function uploadReservedCategoryAsset(
 ): Promise<UploadReservedCategoryAssetResult> {
   const handle = beginOperation({
     useCase: "media.upload-reserved-category-asset",
-    actor: { id: command.actorId, type: "user" },
+    actor: command.actorId ? { id: command.actorId, type: "user" } : { id: "anonymous", type: "system" },
     kind: "write",
   });
 
