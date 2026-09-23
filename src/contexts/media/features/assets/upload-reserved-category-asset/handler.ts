@@ -1,7 +1,7 @@
 import { getCurrentUser } from "@/contexts/auth";
-import { MEDIA_ALLOWED_TYPES } from "../../../contracts/types";
 import { uploadReservedCategoryAsset } from "./service";
 import type { UploadReservedCategoryAssetInput, UploadReservedCategoryAssetResult } from "./types";
+import { validateReservedCategoryUploadInput } from "./validate-input";
 
 // Qualquer ator autenticado envia o PRÓPRIO arquivo (sem media.manage) — a autorização de negócio
 // (matrícula, acesso ao chamado etc.) é do plugin chamador, antes/depois. Aqui só: autenticado +
@@ -9,31 +9,8 @@ import type { UploadReservedCategoryAssetInput, UploadReservedCategoryAssetResul
 export async function uploadReservedCategoryAssetHandler(
   input: UploadReservedCategoryAssetInput,
 ): Promise<UploadReservedCategoryAssetResult> {
-  if (input.filename.trim().length === 0) {
-    return { success: false, error: { code: "media.upload.invalid_filename", message: "O nome do arquivo não pode ser vazio." } };
-  }
-
-  const rule = MEDIA_ALLOWED_TYPES[input.contentType];
-  const categoryOk = rule && (!input.allowedMimeCategories || input.allowedMimeCategories.includes(rule.category));
-  if (!rule || !categoryOk) {
-    return {
-      success: false,
-      error: { code: "media.reserved_upload.invalid_mime_type", message: "Tipo de arquivo não permitido para este envio." },
-    };
-  }
-
-  if (input.size <= 0) {
-    return { success: false, error: { code: "media.upload.invalid_size", message: "O tamanho do arquivo deve ser maior que zero." } };
-  }
-  if (input.size > rule.maxSizeBytes) {
-    return {
-      success: false,
-      error: {
-        code: "media.upload.file_too_large",
-        message: `O arquivo excede o limite de ${Math.floor(rule.maxSizeBytes / (1024 * 1024))}MB para o tipo "${input.contentType}".`,
-      },
-    };
-  }
+  const validationError = validateReservedCategoryUploadInput(input);
+  if (validationError) return validationError;
 
   const currentUser = await getCurrentUser();
   if (!currentUser.success || !currentUser.data) {
