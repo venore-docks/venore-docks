@@ -51,7 +51,7 @@
     "@venore/plugin-calendar": "git+https://github.com/venore-docks/venore-plugin-calendar.git#v1.0.1",
     "@venore/plugin-disc": "git+https://github.com/venore-docks/venore-plugin-disc.git#v0.2.0",
     "@venore/plugin-photo-gallery": "git+https://github.com/venore-docks/venore-plugin-photo-gallery.git#v1.0.0",
-    "@venore/plugin-vagas": "git+https://github.com/venore-docks/venore-plugin-vagas.git#v1.2.1",
+    "@venore/plugin-vagas": "git+https://github.com/venore-docks/venore-plugin-vagas.git#v1.2.2",
     "@venore/theme-harbor": "git+https://github.com/venore-docks/venore-theme-harbor.git#v0.1.4",
     "@vercel/blob": "^2.6.1",
     "@vercel/functions": "^3.7.5",
