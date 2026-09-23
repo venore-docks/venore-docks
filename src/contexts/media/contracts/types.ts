@@ -28,7 +28,8 @@ export type MediaAsset = {
   height: number | null;
   alt: string | null;
   checksum: string;
-  uploadedBy: string;
+  // Nullable — envio anônimo (ex: uploadReservedCategoryAssetPublic) não tem ator autenticado.
+  uploadedBy: string | null;
   visibility: MediaVisibility;
   categoryId: string | null;
   deletedAt: Date | null;
