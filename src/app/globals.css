@@ -20,13 +20,6 @@
 @import "../themes/venore-slime/theme.css";
 @import "../themes/theme-imports.generated.css";
 
-/* Mesmo bug/fix do @import de plugin acima, mas do lado dos temas (achado real: Harbor, Portal do
-   Colaborador FEM — uma classe nova usada só dentro do pacote do tema, nunca replicada em src/,
-   sumia do CSS final sem erro nenhum, sidebar inteira "desaparecia" apesar do React estar
-   renderizando certo). venore-slime não precisa de entrada aqui — vive em src/, já é escaneado
-   pelo Tailwind normalmente. Ver scripts/gen-theme-registry.ts. */
-@import "../themes/theme-sources.generated.css";
-
 /* tw-animate-css: os primitivos stock (dialog, select) usam animate-in/fade-in-0/zoom-in-95/
    slide-in-from-* — sem esse import essas classes não geram CSS nenhum (ficam inertes) e os
    overlays abrem/fecham sem transição. Não é token/valor nosso, é infraestrutura que a classe
