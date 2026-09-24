@@ -26,6 +26,27 @@
    exige pra existir; não modifica cor nem forma de nada. */
 @import "tw-animate-css";
 
+/* Preflight zera margin de todo elemento, inclusive <dialog> (node_modules/tailwindcss/
+   preflight.css, regra `*, ::backdrop { margin: 0 }`). O <dialog> nativo (MediaPickerField,
+   MediaField) depende de margin:auto da UA stylesheet pra se centralizar quando aberto via
+   showModal() — com margin:0 ele gruda no canto (top/left), nunca no centro. Não afeta os
+   overlays do Radix (dialog.tsx), que não usam <dialog> nativo e se centralizam via CSS próprio. */
+dialog[open] {
+  margin: auto;
+}
+
+/* Tailwind v4 removeu a regra de preflight que dava `cursor: pointer` a <button>/[role="button"]
+   (v3 tinha; mudança intencional documentada no upgrade guide). O primitivo Button
+   (components/ui/button.tsx) já compensa com cursor-pointer na própria className, mas os botões
+   nativos soltos pelo app (toggle do drawer mobile, botões dentro de dialog nativo, trigger de
+   accordion, etc. — nenhum passa pelo primitivo) ficaram com cursor:default (seta), apesar de
+   continuarem clicáveis — achado real: "botões sem a mãozinha" em vários lugares do admin.
+   Restaura o comportamento antigo globalmente, em vez de caçar cada botão nativo um a um. */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]) {
+  cursor: pointer;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 /* Os primitivos stock do shadcn (accordion.tsx, tabs.tsx, switch.tsx, etc.) usam classes
