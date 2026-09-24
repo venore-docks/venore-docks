@@ -6,7 +6,7 @@ import { activateTheme } from "@/platform/theme-engine/activate-theme";
 import { toggleThemeEnabled } from "@/platform/theme-engine/toggle-theme-enabled";
 import { activateColorPalette } from "@/platform/theme-engine/activate-color-palette";
 import { CUSTOM_COLOR_TOKENS, setCustomColorPalette } from "@/platform/theme-engine/custom-color-palette";
-import { setBrandColorPalette } from "@/platform/theme-engine/brand-color-palette";
+import { setBrandColorPalette, setPresetColorPalette } from "@/platform/theme-engine/brand-color-palette";
 import { getThemeUpdateStatus, type ThemeUpdateStatus } from "@/platform/theme-engine/theme-update-status";
 import { applyThemeUpdate } from "@/platform/theme-engine/apply-theme-update";
 import { resolveActiveTheme } from "@/platform/theme-rendering/resolve-active-theme";
@@ -125,10 +125,9 @@ export async function updateNavVisibilityAction(
 // Cor personalizada — seção "Avançado" (ampliada de 4 pra 9 tokens, pedido de sessão posterior:
 // os 4 originais primary/secondary/background/foreground não bastavam pra dar identidade visual
 // perceptível, ver brand-color-palette.ts). Salva todos os campos do form (full-overwrite dos 9
-// tokens, ao contrário de updateBrandColorPaletteAction abaixo, que mescla só 5) e já ativa
-// "custom" como paleta corrente — o admin não precisa de um segundo clique em "Usar" depois de
-// salvar. Campo vazio (input type=color sempre manda algo, mas o campo pode estar ausente do
-// FormData se removido do form no futuro) vira token omitido, não string vazia —
+// tokens) e já ativa "custom" como paleta corrente — o admin não precisa de um segundo clique em
+// "Usar" depois de salvar. Campo vazio (input type=color sempre manda algo, mas o campo pode
+// estar ausente do FormData se removido do form no futuro) vira token omitido, não string vazia —
 // setCustomColorPalette só aceita hex válido ou ausência da chave.
 export async function updateCustomColorPaletteAction(
   _prevState: ThemesActionState,
@@ -165,10 +164,11 @@ export async function updateCustomColorPaletteAction(
 }
 
 // "1 cor de marca" — fluxo principal da seção "Paleta de cor" (pedido desta sessão): o admin
-// escolhe 1 hex, setBrandColorPalette gira o matiz sobre os 5 tokens que carregam a identidade
-// visual do tema (primary/-foreground, accent/-foreground, ring) preservando luminosidade/
-// contraste de cada um, mescla com qualquer ajuste prévio do Avançado, e já ativa "custom" — mesmo
-// padrão de auto-ativação de updateCustomColorPaletteAction acima.
+// escolhe 1 hex, setBrandColorPalette monta uma paleta completa (9 tokens, os dois modos) em cima
+// dela — shades da cor de entrada pra secundária/fundo, acentuação na cor complementar pro
+// destaque (buildFullPaletteFromSeed) — e já ativa "custom". Sobrescreve a paleta personalizada
+// inteira (não mescla mais com o que já estava salvo: agora os 9 tokens são sempre gerados juntos,
+// não sobra token "só do Avançado" pra preservar).
 export async function updateBrandColorPaletteAction(
   _prevState: ThemesActionState,
   formData: FormData,
@@ -176,6 +176,31 @@ export async function updateBrandColorPaletteAction(
   const hex = String(formData.get("hex") ?? "");
 
   const saveResult = await setBrandColorPalette({ hex });
+  if (!saveResult.success) {
+    return { error: saveResult.error.message };
+  }
+
+  const activateResult = await activateColorPalette({ paletteId: saveResult.data.id });
+  if (!activateResult.success) {
+    return { error: activateResult.error.message };
+  }
+
+  revalidateEverywhere();
+  return { error: null };
+}
+
+// Presets do catálogo (Espaço/Ametista/Âmbar/Rubro etc.) — pedido de sessão posterior: antes só
+// ativava o preset estático do pacote do tema, que só define 5 tokens de marca (a "paleta toda"
+// não mudava, só primary/accent perceptivelmente). Agora extrai o `primary` do preset como semente
+// e roda pelo mesmo gerador do "1 cor de marca" (setPresetColorPalette) — o preset vira um atalho
+// pra uma paleta completa, salva e ativada como "Personalizada", não como o id do preset em si.
+export async function applyPresetPaletteAction(
+  _prevState: ThemesActionState,
+  formData: FormData,
+): Promise<ThemesActionState> {
+  const paletteId = String(formData.get("paletteId") ?? "");
+
+  const saveResult = await setPresetColorPalette(paletteId);
   if (!saveResult.success) {
     return { error: saveResult.error.message };
   }

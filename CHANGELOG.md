@@ -12,6 +12,28 @@ o core evolui em `main` e se propaga pras instâncias (branches deste repo, ou f
 uma instância só tem o fix depois que a própria instância faz esse merge (ver seção "Modelo de
 atualização" em `VENORE-DOCKS.md`).
 
+## [0.3.0] - 2026-09-24
+
+### Changed
+
+- **"Paleta de cor" agora gera a paleta INTEIRA, não só primary/accent.** Feedback direto sobre a
+  v0.2.0: os presets do catálogo (Espaço/Ametista/Âmbar/Rubro) só rotacionavam 5 tokens de marca,
+  e "1 cor de marca" mesclava só esses 5 em cima do que já estava salvo — os outros 4 tokens
+  (`secondary/-foreground, background, foreground`) ficavam sem valor nenhum e apareciam pretos no
+  formulário "Avançado". Substitui o mecanismo por `buildFullPaletteFromSeed`
+  (`full-palette-generator.ts`): a partir de 1 cor só, monta os 9 tokens de uma vez — fundo/
+  secundária como *shades* da cor de entrada (mesmo matiz, luminosidade/chroma diferentes),
+  destaque (`accent`) no matiz COMPLEMENTAR (oposto no círculo de cor), contraste texto/fundo
+  sempre alto. "1 cor de marca" agora sobrescreve a paleta personalizada inteira (não mescla mais
+  — não sobra nada "só do tema" pra preservar, já que os 9 tokens são gerados juntos). Os presets
+  do catálogo passam a funcionar como atalhos pro mesmo gerador (extraem o `primary` já resolvido
+  do preset como semente) em vez de ativar o preset estático do pacote do tema — por isso ficam
+  salvos e ativados como "Personalizada", não mais como o id do preset em si.
+- **`venore-theme-aurora` (repo próprio, não faz parte deste pacote): renomeia presets.** "FEM"
+  (petróleo/teal) virou "Oceano" — a cor lê mais como oceano que o preset girado original, que
+  passou a se chamar "Espaço". Id de cada preset continua estável (`fem`, `oceano`), só o nome
+  exibido mudou. Bump pendente do pacote (ver o próprio changelog do tema).
+
 ## [0.2.0] - 2026-09-24
 
 ### Added
