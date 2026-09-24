@@ -47,7 +47,7 @@
     "@tiptap/react": "^3.29.2",
     "@tiptap/starter-kit": "^3.29.2",
     "@tiptap/static-renderer": "^3.29.2",
-    "@venore/plugin-erasto-league": "github:venore-docks/venore-plugin-erasto-league#v0.32.2",
+    "@venore/plugin-erasto-league": "github:venore-docks/venore-plugin-erasto-league#v0.32.3",
     "@venore/theme-aurora": "github:venore-docks/venore-theme-aurora#v0.1.6",
     "@vercel/blob": "^2.6.1",
     "@vercel/functions": "^3.7.5",
