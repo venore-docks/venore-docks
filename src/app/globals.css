@@ -26,6 +26,15 @@
    exige pra existir; não modifica cor nem forma de nada. */
 @import "tw-animate-css";
 
+/* Preflight zera margin de todo elemento, inclusive <dialog> (node_modules/tailwindcss/
+   preflight.css, regra `*, ::backdrop { margin: 0 }`). O <dialog> nativo (MediaPickerField,
+   MediaField) depende de margin:auto da UA stylesheet pra se centralizar quando aberto via
+   showModal() — com margin:0 ele gruda no canto (top/left), nunca no centro. Não afeta os
+   overlays do Radix (dialog.tsx), que não usam <dialog> nativo e se centralizam via CSS próprio. */
+dialog[open] {
+  margin: auto;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 /* Os primitivos stock do shadcn (accordion.tsx, tabs.tsx, switch.tsx, etc.) usam classes
