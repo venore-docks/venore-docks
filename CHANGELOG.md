@@ -12,6 +12,63 @@ o core evolui em `main` e se propaga pras instâncias (branches deste repo, ou f
 uma instância só tem o fix depois que a própria instância faz esse merge (ver seção "Modelo de
 atualização" em `VENORE-DOCKS.md`).
 
+## [0.4.0] - 2026-09-24
+
+### Changed
+
+- **"Paleta de cor" agora também muda sidebar, header e fundo de página.** Feedback direto sobre
+  a v0.3.0: "a paleta muda só alguns elementos, sidebar nunca muda". Investigando o `theme.css`
+  dos 16 temas + venore-slime, achamos que sidebar (`--sidebar-bg-start/end` + variante `-admin`),
+  header (`--header-bg`) e o fundo degradê da página (`--app-bg-start/mid/end`) usam uma família
+  de tokens própria, consistente em todo o workspace (mesmo scaffold de `@venore/theme-sdk`), mas
+  fora do vocabulário que a paleta cobria — não é hardcode de plugin/tema (são `var(...)`
+  legítimos), só faltava vocabulário aqui. `PaletteColorToken` (contracts/types.ts) ganhou 16
+  tokens novos: `card/-foreground, popover/-foreground, muted/-foreground, border, input`
+  (vocabulário mínimo, VENORE-DOCKS.md §7) + a família sidebar/header/app-bg — total 25.
+  `buildFullPaletteFromSeed` gera todos a partir da mesma cor de entrada; a seção "Avançado" ganhou
+  2 grupos novos ("Superfícies" e "Sidebar, header e fundo") pra ajuste manual. Deliberadamente
+  FORA do vocabulário: `destructive/success/warning` (cor semântica, não deve seguir a marca) e
+  `chart-*` (paleta categórica, precisa ficar distinguível).
+
+## [0.3.0] - 2026-09-24
+
+### Changed
+
+- **"Paleta de cor" agora gera a paleta INTEIRA, não só primary/accent.** Feedback direto sobre a
+  v0.2.0: os presets do catálogo (Espaço/Ametista/Âmbar/Rubro) só rotacionavam 5 tokens de marca,
+  e "1 cor de marca" mesclava só esses 5 em cima do que já estava salvo — os outros 4 tokens
+  (`secondary/-foreground, background, foreground`) ficavam sem valor nenhum e apareciam pretos no
+  formulário "Avançado". Substitui o mecanismo por `buildFullPaletteFromSeed`
+  (`full-palette-generator.ts`): a partir de 1 cor só, monta os 9 tokens de uma vez — fundo/
+  secundária como *shades* da cor de entrada (mesmo matiz, luminosidade/chroma diferentes),
+  destaque (`accent`) no matiz COMPLEMENTAR (oposto no círculo de cor), contraste texto/fundo
+  sempre alto. "1 cor de marca" agora sobrescreve a paleta personalizada inteira (não mescla mais
+  — não sobra nada "só do tema" pra preservar, já que os 9 tokens são gerados juntos). Os presets
+  do catálogo passam a funcionar como atalhos pro mesmo gerador (extraem o `primary` já resolvido
+  do preset como semente) em vez de ativar o preset estático do pacote do tema — por isso ficam
+  salvos e ativados como "Personalizada", não mais como o id do preset em si.
+- **`venore-theme-aurora` (repo próprio, não faz parte deste pacote): renomeia presets.** "FEM"
+  (petróleo/teal) virou "Oceano" — a cor lê mais como oceano que o preset girado original, que
+  passou a se chamar "Espaço". Id de cada preset continua estável (`fem`, `oceano`), só o nome
+  exibido mudou. Bump pendente do pacote (ver o próprio changelog do tema).
+
+## [0.2.0] - 2026-09-24
+
+### Added
+
+- **Cor de marca em `/admin/themes` → "Paleta de cor".** Até agora, "Personalizada" só deixava
+  editar `primary/secondary/background/foreground` — quatro tokens quase-neutros que não mudavam
+  nada visível na prática (a identidade de cor de um tema mora em `primary/-foreground,
+  accent/-foreground, ring`, confirmado comparando `theme.css` do Aurora com o do Harbor, um
+  recolor manual do Aurora). Agora existe um controle principal de 1 cor: o admin escolhe uma cor
+  de marca, o core gira o matiz (hue) dela sobre esses 5 tokens do tema ativo preservando
+  luminosidade/contraste de cada um (mesmo princípio que já movia os presets do catálogo), sem
+  precisar publicar um novo pacote de tema só pra trocar de cor. O formulário de tokens anterior
+  virou uma seção "Avançado" (fechada por padrão), ampliada de 4 pra 9 tokens
+  (`primary/-foreground, secondary/-foreground, background, foreground, accent/-foreground,
+  ring`) pra quem quiser ajuste fino além do que a derivação automática cobre. Nenhuma mudança em
+  `@venore/theme-*`: o mecanismo lê o catálogo já publicado do tema ativo em runtime.
+
 ## [0.1.1] - 2026-09-24
 
 ### Fixed
