@@ -12,6 +12,23 @@ o core evolui em `main` e se propaga pras instâncias (branches deste repo, ou f
 uma instância só tem o fix depois que a própria instância faz esse merge (ver seção "Modelo de
 atualização" em `VENORE-DOCKS.md`).
 
+## [0.2.0] - 2026-09-24
+
+### Added
+
+- **Cor de marca em `/admin/themes` → "Paleta de cor".** Até agora, "Personalizada" só deixava
+  editar `primary/secondary/background/foreground` — quatro tokens quase-neutros que não mudavam
+  nada visível na prática (a identidade de cor de um tema mora em `primary/-foreground,
+  accent/-foreground, ring`, confirmado comparando `theme.css` do Aurora com o do Harbor, um
+  recolor manual do Aurora). Agora existe um controle principal de 1 cor: o admin escolhe uma cor
+  de marca, o core gira o matiz (hue) dela sobre esses 5 tokens do tema ativo preservando
+  luminosidade/contraste de cada um (mesmo princípio que já movia os presets do catálogo), sem
+  precisar publicar um novo pacote de tema só pra trocar de cor. O formulário de tokens anterior
+  virou uma seção "Avançado" (fechada por padrão), ampliada de 4 pra 9 tokens
+  (`primary/-foreground, secondary/-foreground, background, foreground, accent/-foreground,
+  ring`) pra quem quiser ajuste fino além do que a derivação automática cobre. Nenhuma mudança em
+  `@venore/theme-*`: o mecanismo lê o catálogo já publicado do tema ativo em runtime.
+
 ## [0.1.1] - 2026-09-24
 
 ### Fixed

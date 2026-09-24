@@ -1,8 +1,9 @@
 import { getSetting, setSetting } from "@/contexts/settings";
-import type { ColorPalette, PaletteColorTokens } from "@/contexts/themes";
+import type { ColorPalette, PaletteColorToken, PaletteColorTokens } from "@/contexts/themes";
 import type { OperationResult } from "@/shared/types";
 import { CUSTOM_COLOR_PALETTE_ID } from "./custom-color-palette-id";
 import { contrastRatio, MIN_CUSTOM_PALETTE_CONTRAST } from "./contrast";
+import { isValidHexColor } from "./oklch-color";
 
 export { CUSTOM_COLOR_PALETTE_ID };
 
@@ -12,24 +13,36 @@ export { CUSTOM_COLOR_PALETTE_ID };
 const SETTING_KEY_PREFIX = "theme.customColorPalette";
 const settingKeyFor = (themeKey: string) => `${SETTING_KEY_PREFIX}.${themeKey}`;
 
-// Vocabulário deliberadamente menor que PaletteColorToken (pedido de sessão anterior: só primary/
-// secondary/background/text) — cada um mapeia 1:1 pra uma var shadcn de theme.css (AGENTS.md §3).
-const CUSTOM_COLOR_TOKENS = ["primary", "secondary", "background", "foreground"] as const;
-type CustomColorToken = (typeof CUSTOM_COLOR_TOKENS)[number];
-
-// <input type="color"> do client só produz #rrggbb — a validação aqui é a defesa de verdade
-// contra qualquer payload malformado batendo direto no FormData (ver aviso em app/layout.tsx
-// sobre dangerouslySetInnerHTML: cor arbitrária de admin exige validação antes de virar CSS).
-const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
+// Espelha o union inteiro de PaletteColorToken (contracts/types.ts) — cada um mapeia 1:1 pra uma
+// var shadcn de theme.css (AGENTS.md §3). Antes era um subconjunto de 4 (primary/secondary/
+// background/foreground); ampliado pro fluxo "Avançado" (custom-color-palette-form.tsx) deixar
+// ajustar os 9 tokens, e pro fluxo "1 cor de marca" (brand-color-palette.ts) poder escrever
+// primary-foreground/accent/accent-foreground/ring — sem os quais a paleta personalizada não
+// tinha efeito visual perceptível (ver brand-color-palette.ts pro porquê).
+export const CUSTOM_COLOR_TOKENS: readonly PaletteColorToken[] = [
+  "primary",
+  "primary-foreground",
+  "secondary",
+  "secondary-foreground",
+  "background",
+  "foreground",
+  "accent",
+  "accent-foreground",
+  "ring",
+];
 
 export type CustomColorPaletteInput = { light: PaletteColorTokens; dark: PaletteColorTokens };
 
 type StoredCustomColorPalette = { light: PaletteColorTokens; dark: PaletteColorTokens };
 
+// <input type="color"> do client só produz #rrggbb, mas isValidHexColor (oklch-color.ts) é a
+// defesa de verdade contra payload malformado batendo direto no FormData (ver aviso em
+// app/layout.tsx sobre dangerouslySetInnerHTML: cor arbitrária de admin exige validação antes de
+// virar CSS).
 function hasOnlyValidHexTokens(tokens: PaletteColorTokens): boolean {
   return Object.entries(tokens).every(
     ([token, value]) =>
-      CUSTOM_COLOR_TOKENS.includes(token as CustomColorToken) && typeof value === "string" && HEX_COLOR_PATTERN.test(value),
+      CUSTOM_COLOR_TOKENS.includes(token as PaletteColorToken) && typeof value === "string" && isValidHexColor(value),
   );
 }
 

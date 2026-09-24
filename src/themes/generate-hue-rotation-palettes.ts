@@ -23,7 +23,10 @@ function parseOklch(value: string): { l: string; c: string } | null {
   return match ? { l: match[1], c: match[2] } : null;
 }
 
-function withHue(value: string, hue: number): string {
+// Exportado pra reuso em platform/theme-engine/brand-color-palette.ts (fluxo "1 cor de marca"):
+// mesma primitiva "mantém L/C, troca H" que já move os presets do catálogo, aplicada a 1 hue só
+// em vez de 1 por preset — não duplicar a lógica de rotação de matiz num segundo lugar.
+export function withHue(value: string, hue: number): string {
   const parsed = parseOklch(value);
   // Valor inesperado (não-oklch): devolve como está — melhor que quebrar o catálogo.
   return parsed ? `oklch(${parsed.l} ${parsed.c} ${hue})` : value;

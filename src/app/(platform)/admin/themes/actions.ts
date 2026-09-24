@@ -5,7 +5,8 @@ import { setSetting } from "@/contexts/settings";
 import { activateTheme } from "@/platform/theme-engine/activate-theme";
 import { toggleThemeEnabled } from "@/platform/theme-engine/toggle-theme-enabled";
 import { activateColorPalette } from "@/platform/theme-engine/activate-color-palette";
-import { setCustomColorPalette } from "@/platform/theme-engine/custom-color-palette";
+import { CUSTOM_COLOR_TOKENS, setCustomColorPalette } from "@/platform/theme-engine/custom-color-palette";
+import { setBrandColorPalette } from "@/platform/theme-engine/brand-color-palette";
 import { getThemeUpdateStatus, type ThemeUpdateStatus } from "@/platform/theme-engine/theme-update-status";
 import { applyThemeUpdate } from "@/platform/theme-engine/apply-theme-update";
 import { resolveActiveTheme } from "@/platform/theme-rendering/resolve-active-theme";
@@ -121,20 +122,21 @@ export async function updateNavVisibilityAction(
   return { error: null };
 }
 
-// Cor personalizada (pedido desta sessão): salva os 4 tokens (primary/secondary/background/text)
-// pros dois modos e já ativa "custom" como paleta corrente — o admin não precisa de um segundo
-// clique em "Usar" depois de salvar. Campo vazio (input type=color sempre manda algo, mas o campo
-// pode estar ausente do FormData se removido do form no futuro) vira token omitido, não string
-// vazia — setCustomColorPalette só aceita hex válido ou ausência da chave.
+// Cor personalizada — seção "Avançado" (ampliada de 4 pra 9 tokens, pedido de sessão posterior:
+// os 4 originais primary/secondary/background/foreground não bastavam pra dar identidade visual
+// perceptível, ver brand-color-palette.ts). Salva todos os campos do form (full-overwrite dos 9
+// tokens, ao contrário de updateBrandColorPaletteAction abaixo, que mescla só 5) e já ativa
+// "custom" como paleta corrente — o admin não precisa de um segundo clique em "Usar" depois de
+// salvar. Campo vazio (input type=color sempre manda algo, mas o campo pode estar ausente do
+// FormData se removido do form no futuro) vira token omitido, não string vazia —
+// setCustomColorPalette só aceita hex válido ou ausência da chave.
 export async function updateCustomColorPaletteAction(
   _prevState: ThemesActionState,
   formData: FormData,
 ): Promise<ThemesActionState> {
-  const tokens = ["primary", "secondary", "background", "foreground"] as const;
-
   function readTokens(mode: "light" | "dark") {
     const result: Record<string, string> = {};
-    for (const token of tokens) {
+    for (const token of CUSTOM_COLOR_TOKENS) {
       const value = formData.get(`${mode}-${token}`);
       if (typeof value === "string" && value.trim().length > 0) {
         result[token] = value;
@@ -149,6 +151,31 @@ export async function updateCustomColorPaletteAction(
     light: readTokens("light"),
     dark: readTokens("dark"),
   });
+  if (!saveResult.success) {
+    return { error: saveResult.error.message };
+  }
+
+  const activateResult = await activateColorPalette({ paletteId: saveResult.data.id });
+  if (!activateResult.success) {
+    return { error: activateResult.error.message };
+  }
+
+  revalidateEverywhere();
+  return { error: null };
+}
+
+// "1 cor de marca" — fluxo principal da seção "Paleta de cor" (pedido desta sessão): o admin
+// escolhe 1 hex, setBrandColorPalette gira o matiz sobre os 5 tokens que carregam a identidade
+// visual do tema (primary/-foreground, accent/-foreground, ring) preservando luminosidade/
+// contraste de cada um, mescla com qualquer ajuste prévio do Avançado, e já ativa "custom" — mesmo
+// padrão de auto-ativação de updateCustomColorPaletteAction acima.
+export async function updateBrandColorPaletteAction(
+  _prevState: ThemesActionState,
+  formData: FormData,
+): Promise<ThemesActionState> {
+  const hex = String(formData.get("hex") ?? "");
+
+  const saveResult = await setBrandColorPalette({ hex });
   if (!saveResult.success) {
     return { error: saveResult.error.message };
   }

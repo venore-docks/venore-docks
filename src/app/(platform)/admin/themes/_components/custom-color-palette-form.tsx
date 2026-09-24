@@ -3,16 +3,35 @@
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { useActionToast } from "@/hooks/use-action-toast";
-import type { PaletteColorTokens } from "@/contexts/themes";
+import type { PaletteColorToken, PaletteColorTokens } from "@/contexts/themes";
 import { updateCustomColorPaletteAction, type ThemesActionState } from "../actions";
 
 const initialState: ThemesActionState = { error: null };
 
-const FIELDS: { token: "primary" | "secondary" | "background" | "foreground"; label: string }[] = [
-  { token: "primary", label: "Primária" },
-  { token: "secondary", label: "Secundária" },
-  { token: "background", label: "Fundo" },
-  { token: "foreground", label: "Texto" },
+// Dois grupos visuais dos 9 tokens de PaletteColorToken: "Marca" é o que o fluxo "1 cor de marca"
+// (brand-color-palette-form.tsx) já deriva automaticamente — aqui dá pra ajustar cada um à mão.
+// "Estrutura" é o que sobrava do form original (4 tokens), mantido pra quem quiser ir além do que
+// a derivação por matiz cobre.
+const FIELD_GROUPS: { label: string; fields: { token: PaletteColorToken; label: string }[] }[] = [
+  {
+    label: "Marca",
+    fields: [
+      { token: "primary", label: "Primária" },
+      { token: "primary-foreground", label: "Primária (texto)" },
+      { token: "accent", label: "Destaque" },
+      { token: "accent-foreground", label: "Destaque (texto)" },
+      { token: "ring", label: "Foco (ring)" },
+    ],
+  },
+  {
+    label: "Estrutura",
+    fields: [
+      { token: "secondary", label: "Secundária" },
+      { token: "secondary-foreground", label: "Secundária (texto)" },
+      { token: "background", label: "Fundo" },
+      { token: "foreground", label: "Texto" },
+    ],
+  },
 ];
 
 // input type=color só aceita/produz #rrggbb — por isso o fallback abaixo (quando o admin nunca
@@ -20,23 +39,27 @@ const FIELDS: { token: "primary" | "secondary" | "background" | "foreground"; la
 // ser oklch, formato que o picker nativo do navegador não entende).
 const UNSET_FALLBACK = "#000000";
 
-function ColorModeFields({ mode, label, tokens }: { mode: "light" | "dark"; label: string; tokens: PaletteColorTokens }) {
+function ColorModeFields({ mode, tokens }: { mode: "light" | "dark"; tokens: PaletteColorTokens }) {
   return (
-    <div className="space-y-3">
-      <p className="text-xs font-medium uppercase tracking-caps text-muted-foreground">{label}</p>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {FIELDS.map(({ token, label: fieldLabel }) => (
-          <label key={token} className="flex flex-col items-center gap-1 text-xs text-muted-foreground">
-            <input
-              type="color"
-              name={`${mode}-${token}`}
-              defaultValue={tokens[token] ?? UNSET_FALLBACK}
-              className="h-9 w-full cursor-pointer rounded-md border border-border bg-transparent outline-none ui-motion-base focus-visible:ring-2 focus-visible:ring-ring"
-            />
-            {fieldLabel}
-          </label>
-        ))}
-      </div>
+    <div className="space-y-4">
+      {FIELD_GROUPS.map((group) => (
+        <div key={group.label} className="space-y-2">
+          <p className="text-[0.65rem] font-medium uppercase tracking-caps text-muted-foreground/72">{group.label}</p>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {group.fields.map(({ token, label: fieldLabel }) => (
+              <label key={token} className="flex flex-col items-center gap-1 text-xs text-muted-foreground">
+                <input
+                  type="color"
+                  name={`${mode}-${token}`}
+                  defaultValue={tokens[token] ?? UNSET_FALLBACK}
+                  className="h-9 w-full cursor-pointer rounded-md border border-border bg-transparent outline-none ui-motion-base focus-visible:ring-2 focus-visible:ring-ring"
+                />
+                {fieldLabel}
+              </label>
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -46,23 +69,29 @@ export function CustomColorPaletteForm({ light, dark }: { light: PaletteColorTok
   useActionToast({ pending, error: state.error, successMessage: "Cores personalizadas salvas e aplicadas." });
 
   return (
-    <form action={formAction} className="mt-4 space-y-4 rounded-lg border border-border bg-background p-4">
-      <div>
-        <h3 className="text-sm font-semibold text-foreground">Cores personalizadas</h3>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Sobrescreve primary/secondary/background/text do tema ativo com valores próprios. Salvar aplica
-          automaticamente — não precisa clicar em &quot;Usar&quot; na lista acima.
+    <details className="mt-4 rounded-lg border border-border bg-background p-4">
+      <summary className="cursor-pointer text-sm font-semibold text-foreground">Avançado</summary>
+      <form action={formAction} className="mt-4 space-y-4">
+        <p className="text-xs text-muted-foreground">
+          Ajusta cada token individualmente. Salvar aplica automaticamente — não precisa clicar em &quot;Usar&quot; na
+          lista acima.
         </p>
-      </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <ColorModeFields mode="light" label="Modo claro" tokens={light} />
-        <ColorModeFields mode="dark" label="Modo escuro" tokens={dark} />
-      </div>
+        <div className="grid gap-6 sm:grid-cols-2">
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">Modo claro</p>
+            <ColorModeFields mode="light" tokens={light} />
+          </div>
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">Modo escuro</p>
+            <ColorModeFields mode="dark" tokens={dark} />
+          </div>
+        </div>
 
-      <Button type="submit" variant="outline" size="sm" disabled={pending}>
-        Salvar e aplicar
-      </Button>
-    </form>
+        <Button type="submit" variant="outline" size="sm" disabled={pending}>
+          Salvar e aplicar
+        </Button>
+      </form>
+    </details>
   );
 }

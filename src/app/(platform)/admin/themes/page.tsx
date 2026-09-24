@@ -11,9 +11,26 @@ import { ToggleThemeControl } from "./_components/toggle-theme-control";
 import { ThemeUpdatePanel } from "./_components/theme-update-panel";
 import { ActivateColorPaletteButton } from "./_components/activate-color-palette-button";
 import { CustomColorPaletteForm } from "./_components/custom-color-palette-form";
+import { BrandColorPaletteForm } from "./_components/brand-color-palette-form";
 import { HeaderBehaviorForm } from "./_components/header-behavior-form";
 import { NavVisibilityForm } from "./_components/nav-visibility-form";
 import type { PaletteColorTokens } from "@/contexts/themes";
+import { isValidHexColor, oklchToHex, parseOklchNumeric } from "@/platform/theme-engine/oklch-color";
+
+const BRAND_HEX_FALLBACK = "#000000";
+
+// Prefill do picker de "cor de marca": prefere o `primary` já salvo na paleta personalizada (já
+// vem em hex, formato gravável) — senão deriva do `primary` do 1º preset do catálogo do tema ativo
+// (vem em oklch, precisa converter pra o picker nativo entender). Nunca deixa o campo vazio/preto
+// sem necessidade real.
+function resolveBrandHex(customPrimary: string | undefined, catalogPrimary: string | undefined): string {
+  if (customPrimary && isValidHexColor(customPrimary)) return customPrimary;
+  if (catalogPrimary) {
+    const parsed = parseOklchNumeric(catalogPrimary);
+    if (parsed) return oklchToHex(parsed.l, parsed.c, parsed.h);
+  }
+  return BRAND_HEX_FALLBACK;
+}
 
 // Tira de amostras da paleta (primary/accent/background/text que ela define). "Padrão do tema"
 // não define nenhuma → um quadrinho com a primary do tema ativo, só pra não ficar em branco.
@@ -50,6 +67,10 @@ export default async function ThemesAdminPage() {
     getNavVisibility(),
   ]);
   const customPalette = colorPaletteStates.palettes.find((palette) => palette.id === CUSTOM_COLOR_PALETTE_ID);
+  const firstCatalogPreset = colorPaletteStates.palettes.find(
+    (palette) => palette.id !== "default" && palette.id !== CUSTOM_COLOR_PALETTE_ID,
+  );
+  const brandHex = resolveBrandHex(customPalette?.light.primary, firstCatalogPreset?.light.primary);
   const activeTheme = themes.find((theme) => theme.isActive);
   const activeThemeSupportsHeaderBehavior = activeTheme?.manifest.capabilities?.headerBehavior ?? false;
   // Mais sensível que settings.manage (que já libera esta página inteira): "Atualizar" comita
@@ -107,10 +128,14 @@ export default async function ThemesAdminPage() {
         <div>
           <h2 className="text-sm font-semibold text-foreground">Paleta de cor — {colorPaletteStates.themeName}</h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            Sobrescreve só a cor de destaque (primary/accent) do tema ativo, sem precisar trocar de tema, ou use
-            &quot;Personalizada&quot; abaixo pra definir suas próprias cores de primary/secondary/background/text.
+            Escolha 1 cor de marca abaixo pra recolorir o tema ativo (o mesmo efeito de criar um tema novo só pra
+            trocar a cor, sem precisar de um pacote novo), ou escolha um dos presets prontos na lista. Quem quiser
+            ajuste fino token a token encontra em &quot;Avançado&quot;.
           </p>
         </div>
+
+        <BrandColorPaletteForm hex={brandHex} />
+
         <ul className="mt-4 space-y-3">
           {colorPaletteStates.palettes.map((palette) => (
             <li key={palette.id} className="flex items-center justify-between gap-4 text-sm text-muted-foreground">
