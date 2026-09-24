@@ -89,7 +89,7 @@ export function MediaField({
 
       <dialog
         ref={dialogRef}
-        className="w-full max-w-2xl rounded-panel border border-border bg-card ui-panel-padding-roomy text-foreground backdrop:bg-foreground/40"
+        className="max-h-[85vh] w-[90vw] max-w-4xl overflow-y-auto rounded-panel border border-border bg-card ui-panel-padding-roomy text-foreground backdrop:bg-foreground/40"
       >
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-foreground">Selecionar mídia</h2>
@@ -102,9 +102,9 @@ export function MediaField({
           </button>
         </div>
 
-        <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
+        <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
           {isPending
-            ? Array.from({ length: 8 }).map((_, index) => <Skeleton key={index} className="aspect-square rounded-lg" />)
+            ? Array.from({ length: 12 }).map((_, index) => <Skeleton key={index} className="aspect-square rounded-lg" />)
             : items.map((item) => (
                 <button
                   type="button"

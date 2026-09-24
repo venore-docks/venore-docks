@@ -20,11 +20,27 @@
 @import "../themes/venore-slime/theme.css";
 @import "../themes/theme-imports.generated.css";
 
+/* Mesmo bug/fix do @import de plugin acima, mas do lado dos temas (achado real: Harbor, Portal do
+   Colaborador FEM — uma classe nova usada só dentro do pacote do tema, nunca replicada em src/,
+   sumia do CSS final sem erro nenhum, sidebar inteira "desaparecia" apesar do React estar
+   renderizando certo). venore-slime não precisa de entrada aqui — vive em src/, já é escaneado
+   pelo Tailwind normalmente. Ver scripts/gen-theme-registry.ts. */
+@import "../themes/theme-sources.generated.css";
+
 /* tw-animate-css: os primitivos stock (dialog, select) usam animate-in/fade-in-0/zoom-in-95/
    slide-in-from-* — sem esse import essas classes não geram CSS nenhum (ficam inertes) e os
    overlays abrem/fecham sem transição. Não é token/valor nosso, é infraestrutura que a classe
    exige pra existir; não modifica cor nem forma de nada. */
 @import "tw-animate-css";
+
+/* Preflight zera margin de todo elemento, inclusive <dialog> (node_modules/tailwindcss/
+   preflight.css, regra `*, ::backdrop { margin: 0 }`). O <dialog> nativo (MediaPickerField,
+   MediaField) depende de margin:auto da UA stylesheet pra se centralizar quando aberto via
+   showModal() — com margin:0 ele gruda no canto (top/left), nunca no centro. Não afeta os
+   overlays do Radix (dialog.tsx), que não usam <dialog> nativo e se centralizam via CSS próprio. */
+dialog[open] {
+  margin: auto;
+}
 
 @custom-variant dark (&:is(.dark *));
 
