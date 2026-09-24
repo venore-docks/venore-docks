@@ -1,7 +1,7 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/infrastructure/database/client";
 import { assets } from "../../../database/schema";
-import type { MediaAsset } from "../../../contracts/types";
+import type { MediaAsset, MediaVisibility } from "../../../contracts/types";
 
 // Sem filtro de visibilidade de propósito: chamadas internas de idempotência do próprio
 // pipeline de upload (dedupe por pathname/checksum), não uma leitura pra um ator ver conteúdo
@@ -34,6 +34,7 @@ export async function insertAssetIfAbsent(input: {
   width: number | null;
   height: number | null;
   alt: string | null;
+  visibility: MediaVisibility;
   uploadedBy: string;
 }): Promise<MediaAsset | null> {
   const [row] = await db.insert(assets).values(input).onConflictDoNothing({ target: assets.pathname }).returning();

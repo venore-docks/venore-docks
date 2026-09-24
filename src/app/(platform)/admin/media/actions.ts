@@ -3,17 +3,22 @@
 import { revalidatePath } from "next/cache";
 import {
   clearCategoryAssets,
+  confirmMediaUpload,
   createCategory,
   deleteCategory,
+  requestMediaUploadTicket,
   updateCategory,
   updateMediaAssetCategory,
   updateMediaAssetVisibility,
   uploadMediaAsset,
   type MediaVisibility,
+  type RequestMediaUploadTicketResult,
 } from "@/contexts/media";
 import { deleteMediaSafely } from "@/platform/media-lifecycle/delete-media-safely";
 import { collectMediaUsage } from "@/platform/media-usage/media-usage-registry";
 import type { MediaUsageReference } from "@/platform/media-usage/types";
+import type { MediaAsset } from "@/contexts/media/contracts/types";
+import type { OperationResult } from "@/shared/types";
 
 export type MediaActionState = { error: string | null };
 
@@ -49,6 +54,38 @@ export async function uploadMediaAction(
 
   revalidatePath("/admin/media");
   return { error: null };
+}
+
+// Par de actions do fluxo de client-upload direto ao Blob (docs/media/blob-spec.md) — necessário
+// porque uploadMediaAction acima (server-buffered) nunca tinha um teto de tamanho no client: o
+// form de /admin/media deixava escolher qualquer arquivo dentro do limite de MEDIA_ALLOWED_TYPES
+// (vídeo até 200MB) e sempre tentava o caminho buffered, que esbarra no limite de body de uma
+// serverless function da Vercel (4.5MB, hardcoded pela plataforma, não configurável por
+// next.config.ts) bem antes do limite de negócio — o upload falhava sem chegar a rodar código da
+// aplicação, então nenhum toast de erro aparecia ("nada acontece"). UploadMediaForm passa a usar
+// este par acima de SERVER_BUFFERED_MAX_BYTES, mesmo padrão já usado por MediaPickerField.
+export async function requestMediaUploadTicketAction(input: {
+  filename: string;
+  contentType: string;
+  size: number;
+}): Promise<RequestMediaUploadTicketResult> {
+  return requestMediaUploadTicket(input);
+}
+
+export async function confirmMediaUploadAction(input: {
+  filename: string;
+  pathname: string;
+  url: string;
+  contentType: string;
+  size: number;
+  checksum: string;
+  visibility: MediaVisibility;
+}): Promise<OperationResult<MediaAsset>> {
+  const result = await confirmMediaUpload(input);
+  if (result.success) {
+    revalidatePath("/admin/media");
+  }
+  return result;
 }
 
 // Consultada pelo client antes de pedir confirmação de exclusão (docs do pedido: "a deleção

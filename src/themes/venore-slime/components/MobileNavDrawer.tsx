@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { closeMobileNav, getMobileNavTrigger, useMobileNavOpen } from "./mobile-nav-store";
 
@@ -19,6 +20,26 @@ const OFF_CANVAS_MEDIA_QUERY = "(min-width: 1024px)";
 export function MobileNavDrawer({ children, asideClassName }: { children: ReactNode; asideClassName: string }) {
   const isOpen = useMobileNavOpen();
   const panelRef = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
+  const isFirstRender = useRef(true);
+
+  // `isOpen` vive num store externo ao módulo (mobile-nav-store.ts), não resetado por navegação
+  // client-side (SPA) — sobrevive normalmente entre páginas. SidebarNavLink não fecha o drawer no
+  // clique (é só <Link>, sem onClick próprio, e não deveria precisar saber do drawer pra navegar).
+  // Sem isto, navegar por um link de dentro do drawer aberto deixava `isOpen` preso em `true`: o
+  // botão-backdrop abaixo (fixed inset-0 z-40) continuava montado em toda página seguinte, abaixo
+  // de `lg`, engolindo todo clique da UI real por trás dele — bug real, "nada acontece" ao tocar
+  // em qualquer botão, sem erro nenhum (achado: /admin/media, mas afeta qualquer página). Fecha
+  // sempre que a rota muda enquanto aberto; ignora o próprio mount (não fecha um drawer que acabou
+  // de abrir por causa da primeira renderização desta página).
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    closeMobileNav();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- só reage a pathname; closeMobileNav é estável (módulo, não recriada)
+  }, [pathname]);
 
   useEffect(() => {
     if (!isOpen) return;
