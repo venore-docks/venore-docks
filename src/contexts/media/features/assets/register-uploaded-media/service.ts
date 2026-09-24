@@ -37,6 +37,7 @@ export async function registerUploadedMedia(command: RegisterUploadedMediaComman
     width: command.width ?? null,
     height: command.height ?? null,
     alt: command.alt ?? null,
+    visibility: command.visibility ?? "private",
     uploadedBy: command.actorId,
   });
 

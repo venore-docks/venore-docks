@@ -1,4 +1,4 @@
-import type { MediaAsset } from "@/contexts/media/contracts/types";
+import type { MediaAsset, MediaVisibility } from "@/contexts/media/contracts/types";
 import type { OperationResult } from "@/shared/types";
 
 export type RegisterUploadedMediaCommand = {
@@ -13,6 +13,10 @@ export type RegisterUploadedMediaCommand = {
   width?: number | null;
   height?: number | null;
   alt?: string | null;
+  // Omitido = "private" (mesmo default da coluna) — quem confirma o upload direto ao Blob sem
+  // opinião sobre visibilidade (ex: MediaPickerField, que já força "public" no input em vez de
+  // deixar aqui implícito) continua se comportando como antes desta option ser adicionada.
+  visibility?: MediaVisibility;
   actorId: string;
 };
 
