@@ -48,7 +48,7 @@
     "@tiptap/starter-kit": "^3.29.2",
     "@tiptap/static-renderer": "^3.29.2",
     "@venore/theme-academy": "git+https://github.com/venore-docks/venore-theme-academy.git#v1.1.3",
-    "@venore/theme-aurora": "github:venore-docks/venore-theme-aurora#v0.1.7",
+    "@venore/theme-aurora": "github:venore-docks/venore-theme-aurora#v0.1.8",
     "@venore/theme-druids": "github:venore-docks/venore-theme-druids#v2.0.1",
     "@venore/theme-fearless": "git+https://github.com/venore-docks/venore-theme-fearless.git#v1.1.2",
     "@venore/theme-halo": "github:venore-docks/venore-theme-halo#v0.1.4",
