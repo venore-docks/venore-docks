@@ -21,7 +21,7 @@ describe("setBrandColorPalette", () => {
     resolveActiveTheme.mockResolvedValue({ manifest: { key: "venore-slime" }, colorPalettes: [] });
   });
 
-  it("gera e salva os 9 tokens, em hex, pros dois modos", async () => {
+  it("gera e salva os 25 tokens (inclui sidebar/header/app-bg), em hex, pros dois modos", async () => {
     const { setBrandColorPalette } = await import("./brand-color-palette");
     const result = await setBrandColorPalette({ hex: "#006b82" });
 
@@ -29,19 +29,13 @@ describe("setBrandColorPalette", () => {
     expect(setSetting).toHaveBeenCalledTimes(1);
     const [{ value }] = setSetting.mock.calls[0];
     for (const mode of ["light", "dark"] as const) {
-      for (const token of [
-        "primary",
-        "primary-foreground",
-        "secondary",
-        "secondary-foreground",
-        "background",
-        "foreground",
-        "accent",
-        "accent-foreground",
-        "ring",
-      ]) {
+      // Só checa que o objeto não está vazio e que representantes de cada família (marca,
+      // estrutura, superfície, sidebar) vieram em hex — a lista exaustiva dos 25 já é coberta por
+      // full-palette-generator.test.ts, não precisa duplicar aqui.
+      for (const token of ["primary", "background", "card", "sidebar-bg-start", "header-bg", "app-bg-mid"]) {
         expect(value[mode][token]).toMatch(/^#[0-9a-f]{6}$/i);
       }
+      expect(Object.keys(value[mode])).toHaveLength(25);
     }
   });
 

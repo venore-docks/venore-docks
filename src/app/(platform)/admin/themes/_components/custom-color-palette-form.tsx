@@ -8,10 +8,13 @@ import { updateCustomColorPaletteAction, type ThemesActionState } from "../actio
 
 const initialState: ThemesActionState = { error: null };
 
-// Dois grupos visuais dos 9 tokens de PaletteColorToken: "Marca" é o que o fluxo "1 cor de marca"
-// (brand-color-palette-form.tsx) já deriva automaticamente — aqui dá pra ajustar cada um à mão.
-// "Estrutura" é o que sobrava do form original (4 tokens), mantido pra quem quiser ir além do que
-// a derivação por matiz cobre.
+// Grupos visuais dos 25 tokens de PaletteColorToken (ampliado — ver custom-color-palette.ts):
+// "Marca" é o que o fluxo "1 cor de marca" (brand-color-palette-form.tsx) já deriva
+// automaticamente a partir do matiz complementar; "Superfícies" é o vocabulário mínimo que todo
+// tema já é obrigado a fornecer (card/popover/muted/border/input, VENORE-DOCKS.md §7); "Sidebar,
+// header e fundo" é a família de tokens que ficava fora do alcance da paleta até esta sessão
+// ("a paleta muda só alguns elementos, sidebar nunca muda") — cada um aqui dá pra ajustar à mão
+// além do que a derivação automática cobre.
 const FIELD_GROUPS: { label: string; fields: { token: PaletteColorToken; label: string }[] }[] = [
   {
     label: "Marca",
@@ -30,6 +33,32 @@ const FIELD_GROUPS: { label: string; fields: { token: PaletteColorToken; label: 
       { token: "secondary-foreground", label: "Secundária (texto)" },
       { token: "background", label: "Fundo" },
       { token: "foreground", label: "Texto" },
+    ],
+  },
+  {
+    label: "Superfícies",
+    fields: [
+      { token: "card", label: "Card" },
+      { token: "card-foreground", label: "Card (texto)" },
+      { token: "popover", label: "Popover" },
+      { token: "popover-foreground", label: "Popover (texto)" },
+      { token: "muted", label: "Muted" },
+      { token: "muted-foreground", label: "Muted (texto)" },
+      { token: "border", label: "Borda" },
+      { token: "input", label: "Input" },
+    ],
+  },
+  {
+    label: "Sidebar, header e fundo",
+    fields: [
+      { token: "sidebar-bg-start", label: "Sidebar (início)" },
+      { token: "sidebar-bg-end", label: "Sidebar (fim)" },
+      { token: "sidebar-bg-admin-start", label: "Sidebar admin (início)" },
+      { token: "sidebar-bg-admin-end", label: "Sidebar admin (fim)" },
+      { token: "header-bg", label: "Header" },
+      { token: "app-bg-start", label: "Fundo da página (início)" },
+      { token: "app-bg-mid", label: "Fundo da página (meio)" },
+      { token: "app-bg-end", label: "Fundo da página (fim)" },
     ],
   },
 ];

@@ -14,11 +14,11 @@ const SETTING_KEY_PREFIX = "theme.customColorPalette";
 const settingKeyFor = (themeKey: string) => `${SETTING_KEY_PREFIX}.${themeKey}`;
 
 // Espelha o union inteiro de PaletteColorToken (contracts/types.ts) — cada um mapeia 1:1 pra uma
-// var shadcn de theme.css (AGENTS.md §3). Antes era um subconjunto de 4 (primary/secondary/
-// background/foreground); ampliado pro fluxo "Avançado" (custom-color-palette-form.tsx) deixar
-// ajustar os 9 tokens, e pro fluxo "1 cor de marca" (brand-color-palette.ts) poder escrever
-// primary-foreground/accent/accent-foreground/ring — sem os quais a paleta personalizada não
-// tinha efeito visual perceptível (ver brand-color-palette.ts pro porquê).
+// var shadcn/estrutural de theme.css (AGENTS.md §3). Ampliado de 9 pra 25 tokens (pedido de
+// sessão: "a paleta muda só alguns elementos, sidebar nunca muda") — card/popover/muted/border/
+// input (vocabulário mínimo, VENORE-DOCKS.md §7) e a família sidebar/header/app-background, que
+// antes ficava fora do alcance da paleta mesmo sendo var(...) legítimo em todo theme.css do
+// workspace (ver full-palette-generator.ts pro detalhe).
 export const CUSTOM_COLOR_TOKENS: readonly PaletteColorToken[] = [
   "primary",
   "primary-foreground",
@@ -29,6 +29,22 @@ export const CUSTOM_COLOR_TOKENS: readonly PaletteColorToken[] = [
   "accent",
   "accent-foreground",
   "ring",
+  "card",
+  "card-foreground",
+  "popover",
+  "popover-foreground",
+  "muted",
+  "muted-foreground",
+  "border",
+  "input",
+  "sidebar-bg-start",
+  "sidebar-bg-end",
+  "sidebar-bg-admin-start",
+  "sidebar-bg-admin-end",
+  "header-bg",
+  "app-bg-start",
+  "app-bg-mid",
+  "app-bg-end",
 ];
 
 export type CustomColorPaletteInput = { light: PaletteColorTokens; dark: PaletteColorTokens };
@@ -46,15 +62,27 @@ function hasOnlyValidHexTokens(tokens: PaletteColorTokens): boolean {
   );
 }
 
-// Só checa quando os DOIS tokens do par existem naquele modo — um modo que só mexe em `primary`
-// não é barrado. Retorna a mensagem de erro, ou null se está ok.
+// Pares texto/fundo que precisam de contraste mínimo — foreground/background é o mais óbvio, mas
+// card e popover são as superfícies mais comuns na prática (todo painel usa --card).
+const CONTRAST_PAIRS: { fg: PaletteColorToken; bg: PaletteColorToken; label: string }[] = [
+  { fg: "foreground", bg: "background", label: "texto/fundo" },
+  { fg: "card-foreground", bg: "card", label: "texto/card" },
+  { fg: "popover-foreground", bg: "popover", label: "texto/popover" },
+];
+
+// Só checa um par quando os DOIS tokens existem naquele modo — um modo que só mexe em `primary`
+// não é barrado. Retorna a mensagem de erro do primeiro par com problema, ou null se está tudo ok.
 function contrastProblem(tokens: PaletteColorTokens, modeLabel: string): string | null {
-  const fg = tokens.foreground;
-  const bg = tokens.background;
-  if (!fg || !bg) return null;
-  const ratio = contrastRatio(fg, bg);
-  if (ratio >= MIN_CUSTOM_PALETTE_CONTRAST) return null;
-  return `Contraste texto/fundo no ${modeLabel} é ${ratio.toFixed(1)}:1 — mínimo ${MIN_CUSTOM_PALETTE_CONTRAST}:1 pra legibilidade.`;
+  for (const pair of CONTRAST_PAIRS) {
+    const fg = tokens[pair.fg];
+    const bg = tokens[pair.bg];
+    if (!fg || !bg) continue;
+    const ratio = contrastRatio(fg, bg);
+    if (ratio < MIN_CUSTOM_PALETTE_CONTRAST) {
+      return `Contraste ${pair.label} no ${modeLabel} é ${ratio.toFixed(1)}:1 — mínimo ${MIN_CUSTOM_PALETTE_CONTRAST}:1 pra legibilidade.`;
+    }
+  }
+  return null;
 }
 
 export async function setCustomColorPalette(

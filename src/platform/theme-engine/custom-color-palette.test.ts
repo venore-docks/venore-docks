@@ -59,4 +59,28 @@ describe("setCustomColorPalette", () => {
     expect(result.success).toBe(true);
     expect(setSetting).toHaveBeenCalled();
   });
+
+  it("aceita os tokens ampliados (sidebar/header/superfícies), fora do subconjunto original de 9", async () => {
+    const { setCustomColorPalette } = await import("./custom-color-palette");
+    const result = await setCustomColorPalette("venore-slime", {
+      light: { card: "#ffffff", "sidebar-bg-start": "#111111", "header-bg": "#eeeeee" },
+      dark: {},
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("recusa contraste texto/card abaixo de 4.5:1, sem gravar", async () => {
+    const { setCustomColorPalette } = await import("./custom-color-palette");
+    const result = await setCustomColorPalette("venore-slime", {
+      light: { "card-foreground": "#ffffff", card: "#fefefe" },
+      dark: {},
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: { code: "theme-engine.custom_color_palette.low_contrast", message: expect.any(String) },
+    });
+    expect(setSetting).not.toHaveBeenCalled();
+  });
 });

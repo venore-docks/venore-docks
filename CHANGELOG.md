@@ -12,6 +12,24 @@ o core evolui em `main` e se propaga pras instâncias (branches deste repo, ou f
 uma instância só tem o fix depois que a própria instância faz esse merge (ver seção "Modelo de
 atualização" em `VENORE-DOCKS.md`).
 
+## [0.4.0] - 2026-09-24
+
+### Changed
+
+- **"Paleta de cor" agora também muda sidebar, header e fundo de página.** Feedback direto sobre
+  a v0.3.0: "a paleta muda só alguns elementos, sidebar nunca muda". Investigando o `theme.css`
+  dos 16 temas + venore-slime, achamos que sidebar (`--sidebar-bg-start/end` + variante `-admin`),
+  header (`--header-bg`) e o fundo degradê da página (`--app-bg-start/mid/end`) usam uma família
+  de tokens própria, consistente em todo o workspace (mesmo scaffold de `@venore/theme-sdk`), mas
+  fora do vocabulário que a paleta cobria — não é hardcode de plugin/tema (são `var(...)`
+  legítimos), só faltava vocabulário aqui. `PaletteColorToken` (contracts/types.ts) ganhou 16
+  tokens novos: `card/-foreground, popover/-foreground, muted/-foreground, border, input`
+  (vocabulário mínimo, VENORE-DOCKS.md §7) + a família sidebar/header/app-bg — total 25.
+  `buildFullPaletteFromSeed` gera todos a partir da mesma cor de entrada; a seção "Avançado" ganhou
+  2 grupos novos ("Superfícies" e "Sidebar, header e fundo") pra ajuste manual. Deliberadamente
+  FORA do vocabulário: `destructive/success/warning` (cor semântica, não deve seguir a marca) e
+  `chart-*` (paleta categórica, precisa ficar distinguível).
+
 ## [0.3.0] - 2026-09-24
 
 ### Changed

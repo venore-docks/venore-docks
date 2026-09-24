@@ -44,10 +44,12 @@ function previewTokens(palette: ColorPaletteStateView): PaletteColorTokens {
   return seed ? buildFullPaletteFromSeed(seed).light : palette.light;
 }
 
-// Tira de amostras da paleta (primary/accent/background/text que ela define). "Padrão do tema"
-// não define nenhuma → um quadrinho com a primary do tema ativo, só pra não ficar em branco.
+// Tira de amostras da paleta (primary/accent/sidebar/background que ela define — sidebar entrou
+// aqui de propósito: é o token que motivou ampliar o vocabulário, então a amostra já mostra que
+// ele muda). "Padrão do tema" não define nenhuma → um quadrinho com a primary do tema ativo, só
+// pra não ficar em branco.
 function PaletteSwatches({ tokens }: { tokens: PaletteColorTokens }) {
-  const swatches = (["primary", "accent", "background", "foreground"] as const)
+  const swatches = (["primary", "accent", "sidebar-bg-start", "background"] as const)
     .map((token) => tokens[token])
     .filter((value): value is string => Boolean(value));
   const shown = swatches.length > 0 ? swatches : ["var(--primary)"];
@@ -140,10 +142,10 @@ export default async function ThemesAdminPage() {
         <div>
           <h2 className="text-sm font-semibold text-foreground">Paleta de cor — {colorPaletteStates.themeName}</h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            Escolha 1 cor de marca abaixo pra gerar a paleta inteira do tema ativo (fundo, texto, secundária e um
-            destaque na cor complementar — o mesmo efeito de criar um tema novo só pra trocar a cor, sem precisar de
-            um pacote novo), ou escolha um dos presets prontos na lista. Quem quiser ajuste fino token a token
-            encontra em &quot;Avançado&quot;.
+            Escolha 1 cor de marca abaixo pra gerar a paleta inteira do tema ativo — fundo, texto, sidebar, header,
+            cards e um destaque na cor complementar, tudo de uma vez (o mesmo efeito de criar um tema novo só pra
+            trocar a cor, sem precisar de um pacote novo) — ou escolha um dos presets prontos na lista. Quem quiser
+            ajuste fino token a token encontra em &quot;Avançado&quot;.
           </p>
         </div>
 

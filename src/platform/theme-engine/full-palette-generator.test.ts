@@ -12,6 +12,22 @@ const ALL_TOKENS = [
   "accent",
   "accent-foreground",
   "ring",
+  "card",
+  "card-foreground",
+  "popover",
+  "popover-foreground",
+  "muted",
+  "muted-foreground",
+  "border",
+  "input",
+  "sidebar-bg-start",
+  "sidebar-bg-end",
+  "sidebar-bg-admin-start",
+  "sidebar-bg-admin-end",
+  "header-bg",
+  "app-bg-start",
+  "app-bg-mid",
+  "app-bg-end",
 ] as const;
 
 // Distância circular entre 2 matizes (0-180°): 0 = mesmo matiz, 180 = complementar.
@@ -21,7 +37,7 @@ function hueDistance(a: number, b: number): number {
 }
 
 describe("buildFullPaletteFromSeed", () => {
-  it("preenche os 9 tokens, nos dois modos, todos em hex válido", () => {
+  it("preenche os 25 tokens, nos dois modos, todos em hex válido", () => {
     const result = buildFullPaletteFromSeed(hexToOklch("#006b82"));
 
     for (const mode of ["light", "dark"] as const) {
@@ -66,5 +82,37 @@ describe("buildFullPaletteFromSeed", () => {
     const veryDark = hexToOklch("#1a0d2e");
     const { dark } = buildFullPaletteFromSeed(veryDark);
     expect(hexToOklch(dark.primary!).l).toBeGreaterThan(veryDark.l);
+  });
+
+  it("sidebar carrega o matiz da cor de entrada e responde a modo claro/escuro (bug: sidebar nunca mudava)", () => {
+    const seed = hexToOklch("#006b82");
+    const { light, dark } = buildFullPaletteFromSeed(seed);
+
+    const primaryHue = hexToOklch(light.primary!).h;
+    // Chroma > 0 nos dois stops — não é cinza puro (mesma regressão do bug original: sidebar-bg-*
+    // ficava fora do vocabulário e nunca acompanhava a paleta).
+    expect(hexToOklch(light["sidebar-bg-start"]!).c).toBeGreaterThan(0);
+    expect(hueDistance(primaryHue, hexToOklch(light["sidebar-bg-start"]!).h)).toBeLessThan(15);
+
+    // Claro: sidebar mais clara que a versão escura, pro modo continuar coerente.
+    expect(hexToOklch(light["sidebar-bg-start"]!).l).toBeGreaterThan(hexToOklch(dark["sidebar-bg-start"]!).l);
+  });
+
+  it("card/popover/header contrastam com seu -foreground correspondente", () => {
+    const result = buildFullPaletteFromSeed(hexToOklch("#c0392b"));
+    for (const mode of ["light", "dark"] as const) {
+      const cardL = hexToOklch(result[mode].card!).l;
+      const cardFgL = hexToOklch(result[mode]["card-foreground"]!).l;
+      expect(Math.abs(cardL - cardFgL)).toBeGreaterThan(0.5);
+    }
+  });
+
+  it("app-bg-start/mid/end formam um degradê (3 luminosidades diferentes), não um platô", () => {
+    const { light } = buildFullPaletteFromSeed(hexToOklch("#006b82"));
+    const start = hexToOklch(light["app-bg-start"]!).l;
+    const mid = hexToOklch(light["app-bg-mid"]!).l;
+    const end = hexToOklch(light["app-bg-end"]!).l;
+    expect(start).toBeGreaterThan(mid);
+    expect(mid).toBeGreaterThan(end);
   });
 });
