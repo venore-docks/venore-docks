@@ -33,7 +33,12 @@ export async function resolvePublicPluginRoute(segments: string[]): Promise<Reso
       return { kind: "reserved-not-found" };
     }
 
-    return { kind: "matched", Component: matched.route.Component, params: matched.params };
+    return {
+      kind: "matched",
+      Component: matched.route.Component,
+      params: matched.params,
+      generateMetadata: matched.route.generateMetadata,
+    };
   }
 
   return { kind: "not-a-plugin-route" };
