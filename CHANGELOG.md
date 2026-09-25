@@ -12,6 +12,29 @@ o core evolui em `main` e se propaga pras instâncias (branches deste repo, ou f
 uma instância só tem o fix depois que a própria instância faz esse merge (ver seção "Modelo de
 atualização" em `VENORE-DOCKS.md`).
 
+## [0.5.0] - 2026-09-25
+
+### Added
+
+- **`<head>` de rota pública de plugin (title, description, Open Graph).** A entrada `public` da
+  `route-table.ts` de um plugin aceita `generateMetadata` opcional — mesma assinatura do
+  `generateMetadata` de um `page.tsx`, com `asPluginMetadata` pra variância de params (mesmo motivo
+  de `asPluginPage`). O catch-all do CMS ganhou `generateMetadata` que chama o do plugin; sem ele a
+  página herda o metadata do layout raiz como antes. Primeiro uso: preview de link no WhatsApp da
+  página do jogo do `erasto-league` (capa do jogo como `og:image`). Resolução da rota memoizada por
+  request (metadata e página não leem o registro de plugins duas vezes); erro no metadata de um
+  plugin cai pro metadata herdado em vez de derrubar a página.
+
+### Fixed
+
+- **Migration nova de plugin já instalado agora se aplica sozinha no deploy.** Bump de tag de um
+  plugin com migration nova não aplicava nada até alguém rodar `npm run db:update` — e instância na
+  Vercel não tem onde rodar isso. O `prebuild` agora roda `db:migrate:plugins`
+  (`scripts/migrate-installed-plugins.ts`) depois do `drizzle-kit migrate` do core: migrations
+  pendentes de todo plugin **instalado** (plugin nunca instalado é pulado — a primeira migration
+  continua sendo do install). Falha derruba o build, como a migration do core (a Vercel mantém o
+  deploy anterior). `db:update` continua existindo pro fluxo local.
+
 ## [0.4.0] - 2026-09-24
 
 ### Changed

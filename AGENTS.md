@@ -300,8 +300,8 @@ logBuffer.push({ message, level });
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run test` | Vitest — só `*.test.ts` (unitário, sem banco real) |
 | `npm run test:integration` | Vitest com `vitest.integration.config.ts` — só `*.integration.test.ts` |
-| `npm run db:generate` / `npm run db:migrate` | Drizzle Kit — schema de core/contexts (não plugin). `db:migrate` é o único passo de migration do `vercel-build` |
-| `npm run db:generate:<plugin>` / `npm run db:migrate:<plugin>` | Idem para a árvore própria de cada plugin com schema (`academy`, `birthdays`, `broadcast`, `enrollment-dashboard`). Uso local — em produção a migration do plugin roda no **install** (`platform/plugin-engine/run-plugin-migrations.ts`), não no `vercel-build` |
+| `npm run db:generate` / `npm run db:migrate` | Drizzle Kit — schema de core/contexts (não plugin). Roda no `prebuild` (logo, em todo `vercel-build`) |
+| `npm run db:migrate:plugins` | Migrations pendentes de cada plugin **já instalado** (`scripts/migrate-installed-plugins.ts`). Roda no `prebuild` depois do `db:migrate` — bump de tag de plugin com migration nova se aplica sozinho no deploy da Vercel, sem `db:update`. Falha de migration derruba o build (o deploy anterior continua no ar). A **primeira** migration de um plugin continua rodando no install (`/admin/plugins` → `platform/plugin-engine/run-plugin-migrations.ts`); plugin nunca instalado é pulado |
 | `npm run db:update` | **Rodar depois de todo `git merge upstream/main`.** Consolida migrations do core + `ensureBaseRbacDataSeeded` (papéis/permissions base do "admin", cobre qualquer chave nova em `contracts/base-role-permissions.ts` sem precisar de script próprio) + `registerPlugins` + migrations de cada plugin com schema já resolvido no registro. Idempotente — seguro rodar mesmo sem nada novo pra aplicar (`scripts/update-instance.ts`). Substituiu os antigos `db:seed:<permission>` pontuais (removidos) — uma permission nova só precisa entrar em `contracts/base-role-permissions.ts`, nunca de um script novo. |
 | `npm run db:bootstrap-superadmin` | Promove usuário existente a `superadmin` fora do fluxo automático |
 
