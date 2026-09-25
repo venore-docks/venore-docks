@@ -88,6 +88,14 @@ consultam esse registro:
 Adicionar uma rota nova a um plugin existente (admin, pública ou API) é só uma entrada nova em
 `route-table.ts` — nunca toca `app/`.
 
+`<head>` de rota pública de plugin (title, description, Open Graph — ex: imagem de preview de link
+no WhatsApp) também mora na `route-table.ts`: a entrada `public` aceita um `generateMetadata`
+opcional, mesma assinatura do `generateMetadata` de um `page.tsx` (envolto em `asPluginMetadata`,
+mesmo motivo de `asPluginPage`). Quem chama é o `generateMetadata` do catch-all do CMS; sem ele, a
+página herda o metadata do layout raiz como qualquer outra. Imagem de Open Graph precisa de URL
+absoluta — o layout raiz não declara `metadataBase`, então o plugin monta a origem a partir do
+request.
+
 **Exceções físicas, não de conteúdo** (continuam existindo por exigência do Next.js, não por
 preguiça de generalizar):
 - Route segment config (`export const dynamic`, `revalidate`, `runtime`) só é lido de export
