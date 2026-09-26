@@ -88,9 +88,10 @@ jobs:
       - run: npm ci
 
       - name: Migrate (core)
-        # Migrations de plugin rodam no install (platform/plugin-engine/run-plugin-migrations.ts),
-        # não têm mais script npm próprio. O smoke só bate em rotas de core (/, /login, /setup,
-        # /cursos, /academy, /api/auth/providers), então o schema de core basta pra subir o app.
+        # A primeira migration de plugin roda no install (platform/plugin-engine/run-plugin-
+        # migrations.ts); as seguintes, de plugin já instalado, no prebuild do Build abaixo
+        # (db:migrate:plugins — no-op aqui, sem plugin instalado). O smoke só bate em rotas de core
+        # (/, /login, /setup, /cursos, /academy, /api/auth/providers), então o schema de core basta.
         run: npm run db:migrate
 
       - name: Build
