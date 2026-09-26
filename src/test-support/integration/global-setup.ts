@@ -7,7 +7,10 @@ import { requireTestDatabaseUrl } from "./require-test-database-url";
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 const CORE_MIGRATIONS_FOLDER = path.resolve(dirname, "../../../drizzle");
-const PLUGINS_DIR = path.resolve(dirname, "../../plugins");
+// Plugin é pacote npm `@venore/plugin-<key>` com a árvore de migrations dentro — mesmo caminho que
+// platform/plugin-engine/run-plugin-migrations.ts resolve em produção (não src/plugins/, onde os
+// plugins moravam antes de virar pacote).
+const PLUGIN_PACKAGES_DIR = path.resolve(dirname, "../../../node_modules/@venore");
 
 // Roda 1x antes da suíte inteira (contrato de globalSetup do Vitest), num Pool próprio — nunca o
 // singleton de app/infrastructure/database/client.ts — porque a validação de TEST_DATABASE_URL
@@ -34,7 +37,7 @@ export default async function globalSetup(): Promise<void> {
     for (const manifest of PLUGIN_REGISTRY) {
       if (!manifest.migrationsPath) continue;
       await migrate(db, {
-        migrationsFolder: path.resolve(PLUGINS_DIR, manifest.key, manifest.migrationsPath),
+        migrationsFolder: path.resolve(PLUGIN_PACKAGES_DIR, `plugin-${manifest.key}`, manifest.migrationsPath),
         migrationsSchema: manifest.migrationsSchema ?? `${manifest.key.replace(/-/g, "_")}_migrations`,
         migrationsTable: manifest.migrationsTable ?? "__drizzle_migrations",
       });

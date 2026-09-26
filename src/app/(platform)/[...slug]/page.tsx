@@ -1,5 +1,7 @@
+import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, unstable_rethrow } from "next/navigation";
+import { cache } from "react";
 import { ArrowLeft, ArrowRight, BookOpen, Calendar } from "lucide-react";
 import {
   getCachedCategoryBySlug,
@@ -18,6 +20,38 @@ import { EmptyState } from "@/components/empty-state";
 
 // force-dynamic: mesmo motivo de app/page.tsx — conteúdo e tema ativo mudam em runtime.
 export const dynamic = "force-dynamic";
+
+type CatchAllProps = {
+  params: Promise<{ slug: string[] }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+// generateMetadata e a página resolvem a MESMA rota de plugin no mesmo request — cache() evita
+// ler o registro de plugins ativos (registerPlugins, sem cache próprio) duas vezes. Chave em JSON
+// (não join("/")) porque um segmento decodificado pode conter "/".
+const resolvePublicPluginRouteForRequest = cache((segmentsKey: string) =>
+  resolvePublicPluginRoute(JSON.parse(segmentsKey) as string[]),
+);
+
+// Só rota de plugin com generateMetadata na route-table (ex: página pública de um jogo do
+// erasto-league, com a capa como imagem de compartilhamento) sobrescreve algo aqui — o resto
+// continua herdando o metadata do layout raiz, como antes. Erro no metadata de um plugin não
+// derruba a página: cai pro metadata herdado (a própria página decide se renderiza ou falha);
+// notFound()/redirect() internos do Next continuam valendo (unstable_rethrow).
+export async function generateMetadata({ params, searchParams }: CatchAllProps): Promise<Metadata> {
+  const { slug: segments } = await params;
+  const pluginRoute = await resolvePublicPluginRouteForRequest(JSON.stringify(segments));
+  if (pluginRoute.kind !== "matched" || !pluginRoute.generateMetadata) {
+    return {};
+  }
+  try {
+    return await pluginRoute.generateMetadata({ params: Promise.resolve(pluginRoute.params), searchParams });
+  } catch (error) {
+    unstable_rethrow(error);
+    console.warn(`[plugin-routing] generateMetadata de "/${segments.join("/")}" falhou — usando o metadata herdado.`, error);
+    return {};
+  }
+}
 
 // C7: "authenticated" nunca aparece pra visitante sem sessão — nem como entry única (notFound),
 // nem como item de listagem (BL1: filtrado antes de renderizar, não link que ia dar 404).
@@ -148,13 +182,7 @@ async function renderCategoryBlogroll(category: { id: string; name: string; slug
   );
 }
 
-export default async function CatchAllPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ slug: string[] }>;
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
+export default async function CatchAllPage({ params, searchParams }: CatchAllProps) {
   const { slug: segments } = await params;
 
   // Rota de plugin (ex: /academy, /birthdays, /donations) sempre tem precedência sobre conteúdo
@@ -162,7 +190,7 @@ export default async function CatchAllPage({
   // app/(platform)/**, reservando o slug antes do catch-all existir sequer. Plugin registrado mas
   // desativado, ou sub-rota que não casou, vira notFound() direto — nunca cai pra procurar
   // conteúdo do CMS com aquele slug (ver comentário em resolve-public-route.ts).
-  const pluginRoute = await resolvePublicPluginRoute(segments);
+  const pluginRoute = await resolvePublicPluginRouteForRequest(JSON.stringify(segments));
   if (pluginRoute.kind === "reserved-not-found") {
     notFound();
   }

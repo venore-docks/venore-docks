@@ -1,6 +1,6 @@
 {
   "name": "venore-docks-1.0.0",
-  "version": "0.1.1",
+  "version": "0.5.0",
   "private": true,
   "engines": {
     "node": ">=22.12"
@@ -9,7 +9,7 @@
     "gen:registries": "tsx scripts/gen-plugin-registry.ts && tsx scripts/gen-theme-registry.ts",
     "postinstall": "npm run gen:registries",
     "predev": "npm run gen:registries",
-    "prebuild": "npm run gen:registries && drizzle-kit migrate",
+    "prebuild": "npm run gen:registries && drizzle-kit migrate && npm run db:migrate:plugins",
     "prevercel-build": "npm run gen:registries",
     "pretypecheck": "npm run gen:registries",
     "pretest": "npm run gen:registries",
@@ -26,6 +26,7 @@
     "test:plugins": "vitest run --config vitest.plugins.config.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "db:migrate:plugins": "tsx --env-file-if-exists=.env scripts/migrate-installed-plugins.ts",
     "db:install:fresh": "tsx --env-file=.env scripts/install-fresh.ts",
     "db:update": "tsx --env-file=.env scripts/update-instance.ts",
     "db:bootstrap-superadmin": "tsx --env-file=.env scripts/bootstrap-superadmin.ts",
@@ -47,8 +48,8 @@
     "@tiptap/react": "^3.29.2",
     "@tiptap/starter-kit": "^3.29.2",
     "@tiptap/static-renderer": "^3.29.2",
-    "@venore/plugin-erasto-league": "github:venore-docks/venore-plugin-erasto-league#v0.32.3",
-    "@venore/theme-aurora": "github:venore-docks/venore-theme-aurora#v0.1.7",
+    "@venore/plugin-erasto-league": "github:venore-docks/venore-plugin-erasto-league#2b72d0b35cb035b7900cadcd04564169b43e478d",
+    "@venore/theme-aurora": "github:venore-docks/venore-theme-aurora#v0.1.8",
     "@vercel/blob": "^2.6.1",
     "@vercel/functions": "^3.7.5",
     "class-variance-authority": "^0.7.1",
