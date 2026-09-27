@@ -89,6 +89,10 @@ atualização" em `VENORE-DOCKS.md`).
 
 ### Added
 
+- **Blocos novos no page builder:** Vídeo/incorporação (YouTube, Vimeo, Google Maps, Spotify —
+  só provedores conhecidos viram iframe), Tabela, Arquivo para download (novo campo de mídia
+  "file"), Perguntas frequentes (com JSON-LD `FAQPage`), Código, Números em destaque e Linha do
+  tempo.
 - **Backup diário cifrado** (`.github/workflows/backup.yml`): `pg_dump` de cada instância listada
   no secret `BACKUP_TARGETS`, cifrado com GPG AES-256 (`BACKUP_PASSPHRASE`) antes de virar
   artifact (14 dias). Configuração e restauração em `docs/backup.md`.

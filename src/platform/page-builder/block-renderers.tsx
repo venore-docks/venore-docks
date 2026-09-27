@@ -14,6 +14,11 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { serializeJsonLd } from "@/shared/json-ld";
+import { FileText } from "lucide-react";
+import { parseEmbedUrl } from "./embed-providers";
+import { parseFaqItems, parseStatItems, parseTableRows, parseTimelineItems } from "./text-block-parsers";
 import { cn } from "@/lib/utils";
 import type { VariantProps } from "class-variance-authority";
 import { PLUGIN_CONTRIBUTIONS } from "@/plugins/contributions";
@@ -784,6 +789,191 @@ async function CarouselBlock({ block, renderBlocks }: BlockRendererProps) {
   );
 }
 
+const EMBED_ASPECT_CLASSES: Record<string, string> = {
+  video: "aspect-video",
+  square: "aspect-square",
+  portrait: "aspect-[9/16] max-w-sm",
+};
+
+function EmbedBlock({ block }: BlockRendererProps) {
+  const target = parseEmbedUrl(readString(block.data, "url"));
+  if (!target) return null;
+  const title = readString(block.data, "title") || "Conteúdo incorporado";
+  // Spotify tem altura fixa própria; os demais seguem a proporção escolhida.
+  if (target.provider === "spotify") {
+    return <iframe src={target.src} title={title} className="h-38 w-full rounded-panel border-0" loading="lazy" allow="encrypted-media" />;
+  }
+  const aspect = EMBED_ASPECT_CLASSES[readString(block.data, "aspect", "video")] ?? EMBED_ASPECT_CLASSES.video;
+  return (
+    <div className={cn("w-full overflow-hidden rounded-panel bg-muted", aspect)}>
+      <iframe
+        src={target.src}
+        title={title}
+        className="h-full w-full border-0"
+        loading="lazy"
+        referrerPolicy="strict-origin-when-cross-origin"
+        allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+        allowFullScreen
+      />
+    </div>
+  );
+}
+
+function TableBlock({ block }: BlockRendererProps) {
+  const rows = parseTableRows(readString(block.data, "rows"));
+  if (rows.length === 0) return null;
+  const hasHeader = block.data.header !== false && rows.length > 1;
+  const head = hasHeader ? rows[0] : null;
+  const body = hasHeader ? rows.slice(1) : rows;
+  const caption = readString(block.data, "caption");
+  return (
+    <div className="overflow-x-auto rounded-md border border-border">
+      <Table>
+        {caption && <TableCaption>{caption}</TableCaption>}
+        {head && (
+          <TableHeader>
+            <TableRow>
+              {head.map((cell, index) => (
+                <TableHead key={index}>{cell}</TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+        )}
+        <TableBody>
+          {body.map((row, rowIndex) => (
+            <TableRow key={rowIndex}>
+              {row.map((cell, cellIndex) => (
+                <TableCell key={cellIndex}>{cell}</TableCell>
+              ))}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1).replace(".", ",")} MB`;
+}
+
+async function FileBlock({ block }: BlockRendererProps) {
+  const mediaId = readString(block.data, "mediaId");
+  if (!mediaId) return null;
+  const mediaResult = await getMediaAsset({ id: mediaId });
+  if (!mediaResult.success || !mediaResult.data) return null;
+  const media = mediaResult.data;
+  const label = readString(block.data, "label") || media.filename;
+  const description = readString(block.data, "description");
+  return (
+    <a
+      href={media.url}
+      download={media.filename}
+      className="flex items-center gap-3 rounded-panel border border-border bg-card p-4 ui-motion-base hover:bg-muted"
+    >
+      <FileText className="size-6 shrink-0 text-primary" aria-hidden="true" />
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-medium text-foreground">{label}</span>
+        <span className="block text-xs text-muted-foreground">
+          {description ? `${description} · ` : ""}
+          {formatFileSize(media.size)}
+        </span>
+      </span>
+    </a>
+  );
+}
+
+function FaqBlock({ block, mode }: BlockRendererProps) {
+  const items = parseFaqItems(readString(block.data, "items"));
+  if (items.length === 0) return null;
+  const title = readString(block.data, "title");
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: items.map((item) => ({ "@type": "Question", name: item.question, acceptedAnswer: { "@type": "Answer", text: item.answer } })),
+  };
+  return (
+    <div className="space-y-3">
+      {title && <h2 className="text-xl font-semibold text-foreground">{title}</h2>}
+      {/* Mesmo invólucro do bloco Acordeão (Card + Accordion do tema). */}
+      <Card className="shadow-panel">
+        <CardContent>
+          <Accordion type="multiple">
+            {items.map((item, index) => (
+              <AccordionItem key={index} value={`faq-${index}`}>
+                <AccordionTrigger>{item.question}</AccordionTrigger>
+                <AccordionContent className="whitespace-pre-line text-muted-foreground">{item.answer}</AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </CardContent>
+      </Card>
+      {mode === "published" && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
+      )}
+    </div>
+  );
+}
+
+function CodeBlock({ block }: BlockRendererProps) {
+  const code = readString(block.data, "code");
+  if (!code) return null;
+  const language = readString(block.data, "language");
+  const caption = readString(block.data, "caption");
+  return (
+    <figure className="space-y-1">
+      <div className="overflow-hidden rounded-panel border border-border bg-muted">
+        {language && <div className="border-b border-border px-3 py-1 text-xs font-medium text-muted-foreground">{language}</div>}
+        <pre className="overflow-x-auto p-4 text-sm leading-relaxed text-foreground">
+          <code>{code}</code>
+        </pre>
+      </div>
+      {caption && <figcaption className="text-xs text-muted-foreground">{caption}</figcaption>}
+    </figure>
+  );
+}
+
+const STATS_COLUMN_CLASSES: Record<string, string> = {
+  "2": "sm:grid-cols-2",
+  "3": "sm:grid-cols-2 lg:grid-cols-3",
+  "4": "sm:grid-cols-2 lg:grid-cols-4",
+};
+
+function StatsBlock({ block }: BlockRendererProps) {
+  const items = parseStatItems(readString(block.data, "items"));
+  if (items.length === 0) return null;
+  const columns = STATS_COLUMN_CLASSES[readString(block.data, "columns", "3")] ?? STATS_COLUMN_CLASSES["3"];
+  return (
+    <dl className={cn("grid grid-cols-1 gap-4", columns)}>
+      {items.map((item, index) => (
+        <div key={index} className="rounded-panel border border-border bg-card p-5 text-center">
+          <dd className="text-3xl font-semibold tracking-tight text-foreground">{item.value}</dd>
+          {item.label && <dt className="mt-1 text-sm text-muted-foreground">{item.label}</dt>}
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+function TimelineBlock({ block }: BlockRendererProps) {
+  const items = parseTimelineItems(readString(block.data, "items"));
+  if (items.length === 0) return null;
+  return (
+    <ol className="relative space-y-6 border-l border-border pl-6">
+      {items.map((item, index) => (
+        <li key={index} className="relative">
+          <span className="absolute -left-7.5 top-1.5 size-3 rounded-full border-2 border-background bg-primary" aria-hidden="true" />
+          {item.date && <p className="text-xs font-medium tracking-caps text-muted-foreground uppercase">{item.date}</p>}
+          {item.title && <p className="text-base font-semibold text-foreground">{item.title}</p>}
+          {item.description && <p className="text-sm text-muted-foreground">{item.description}</p>}
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 const CORE_BLOCK_RENDERERS: Record<string, BlockRendererComponent> = {
   [ROW_BLOCK_KEY]: RowBlock,
   "core.content.heading": HeadingBlock,
@@ -810,6 +1000,13 @@ const CORE_BLOCK_RENDERERS: Record<string, BlockRendererComponent> = {
   [CTA_BLOCK_KEY]: CTABlock,
   [GALLERY_BLOCK_KEY]: GalleryBlock,
   [CAROUSEL_BLOCK_KEY]: CarouselBlock,
+  "core.content.embed": EmbedBlock,
+  "core.content.table": TableBlock,
+  "core.content.file": FileBlock,
+  "core.content.faq": FaqBlock,
+  "core.content.code": CodeBlock,
+  "core.content.stats": StatsBlock,
+  "core.content.timeline": TimelineBlock,
 };
 
 // Renderers de plugin vêm de PLUGIN_CONTRIBUTIONS[key].blockRenderers — um LOADER preguiçoso
