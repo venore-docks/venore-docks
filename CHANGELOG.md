@@ -89,6 +89,9 @@ atualização" em `VENORE-DOCKS.md`).
 
 ### Added
 
+- **Backup diário cifrado** (`.github/workflows/backup.yml`): `pg_dump` de cada instância listada
+  no secret `BACKUP_TARGETS`, cifrado com GPG AES-256 (`BACKUP_PASSPHRASE`) antes de virar
+  artifact (14 dias). Configuração e restauração em `docs/backup.md`.
 - **LGPD (autoatendimento) em `/account`:** "Baixar meus dados" (`/api/account/export`, JSON com
   perfil, papéis, arquivos enviados e conteúdos de autoria — nunca senha/segredo) e "Excluir minha
   conta" (confirma e-mail e senha; anonimiza como a remoção pelo admin; superadmin não se exclui).
