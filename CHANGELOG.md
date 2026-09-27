@@ -12,6 +12,29 @@ o core evolui em `main` e se propaga pras instâncias (branches deste repo, ou f
 uma instância só tem o fix depois que a própria instância faz esse merge (ver seção "Modelo de
 atualização" em `VENORE-DOCKS.md`).
 
+## [Unreleased]
+
+### Security
+
+- **Hierarquia do RBAC aplicada no servidor.** Quem não é superadmin não concede nem remove o papel
+  `superadmin`, não mexe nos papéis de um superadmin e não concede (a um papel ou via papel) uma
+  permission que ele mesmo não tem (`contexts/rbac/shared/privilege-guard.ts`). Ações sobre outro
+  usuário (congelar, descongelar, remover, apagar, redefinir senha) passam por
+  `authorizeActorOverUser`: só superadmin age sobre superadmin e ninguém congela/remove/apaga a
+  própria conta. Antes, o papel `admin` conseguia se promover a superadmin pela própria tela.
+- **XSS armazenado via JSON-LD do breadcrumb.** O `venore-slime` serializa com `serializeJsonLd`
+  (escapa `<`, `>` e `&`; exportado em `@venore/theme-sdk/json-ld` para os demais temas) e o core
+  neutraliza `<`/`>` nos rótulos do JSON-LD na origem, protegendo também os temas externos que
+  ainda usam `JSON.stringify` cru.
+- **`installPlugin` autoriza antes de agir.** Migrations e concessão de permissions ao `admin`
+  rodavam antes da única checagem de `platform.extensions.manage`.
+- **Atualização de tema sem injeção no `package.json`.** A tag precisa ser semver e existir no
+  repositório do tema; `package.json` e `package-lock.json` são reescritos estruturadamente e
+  commitados juntos (um commit, fast-forward) via Git Data API.
+- **Dependências:** `next` 16.2.11 → 16.3.6 (advisories crítico/altos), Tiptap 3.29 → 3.31 e
+  transitivas (`js-yaml`, `nanoid`, `brace-expansion`, `fast-uri`, `hono`, `qs`). Restam 4
+  moderadas no `esbuild` interno do `drizzle-kit` (só servidor de dev do esbuild, não usado).
+
 ## [0.5.0] - 2026-09-25
 
 ### Added

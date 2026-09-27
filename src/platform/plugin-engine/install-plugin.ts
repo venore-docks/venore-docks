@@ -1,5 +1,5 @@
 import { listExtensionStates, setExtensionInstalled } from "@/contexts/extensions";
-import { grantPermissionsToRole } from "@/contexts/rbac";
+import { authorizeActor, grantPermissionsToRole } from "@/contexts/rbac";
 import type { OperationResult } from "@/shared/types";
 import { PLUGIN_REGISTRY } from "@/plugins/registry";
 import { runPluginMigrations } from "./run-plugin-migrations";
@@ -15,6 +15,14 @@ export type InstallPluginInput = { pluginKey: string };
 // continua "available" (sem estado), então uma nova tentativa de instalar reexecuta do zero em
 // vez de deixar um plugin "instalado" apontando pra um schema que não subiu.
 export async function installPlugin(command: InstallPluginInput): Promise<OperationResult<void>> {
+  // Autoriza ANTES de qualquer efeito: a migration (DDL) e a concessão de permissions ao "admin"
+  // rodavam antes do único authorizeActor (em setExtensionInstalled) — qualquer chamador da
+  // Server Action disparava migration de plugin e re-concedia permissions removidas de propósito.
+  const authz = await authorizeActor("platform.extensions.manage");
+  if (!authz.authorized) {
+    return { success: false, error: authz.error };
+  }
+
   const manifest = PLUGIN_REGISTRY.find((entry) => entry.key === command.pluginKey);
   if (!manifest) {
     return {

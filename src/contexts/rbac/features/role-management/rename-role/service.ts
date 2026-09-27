@@ -1,5 +1,6 @@
 import { beginOperation, endOperation } from "@/observability";
 import { invalidateUserContext } from "../../../user-context-cache";
+import { assertActorIsSuperadmin, SUPERADMIN_ROLE_KEY } from "../../../shared/privilege-guard";
 import { findRoleById, findUserIdsWithRole, updateRoleName } from "./store";
 import { toRoleRef } from "./view";
 import type { RenameRoleCommand, RenameRoleResult } from "./types";
@@ -18,6 +19,14 @@ export async function renameRole(command: RenameRoleCommand): Promise<RenameRole
     const error = { code: "rbac.roles.not_found", message: `Papel "${command.roleId}" não encontrado.` };
     endOperation(handle, { success: false, error });
     return { success: false, error };
+  }
+
+  if (role.key === SUPERADMIN_ROLE_KEY) {
+    const guard = await assertActorIsSuperadmin(command.actor.id, "Só um superadmin pode renomear o papel superadmin.");
+    if (!guard.success) {
+      endOperation(handle, guard);
+      return guard;
+    }
   }
 
   const updated = await updateRoleName(command.roleId, command.name);

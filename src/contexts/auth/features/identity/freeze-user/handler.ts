@@ -1,4 +1,4 @@
-import { authorizeActor } from "@/contexts/rbac";
+import { authorizeActorOverUser } from "@/contexts/rbac";
 import { freezeUser } from "./service";
 import type { FreezeUserInput, FreezeUserResult } from "./types";
 
@@ -10,7 +10,7 @@ export async function freezeUserHandler(input: FreezeUserInput): Promise<FreezeU
     return { success: false, error: { code: "auth.identity.invalid_id", message: "targetUserId não pode ser vazio." } };
   }
 
-  const authz = await authorizeActor("rbac.users.manage");
+  const authz = await authorizeActorOverUser("rbac.users.manage", input.targetUserId);
   if (!authz.authorized) {
     return { success: false, error: authz.error };
   }

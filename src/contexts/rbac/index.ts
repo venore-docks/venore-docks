@@ -3,6 +3,10 @@
 // exemplo, por contexts/themes/features/active-theme/activate-theme/handler.ts.
 export { authorizeActor } from "./authorize-actor";
 export type { AuthorizeActorResult } from "./authorize-actor";
+// Ação administrativa sobre OUTRO usuário (auth: congelar/remover/apagar/redefinir senha) —
+// permission + hierarquia (só superadmin age sobre superadmin) + recusa agir sobre si mesmo.
+export { authorizeActorOverUser } from "./authorize-actor";
+export type { AuthorizeActorOverUserOptions } from "./authorize-actor";
 // Resolve o alcance efetivo de uma permission escopável pro ator corrente — para listagens
 // filtrarem por id (Fase B de docs/rbac-scoped-roles.md, D3). Dormente: nenhum call site passa
 // escopo ainda. A resolução das INSTÂNCIAS (nomes de categoria etc.) é composição em platform/.

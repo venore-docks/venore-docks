@@ -9,8 +9,10 @@ vi.mock("@/contexts/extensions", () => ({
 }));
 
 const grantPermissionsToRole = vi.fn();
+const authorizeActor = vi.fn();
 
 vi.mock("@/contexts/rbac", () => ({
+  authorizeActor: (...args: unknown[]) => authorizeActor(...args),
   grantPermissionsToRole: (...args: unknown[]) => grantPermissionsToRole(...args),
 }));
 
@@ -35,6 +37,7 @@ vi.mock("@/plugins/registry", () => ({
 
 describe("installPlugin", () => {
   beforeEach(() => {
+    authorizeActor.mockReset().mockResolvedValue({ authorized: true, actorId: "admin-1" });
     listExtensionStates.mockReset();
     setExtensionInstalled.mockReset();
     grantPermissionsToRole.mockReset();
@@ -115,4 +118,21 @@ describe("installPlugin", () => {
     expect(grantPermissionsToRole).not.toHaveBeenCalled();
     expect(result).toEqual({ success: true, data: undefined });
   });
+
+  it("refuses an unauthorized caller before running migrations or granting permissions", async () => {
+    authorizeActor.mockResolvedValue({
+      authorized: false,
+      error: { code: "rbac.authorization.unauthenticated", message: "x" },
+    });
+
+    const { installPlugin } = await import("./install-plugin");
+    const result = await installPlugin({ pluginKey: "broadcast" });
+
+    expect(authorizeActor).toHaveBeenCalledWith("platform.extensions.manage");
+    expect(result).toEqual({ success: false, error: { code: "rbac.authorization.unauthenticated", message: "x" } });
+    expect(runPluginMigrations).not.toHaveBeenCalled();
+    expect(grantPermissionsToRole).not.toHaveBeenCalled();
+    expect(listExtensionStates).not.toHaveBeenCalled();
+  });
 });
+

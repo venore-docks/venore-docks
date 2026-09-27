@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import type { BreadcrumbItem } from "@/contexts/themes/contracts/types";
+import { serializeJsonLd } from "@/theme-sdk/json-ld";
 
 // Puramente apresentacional — recebe a trilha e o JSON-LD já resolvidos no servidor
 // (platform/breadcrumbs/resolve-breadcrumbs.ts) e só renderiza; nunca busca rota/entidade sozinho
@@ -69,9 +70,9 @@ export function Breadcrumbs({
       {breadcrumbsJsonLd && (
         <script
           type="application/ld+json"
-          // JSON-LD só pode ir pro DOM assim; conteúdo vem 100% do servidor
-          // (resolve-breadcrumbs.ts), nunca de input de usuário.
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbsJsonLd) }}
+          // JSON-LD só pode ir pro DOM assim. Os rótulos vêm de conteúdo editado por usuários
+          // (título de entry, nome de arquivo) — serializeJsonLd escapa `<` pra não fechar a tag.
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbsJsonLd) }}
         />
       )}
     </>
