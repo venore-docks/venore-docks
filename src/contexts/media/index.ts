@@ -25,6 +25,8 @@ export type {
 export { listMediaAssetsHandler as listMediaAssets } from "./features/assets/list-media-assets/handler";
 export { getMediaAssetHandler as getMediaAsset } from "./features/assets/get-media-asset/handler";
 export { getMediaAssetUrlsHandler as getMediaAssetUrls } from "./features/assets/get-media-asset-urls/handler";
+export { listOwnMediaAssetsHandler as listOwnMediaAssets } from "./features/assets/list-own-media-assets/handler";
+export type { OwnMediaAssetSummary, ListOwnMediaAssetsResult } from "./features/assets/list-own-media-assets/types";
 export type { GetMediaAssetUrlsQuery, GetMediaAssetUrlsResult } from "./features/assets/get-media-asset-urls/types";
 // Leitura do CONTEÚDO de um asset com autorização por asset (visibilidade, dono, URL assinada) —
 // usada pelas rotas que servem mídia (/api/media/asset/[id], /api/media/file/[...key]).

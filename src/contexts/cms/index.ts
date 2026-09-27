@@ -41,6 +41,8 @@ export { findMediaUsageHandler as findCmsMediaUsage } from "./features/entries/f
 // Consumida por platform/identity-lifecycle/purge-user-safely.ts — mesma composição fora de cms e
 // auth (auth não pode importar cms).
 export { countEntriesByAuthorHandler as countCmsEntriesByAuthor } from "./features/entries/count-entries-by-author/handler";
+export { listOwnAuthoredEntriesHandler as listOwnAuthoredEntries } from "./features/entries/list-own-authored-entries/handler";
+export type { OwnAuthoredEntry, ListOwnAuthoredEntriesResult } from "./features/entries/list-own-authored-entries/types";
 export type {
   CountEntriesByAuthorQuery,
   CountEntriesByAuthorResult,

@@ -5,11 +5,13 @@ import { redirect } from "next/navigation";
 import QRCode from "qrcode";
 import {
   confirmMfaEnrollment,
+  deleteOwnAccount,
   disableOwnMfa,
   getOwnMfaStatus,
   revokeOwnSessions,
   setOwnName,
   setOwnPassword,
+  signOut,
   startMfaEnrollment,
   updateOwnAvatar,
 } from "@/contexts/auth";
@@ -147,5 +149,18 @@ export async function disableMfaAction(_prev: AccountActionState, formData: Form
     return { error: result.error.message };
   }
   revalidatePath("/account");
+  return { error: null };
+}
+
+// LGPD: exclusão da própria conta (anonimiza e encerra a sessão).
+export async function deleteOwnAccountAction(_prev: AccountActionState, formData: FormData): Promise<AccountActionState> {
+  const result = await deleteOwnAccount({
+    confirmEmail: String(formData.get("confirmEmail") ?? ""),
+    password: String(formData.get("password") ?? ""),
+  });
+  if (!result.success) {
+    return { error: result.error.message };
+  }
+  await signOut({ redirectTo: "/" });
   return { error: null };
 }

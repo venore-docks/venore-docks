@@ -89,6 +89,9 @@ atualização" em `VENORE-DOCKS.md`).
 
 ### Added
 
+- **LGPD (autoatendimento) em `/account`:** "Baixar meus dados" (`/api/account/export`, JSON com
+  perfil, papéis, arquivos enviados e conteúdos de autoria — nunca senha/segredo) e "Excluir minha
+  conta" (confirma e-mail e senha; anonimiza como a remoção pelo admin; superadmin não se exclui).
 - **Verificação em duas etapas (TOTP)** no login por senha: ativação em `/account` com QR code e 8
   códigos de recuperação (uso único), código exigido só depois da senha certa, código não vale duas
   vezes, desativação exige um código válido e o admin pode redefinir (`/admin/community`). Segredo

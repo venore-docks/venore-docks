@@ -1,11 +1,12 @@
 import { redirect } from "next/navigation";
-import { getCurrentUser, getOwnMfaStatus } from "@/contexts/auth";
+import { getCurrentUser, getOwnAccountData, getOwnMfaStatus } from "@/contexts/auth";
 import { getMediaAsset } from "@/contexts/media";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AvatarForm } from "./_components/avatar-form";
 import { NameForm } from "./_components/name-form";
 import { ChangePasswordForm, RevokeSessionsForm } from "./_components/security-forms";
 import { DisableMfa, EnableMfa } from "./_components/mfa-forms";
+import { DeleteAccountForm } from "./_components/privacy-forms";
 
 export const dynamic = "force-dynamic";
 
@@ -23,8 +24,10 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
   }
 
   const user = currentUser.data;
-  const mfaResult = await getOwnMfaStatus();
+  const [mfaResult, accountData] = await Promise.all([getOwnMfaStatus(), getOwnAccountData()]);
   const mfa = mfaResult.success ? mfaResult.data : null;
+  // A conta tem senha (independe de como esta sessão entrou): define se os formulários pedem a senha.
+  const hasPassword = accountData.success ? accountData.data.hasPassword : user.authProvider === "credentials";
   const avatarMediaResult = user.avatarMediaId ? await getMediaAsset({ id: user.avatarMediaId }) : null;
   const avatarMedia =
     avatarMediaResult?.success && avatarMediaResult.data
@@ -72,7 +75,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
           <CardTitle className="text-sm">Senha</CardTitle>
         </CardHeader>
         <CardContent>
-          <ChangePasswordForm hasPasswordLogin={user.authProvider === "credentials"} />
+          <ChangePasswordForm hasPasswordLogin={hasPassword} />
         </CardContent>
       </Card>
 
@@ -89,6 +92,21 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
         </CardHeader>
         <CardContent>
           <RevokeSessionsForm />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Privacidade</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">Baixe os dados que este site guarda sobre você (perfil, papéis, arquivos e conteúdos).</p>
+            <a href="/api/account/export" className="text-sm font-medium text-primary hover:underline" download>
+              Baixar meus dados (JSON)
+            </a>
+          </div>
+          <DeleteAccountForm hasPasswordLogin={hasPassword} />
         </CardContent>
       </Card>
     </div>

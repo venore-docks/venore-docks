@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { expect, test } from "@playwright/test";
 import { currentTotpStep, totpAt } from "../src/contexts/auth/shared/totp";
 
@@ -118,5 +119,35 @@ test.describe.serial("primeiro acesso", () => {
     await page.getByPlaceholder("Código de verificação (se ativado)").fill(recoveryCode);
     await page.getByRole("button", { name: "Entrar com senha" }).click();
     await expect(page).toHaveURL(/\/admin/);
+  });
+
+  test("membro baixa os próprios dados e exclui a conta (LGPD)", async ({ browser }) => {
+    const page = await (await browser.newContext()).newPage();
+    const member = `membro-${Date.now()}@example.test`;
+    await page.goto("/login", { waitUntil: "networkidle" });
+    await page.locator("details summary").first().click();
+    await page.getByPlaceholder("Nome").fill("Membro");
+    await page.getByPlaceholder("Email", { exact: true }).fill(member);
+    await page.locator('input[name="password"]').nth(1).fill("senha-membro-1");
+    await page.getByRole("button", { name: /Criar conta/ }).click();
+    await page.waitForURL(/notice=registration-received/);
+    // Aprovação direto no banco (o fluxo de aprovação pelo admin tem teste próprio).
+    execFileSync("psql", [process.env.DATABASE_URL ?? "", "-qc", `update auth.users set status='approved' where email='${member}'`]);
+
+    await page.goto("/login?callbackUrl=%2Faccount", { waitUntil: "networkidle" });
+    await page.getByPlaceholder("Email ou usuário").fill(member);
+    await page.getByPlaceholder("Senha", { exact: true }).fill("senha-membro-1");
+    await page.getByRole("button", { name: "Entrar com senha" }).click();
+    await expect(page).toHaveURL(/\/account/);
+
+    const exported = await (await page.request.get("/api/account/export")).json();
+    expect(exported.account.email).toBe(member);
+    expect(exported.account.passwordHash).toBeUndefined();
+
+    await page.getByPlaceholder("Digite seu e-mail para confirmar").fill(member);
+    await page.locator('form:has(button:has-text("Excluir minha conta")) input[name="password"]').fill("senha-membro-1");
+    await page.getByRole("button", { name: "Excluir minha conta" }).click();
+    await page.waitForURL((url) => url.pathname === "/");
+    expect((await page.request.get("/api/account/export")).status()).toBe(401);
   });
 });

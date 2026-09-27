@@ -135,3 +135,8 @@ export {
 } from "./features/mfa/manage-own-mfa/handler";
 export { adminResetMfaHandler as adminResetMfa } from "./features/mfa/admin-reset-mfa/handler";
 export type { MfaStatus, MfaEnrollment } from "./features/mfa/manage-own-mfa/types";
+// LGPD: excluir a própria conta (anonimiza, igual à remoção pelo admin) e ler os próprios dados.
+export { deleteOwnAccountHandler as deleteOwnAccount } from "./features/identity/delete-own-account/handler";
+export type { DeleteOwnAccountInput, DeleteOwnAccountResult } from "./features/identity/delete-own-account/types";
+export { getOwnAccountDataHandler as getOwnAccountData } from "./features/identity/get-own-account-data/handler";
+export type { OwnAccountData, GetOwnAccountDataResult } from "./features/identity/get-own-account-data/types";
