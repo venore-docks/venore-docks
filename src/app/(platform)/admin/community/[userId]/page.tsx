@@ -14,6 +14,7 @@ import { PurgeUserDialog } from "../_components/purge-user-dialog";
 import { RejectUserDialog } from "../_components/reject-user-dialog";
 import { RemoveUserDialog } from "../_components/remove-user-dialog";
 import { UnfreezeUserButton } from "../_components/unfreeze-user-button";
+import { RevokeSessionsButton } from "../_components/revoke-sessions-button";
 import { USER_STATUS_BADGE_CLASS, USER_STATUS_LABEL } from "../_components/users-table";
 import { ResetPasswordDialog } from "./_components/reset-password-dialog";
 
@@ -106,6 +107,7 @@ export default async function CommunityUserProfilePage({ params }: { params: Pro
           )}
           {user.status === "approved" && <FreezeUserDialog userId={user.id} />}
           {user.status === "frozen" && <UnfreezeUserButton userId={user.id} />}
+          {user.status === "approved" && <RevokeSessionsButton userId={user.id} />}
           {canRemove && user.status !== "removed" && <RemoveUserDialog userId={user.id} />}
           {canPurge && user.status === "removed" && <PurgeUserDialog userId={user.id} />}
         </div>

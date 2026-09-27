@@ -18,3 +18,10 @@ declare module "next-auth" {
     } & DefaultSession["user"];
   }
 }
+
+declare module "@auth/core/jwt" {
+  interface JWT {
+    // Versão de sessão gravada no login (users.session_version) — ver revoke-sessions.
+    sv?: number;
+  }
+}

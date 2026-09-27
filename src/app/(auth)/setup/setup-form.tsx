@@ -4,7 +4,7 @@ import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { bootstrapSuperadminAction, type SetupActionState } from "../actions";
-import { PasswordInput } from "../login/password-input";
+import { PasswordInput } from "@/components/password-input";
 
 const initialState: SetupActionState = { error: null };
 

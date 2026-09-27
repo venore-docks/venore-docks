@@ -32,6 +32,10 @@ export const users = authSchema.table("users", {
   // atividade do perfil admin (/admin/community/[userId]), não é usado por nenhuma checagem de
   // autorização.
   lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
+  // Versão das sessões (JWT). O token guarda o valor do login; incrementar derruba toda sessão
+  // emitida antes ("sair de todos os dispositivos", troca de senha). Ver features/session/
+  // revoke-sessions e o callback session de auth.config.ts.
+  sessionVersion: integer("session_version").notNull().default(0),
 }, (table) => [
   // E-mail único sem diferenciar maiúsculas: o cadastro já normaliza pra minúsculas, mas conta
   // criada pelo adapter do Auth.js (OAuth) grava como o provedor mandou — "Ana@x.com" e

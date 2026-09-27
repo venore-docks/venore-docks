@@ -87,6 +87,17 @@ atualização" em `VENORE-DOCKS.md`).
 
 ### Added
 
+- **Sessões revogáveis.** "Sair dos outros dispositivos" em `/account` e "Encerrar sessões" no
+  perfil do usuário em `/admin/community`; trocar a senha (própria ou pelo admin) também derruba
+  as sessões abertas. O JWT guarda `users.session_version` (migration 0048) e a sessão atual é
+  renovada só com prova assinada pelo servidor.
+- **Troca de senha em `/account`**, exigindo a senha atual quando a conta já tem uma.
+- **SEO:** `<title>`, description (primeiro parágrafo), canonical e Open Graph (capa) por
+  conteúdo e categoria; `sitemap.xml`, `robots.txt` (preview não indexa) e RSS em `/rss.xml`
+  (`?category=`). Conteúdo "authenticated" fica fora de tudo isso. `SITE_URL` define o domínio.
+- **Saúde e erros:** `GET /api/health` (app + banco, 200/503) e `src/instrumentation.ts`
+  (`onRequestError`) registrando erros não tratados em `/admin/diagnostics` e, com
+  `ERROR_WEBHOOK_URL`, enviando pra um webhook.
 - **Revisões e propostas no CMS.** Cada alteração guarda o estado anterior (histórico restaurável,
   50 por conteúdo). Quem não pode publicar (papel `author`) ao editar um conteúdo publicado cria
   uma **proposta** — o site não muda até alguém com `cms.entries.publish` aplicar. Arquivar

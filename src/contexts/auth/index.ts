@@ -1,4 +1,10 @@
 export { handlers, signIn, signOut } from "./auth.config";
+// Encerrar sessões: a própria (/account) e a de outro usuário (admin, mesma hierarquia de congelar).
+export {
+  revokeOwnSessionsHandler as revokeOwnSessions,
+  revokeUserSessionsHandler as revokeUserSessions,
+} from "./features/session/revoke-sessions/handler";
+export type { RevokeSessionsResult, RevokeUserSessionsInput } from "./features/session/revoke-sessions/types";
 export { getCurrentUserHandler as getCurrentUser } from "./features/session/get-current-user/handler";
 export { getCurrentUserRegistrationStatusHandler as getCurrentUserRegistrationStatus } from "./features/session/get-current-user-registration-status/handler";
 export { listAvailableAuthProviders } from "./providers";

@@ -1,7 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { adminCreateUser, adminSetUserPassword, freezeUser, removeUser, unfreezeUser } from "@/contexts/auth";
+import {
+  adminCreateUser,
+  adminSetUserPassword,
+  freezeUser,
+  removeUser,
+  revokeUserSessions,
+  unfreezeUser,
+} from "@/contexts/auth";
 import { approveRegistration, grantDefaultRoleOnRegistration, rejectRegistration } from "@/contexts/rbac";
 import { purgeUserSafely } from "@/platform/identity-lifecycle/purge-user-safely";
 
@@ -37,6 +44,16 @@ export async function freezeUserAction(_prevState: CommunityActionState, formDat
   const targetUserId = String(formData.get("targetUserId") ?? "");
   const reason = String(formData.get("reason") ?? "").trim();
   const result = await freezeUser({ targetUserId, reason: reason || undefined });
+  if (!result.success) return { error: result.error.message };
+
+  revalidateCommunity(targetUserId);
+  return { error: null };
+}
+
+// Desconecta a pessoa de todos os dispositivos (a conta continua ativa).
+export async function revokeUserSessionsAction(_prevState: CommunityActionState, formData: FormData): Promise<CommunityActionState> {
+  const targetUserId = String(formData.get("targetUserId") ?? "");
+  const result = await revokeUserSessions({ targetUserId });
   if (!result.success) return { error: result.error.message };
 
   revalidateCommunity(targetUserId);

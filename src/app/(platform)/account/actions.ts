@@ -1,7 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { setOwnName, updateOwnAvatar } from "@/contexts/auth";
+import { redirect } from "next/navigation";
+import { revokeOwnSessions, setOwnName, setOwnPassword, updateOwnAvatar } from "@/contexts/auth";
 import { uploadAvatarMediaAsset } from "@/contexts/media";
 
 export type AccountActionState = { error: string | null };
@@ -64,4 +65,31 @@ export async function uploadAvatarAction(_prevState: AccountActionState, formDat
 
   revalidatePath("/account");
   return { error: null };
+}
+
+// Troca de senha: pede a atual (setOwnPassword recusa sem ela quando a conta já tem senha) e
+// derruba as outras sessões; esta continua (o handler renova o token).
+export async function changeOwnPasswordAction(_prevState: AccountActionState, formData: FormData): Promise<AccountActionState> {
+  const newPassword = String(formData.get("newPassword") ?? "");
+  if (newPassword !== String(formData.get("confirmPassword") ?? "")) {
+    return { error: "A confirmação não bate com a nova senha." };
+  }
+
+  const result = await setOwnPassword({ newPassword, currentPassword: String(formData.get("currentPassword") ?? "") });
+  if (!result.success) {
+    return { error: result.error.message };
+  }
+
+  // redirect (não re-render no mesmo request): a página só enxerga o cookie renovado no próximo.
+  redirect("/account?aviso=senha-alterada");
+}
+
+// "Sair de todos os outros dispositivos": invalida todo JWT já emitido e renova o desta sessão.
+export async function revokeOtherSessionsAction(): Promise<AccountActionState> {
+  const result = await revokeOwnSessions();
+  if (!result.success) {
+    return { error: result.error.message };
+  }
+
+  redirect("/account?aviso=sessoes-encerradas");
 }

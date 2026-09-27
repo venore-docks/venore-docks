@@ -11,12 +11,13 @@ import {
   listEntries,
   recordEntryView,
 } from "@/contexts/cms";
-import type { Block, EntryRecord } from "@/contexts/cms";
+import type { EntryRecord } from "@/contexts/cms";
 import { getCurrentUser } from "@/contexts/auth";
 import { getMediaAssetUrls } from "@/contexts/media";
 import { resolvePublicPluginRoute } from "@/platform/plugin-routing/resolve-public-route";
 import { BlockRenderer } from "@/components/page-builder/block-renderer";
 import { EmptyState } from "@/components/empty-state";
+import { extractExcerpt } from "@/platform/seo/entry-excerpt";
 
 // force-dynamic: mesmo motivo de app/page.tsx — conteúdo e tema ativo mudam em runtime.
 export const dynamic = "force-dynamic";
@@ -41,6 +42,9 @@ const resolvePublicPluginRouteForRequest = cache((segmentsKey: string) =>
 export async function generateMetadata({ params, searchParams }: CatchAllProps): Promise<Metadata> {
   const { slug: segments } = await params;
   const pluginRoute = await resolvePublicPluginRouteForRequest(JSON.stringify(segments));
+  if (pluginRoute.kind === "not-a-plugin-route") {
+    return generateCmsMetadata(segments);
+  }
   if (pluginRoute.kind !== "matched" || !pluginRoute.generateMetadata) {
     return {};
   }
@@ -58,6 +62,53 @@ const isViewerAuthenticated = cache(async (): Promise<boolean> => {
   return currentUser.success && Boolean(currentUser.data);
 });
 
+// <head> das páginas do CMS: título, resumo (primeiro rich text), capa como og:image, canonical.
+// Conteúdo "authenticated" sai com noindex — mesmo pra quem está logado vendo a página.
+async function generateCmsMetadata(segments: string[]): Promise<Metadata> {
+  if (segments.length === 0 || segments.length > 2) return {};
+
+  const categoryResult = await getCachedCategoryBySlug(segments[0]);
+  const category = categoryResult.success ? categoryResult.data : null;
+  if (segments.length === 1 && category) {
+    return {
+      title: category.name,
+      description: category.description ?? undefined,
+      alternates: { canonical: `/${category.slug}`, types: { "application/rss+xml": `/rss.xml?category=${category.slug}` } },
+    };
+  }
+
+  const entryResult =
+    segments.length === 1
+      ? await getCachedPublishedEntryBySlug(null, segments[0])
+      : category
+        ? await getCachedPublishedEntryBySlug(category.id, segments[1])
+        : null;
+  const entry = entryResult?.success ? entryResult.data : null;
+  if (!entry) return {};
+  // Título/resumo de conteúdo fechado não vai pro <head> de quem não pode ver a página.
+  if (!(await isVisibleToCurrentViewer(entry))) return {};
+
+  const description = extractExcerpt(extractEntryComposition(entry.data), 200) ?? undefined;
+  const coverResult = entry.mediaId ? await getMediaAssetUrls({ ids: [entry.mediaId] }) : null;
+  const coverUrl = entry.mediaId && coverResult?.success ? coverResult.data[entry.mediaId] : undefined;
+  const path = category && segments.length === 2 ? `/${category.slug}/${entry.slug}` : `/${entry.slug}`;
+
+  return {
+    title: entry.title,
+    description,
+    alternates: { canonical: path },
+    robots: entry.visibility === "public" ? undefined : { index: false, follow: false },
+    openGraph: {
+      type: "article",
+      title: entry.title,
+      description,
+      url: path,
+      publishedTime: entry.publishedAt?.toISOString(),
+      images: coverUrl ? [{ url: coverUrl }] : undefined,
+    },
+  };
+}
+
 // C7: "authenticated" nunca aparece pra visitante sem sessão — nem como entry única (notFound),
 // nem como item de listagem (BL1: filtrado antes de renderizar, não link que ia dar 404).
 async function isVisibleToCurrentViewer(entry: EntryRecord): Promise<boolean> {
@@ -68,42 +119,6 @@ async function isVisibleToCurrentViewer(entry: EntryRecord): Promise<boolean> {
 function formatDate(date: Date | null): string | null {
   if (!date) return null;
   return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "long", year: "numeric" }).format(date);
-}
-
-function textFromRichTextNode(node: unknown): string {
-  if (!node || typeof node !== "object") return "";
-  const record = node as { type?: unknown; text?: unknown; content?: unknown };
-  if (record.type === "text" && typeof record.text === "string") return record.text;
-  if (Array.isArray(record.content)) return record.content.map(textFromRichTextNode).join(" ");
-  return "";
-}
-
-// Entries não têm campo de resumo dedicado (só corpo estruturado em blocos) — o blogroll deriva
-// um preview em texto puro do primeiro bloco de rich text da composição, em vez de exigir que o
-// autor mantenha um resumo duplicado em dois lugares.
-function extractExcerpt(composition: Block[] | null, maxLength = 160): string | null {
-  if (!composition) return null;
-
-  function walk(blocks: Block[]): string | null {
-    for (const block of blocks) {
-      if (block.key === "core.content.richtext") {
-        const content = (block.data as { content?: unknown }).content;
-        if (content && typeof content === "object") {
-          const text = textFromRichTextNode(content).replace(/\s+/g, " ").trim();
-          if (text) return text;
-        }
-      }
-      for (const area of block.areas ?? []) {
-        const found = walk(area.blocks);
-        if (found) return found;
-      }
-    }
-    return null;
-  }
-
-  const text = walk(composition);
-  if (!text) return null;
-  return text.length > maxLength ? `${text.slice(0, maxLength).trimEnd()}…` : text;
 }
 
 // BL1 (docs/implementation-roadmap.md, Fase 4): rota de categoria em formato blog — lista as

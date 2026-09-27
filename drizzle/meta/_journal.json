@@ -337,6 +337,13 @@
       "when": 1790477218216,
       "tag": "0047_performance_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1790492050778,
+      "tag": "0048_session_version",
+      "breakpoints": true
     }
   ]
 }

@@ -7,6 +7,7 @@ import { ServiceWorkerRegistrar } from "@/components/pwa/service-worker-registra
 import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { ThemeDomSync } from "@/components/theme-dom-sync";
 import { getBrandConfig } from "@/platform/brand/get-brand-config";
+import { getSiteOrigin } from "@/platform/seo/site-origin";
 import { resolveActiveTheme } from "@/platform/theme-rendering/resolve-active-theme";
 import { resolveActiveColorPalette, buildColorPaletteOverrideCss } from "@/platform/theme-rendering/resolve-active-color-palette";
 import "./globals.css";
@@ -25,6 +26,9 @@ export async function generateMetadata(): Promise<Metadata> {
   const { siteName, footerDescription, faviconUrl } = await getBrandConfig();
 
   return {
+    // Base das URLs relativas de canonical/og:image (SITE_URL ou o host da requisição).
+    metadataBase: new URL(await getSiteOrigin()),
+    alternates: { types: { "application/rss+xml": "/rss.xml" } },
     // Título vem do nome do site configurado (contexts/settings, /admin/settings/brand) — as
     // páginas internas põem só o próprio nome via `title` e o template junta " · <site>".
     title: { default: siteName, template: `%s · ${siteName}` },

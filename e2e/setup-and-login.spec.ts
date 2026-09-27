@@ -57,4 +57,37 @@ test.describe.serial("primeiro acesso", () => {
     await page.getByRole("button", { name: "Entrar com senha" }).click();
     await expect(page).toHaveURL(/\/admin\/settings/);
   });
+
+  test("sair dos outros dispositivos derruba a outra sessão e mantém esta", async ({ browser }) => {
+    const login = async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await page.goto("/login?callbackUrl=%2Fadmin", { waitUntil: "networkidle" });
+      await page.getByPlaceholder("Email ou usuário").fill(email);
+      await page.getByPlaceholder("Senha", { exact: true }).fill(password);
+      await page.getByRole("button", { name: "Entrar com senha" }).click();
+      await expect(page).toHaveURL(/\/admin/);
+      return { context, page };
+    };
+    const first = await login();
+    const second = await login();
+
+    await first.page.goto("/account", { waitUntil: "networkidle" });
+    await first.page.getByRole("button", { name: "Sair dos outros dispositivos" }).click();
+    await expect(first.page.getByRole("status").filter({ hasText: "As outras sessões foram encerradas." })).toBeVisible();
+
+    await second.page.goto("/admin");
+    await expect(second.page.getByRole("heading", { name: "Acesso negado" })).toBeVisible();
+
+    // A sessão revogada tenta se renovar pelo endpoint de update do Auth.js — não pode voltar.
+    const csrf = await (await second.page.request.get("/api/auth/csrf")).json();
+    await second.page.request.post("/api/auth/session", { data: { csrfToken: csrf.csrfToken, data: {} } });
+    await second.page.goto("/admin");
+    await expect(second.page.getByRole("heading", { name: "Acesso negado" })).toBeVisible();
+    await first.page.goto("/admin");
+    await expect(first.page.getByRole("heading", { name: "Acesso negado" })).toHaveCount(0);
+
+    await first.context.close();
+    await second.context.close();
+  });
 });

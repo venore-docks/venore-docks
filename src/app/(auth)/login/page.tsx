@@ -8,7 +8,7 @@ import { resolveBrandAesthetics } from "@/platform/theme-rendering/resolve-brand
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { signInWithPasswordAction, signInWithProviderAction, signUpWithPasswordAction } from "../actions";
-import { PasswordInput } from "./password-input";
+import { PasswordInput } from "@/components/password-input";
 
 // Só mensagens conhecidas, por código — antes `?error=` aceitava texto livre e qualquer um montava
 // um link de login oficial com a mensagem que quisesse (content spoofing).

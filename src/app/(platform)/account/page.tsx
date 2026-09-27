@@ -4,14 +4,21 @@ import { getMediaAsset } from "@/contexts/media";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AvatarForm } from "./_components/avatar-form";
 import { NameForm } from "./_components/name-form";
+import { ChangePasswordForm, RevokeSessionsForm } from "./_components/security-forms";
 
 export const dynamic = "force-dynamic";
 
-export default async function AccountPage() {
+const NOTICES: Record<string, string> = {
+  "senha-alterada": "Senha alterada. As outras sessões desta conta foram encerradas.",
+  "sessoes-encerradas": "As outras sessões foram encerradas.",
+};
+
+export default async function AccountPage({ searchParams }: { searchParams: Promise<{ aviso?: string }> }) {
+  const notice = NOTICES[(await searchParams).aviso ?? ""] ?? null;
   const currentUser = await getCurrentUser();
 
   if (!currentUser.success || !currentUser.data) {
-    redirect("/api/auth/signin");
+    redirect("/login?callbackUrl=%2Faccount");
   }
 
   const user = currentUser.data;
@@ -33,6 +40,12 @@ export default async function AccountPage() {
         <p className="mt-2 text-sm text-muted-foreground">{user.name ?? user.email}</p>
       </div>
 
+      {notice && (
+        <p role="status" className="rounded-md border border-border bg-accent/14 px-3 py-2 text-sm text-foreground">
+          {notice}
+        </p>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="text-sm">Nome</CardTitle>
@@ -48,6 +61,24 @@ export default async function AccountPage() {
         </CardHeader>
         <CardContent>
           <AvatarForm avatarMedia={avatarMedia} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Senha</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ChangePasswordForm hasPasswordLogin={user.authProvider === "credentials"} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Sessões</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <RevokeSessionsForm />
         </CardContent>
       </Card>
     </div>
