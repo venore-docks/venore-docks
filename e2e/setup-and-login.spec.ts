@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { currentTotpStep, totpAt } from "../src/contexts/auth/shared/totp";
 
 // Primeiro acesso de uma instância nova: /setup com SETUP_TOKEN cria o superadmin, e depois o
 // login por senha funciona (e falha do jeito certo). Roda contra um banco vazio.
@@ -89,5 +90,33 @@ test.describe.serial("primeiro acesso", () => {
 
     await first.context.close();
     await second.context.close();
+  });
+
+  test("verificação em duas etapas: ativar, exigir no login e aceitar código de recuperação", async ({ page }) => {
+    await page.goto("/login?callbackUrl=%2Faccount", { waitUntil: "networkidle" });
+    await page.getByPlaceholder("Email ou usuário").fill(email);
+    await page.getByPlaceholder("Senha", { exact: true }).fill(password);
+    await page.getByRole("button", { name: "Entrar com senha" }).click();
+    await expect(page).toHaveURL(/\/account/);
+
+    await page.getByRole("button", { name: "Ativar verificação em duas etapas" }).click();
+    const secret = (await page.locator("p.font-mono").innerText()).trim();
+    await page.getByPlaceholder("Código de 6 dígitos").fill(totpAt(secret, currentTotpStep()));
+    await page.getByRole("button", { name: "Ativar", exact: true }).click();
+    await expect(page.getByText("Verificação em duas etapas ativada.")).toBeVisible();
+    const recoveryCode = (await page.locator("ul.font-mono li").first().innerText()).trim();
+
+    await page.context().clearCookies();
+    await page.goto("/login?callbackUrl=%2Fadmin", { waitUntil: "networkidle" });
+    await page.getByPlaceholder("Email ou usuário").fill(email);
+    await page.getByPlaceholder("Senha", { exact: true }).fill(password);
+    await page.getByRole("button", { name: "Entrar com senha" }).click();
+    await expect(page).toHaveURL(/error=mfa_required/);
+
+    await page.getByPlaceholder("Email ou usuário").fill(email);
+    await page.getByPlaceholder("Senha", { exact: true }).fill(password);
+    await page.getByPlaceholder("Código de verificação (se ativado)").fill(recoveryCode);
+    await page.getByRole("button", { name: "Entrar com senha" }).click();
+    await expect(page).toHaveURL(/\/admin/);
   });
 });

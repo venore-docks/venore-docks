@@ -20,6 +20,8 @@ const ERROR_MESSAGES: Record<string, string> = {
   account_rejected: "Cadastro rejeitado. Fale com um administrador se acha que isso é engano.",
   account_frozen: "Conta congelada por um administrador. Fale com um administrador para reativar.",
   account_removed: "Conta removida.",
+  mfa_required: "Esta conta usa verificação em duas etapas: informe também o código do app autenticador.",
+  mfa_invalid: "Código de verificação inválido. Use o código atual do app ou um código de recuperação.",
   "auth.registration.invalid_email": "Informe um email válido.",
   "auth.registration.invalid_name": "Informe seu nome.",
   "auth.registration.weak_password": "A senha precisa ter ao menos 8 caracteres.",
@@ -132,6 +134,13 @@ export default async function LoginPage({
             <div className="space-y-2">
               <Input name="username" placeholder="Email ou usuário" autoComplete="username" required />
               <PasswordInput name="password" placeholder="Senha" autoComplete="current-password" required />
+              <Input
+                name="otp"
+                placeholder="Código de verificação (se ativado)"
+                autoComplete="one-time-code"
+                inputMode="text"
+                maxLength={12}
+              />
             </div>
             <Button type="submit" className="w-full">
               Entrar com senha

@@ -18,6 +18,13 @@ vi.mock("./features/identity/rehash-password/handler", () => ({
   rehashPasswordHandler: (...args: unknown[]) => rehashPasswordHandler(...args),
 }));
 
+const isMfaEnabled = vi.fn(async () => false);
+const verifyMfaCode = vi.fn(async () => false);
+vi.mock("./features/mfa/verify-mfa-login/service", () => ({
+  isMfaEnabled: (...args: unknown[]) => isMfaEnabled(...(args as [])),
+  verifyMfaCode: (...args: unknown[]) => verifyMfaCode(...(args as [])),
+}));
+
 type AuthorizeFn = (credentials: Record<string, unknown>) => Promise<{ id: string; name?: string | null; email?: string | null } | null>;
 
 async function getAuthorize(): Promise<AuthorizeFn> {
@@ -117,5 +124,24 @@ describe("credentials provider authorize", () => {
     const authorize = await getAuthorize();
     await authorize({ username: "u@e.com", password: "secret" });
     expect(rehashPasswordHandler).toHaveBeenCalledWith({ userId: "u1", password: "secret", storedHash: APPROVED_USER.passwordHash });
+  });
+
+  it("asks for the second factor only after the right password, and checks it", async () => {
+    findUserByEmailHandler.mockResolvedValue({ success: true, data: APPROVED_USER });
+    verifyPasswordHash.mockResolvedValue(true);
+    isMfaEnabled.mockResolvedValue(true);
+    const authorize = await getAuthorize();
+
+    await expect(authorize({ username: "u@e.com", password: "right" })).rejects.toMatchObject({ code: "mfa_required" });
+    verifyMfaCode.mockResolvedValue(false);
+    await expect(authorize({ username: "u@e.com", password: "right", otp: "000000" })).rejects.toMatchObject({ code: "mfa_invalid" });
+    verifyMfaCode.mockResolvedValue(true);
+    await expect(authorize({ username: "u@e.com", password: "right", otp: "123456" })).resolves.toMatchObject({ id: "u1" });
+
+    verifyPasswordHash.mockResolvedValue(false);
+    isMfaEnabled.mockClear();
+    await expect(authorize({ username: "u@e.com", password: "wrong" })).resolves.toBeNull();
+    expect(isMfaEnabled).not.toHaveBeenCalled();
+    isMfaEnabled.mockResolvedValue(false);
   });
 });

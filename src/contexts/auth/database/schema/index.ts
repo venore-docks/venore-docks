@@ -36,6 +36,13 @@ export const users = authSchema.table("users", {
   // emitida antes ("sair de todos os dispositivos", troca de senha). Ver features/session/
   // revoke-sessions e o callback session de auth.config.ts.
   sessionVersion: integer("session_version").notNull().default(0),
+  // Verificação em duas etapas (TOTP) do login por senha — features/mfa. Segredos cifrados
+  // (shared/secret-box.ts). pending = cadastro iniciado e ainda não confirmado com um código.
+  mfaSecret: text("mfa_secret"),
+  mfaPendingSecret: text("mfa_pending_secret"),
+  mfaEnabledAt: timestamp("mfa_enabled_at", { withTimezone: true }),
+  // Último passo TOTP aceito: o mesmo código não vale duas vezes (replay dentro dos 30 s).
+  mfaLastStep: integer("mfa_last_step"),
 }, (table) => [
   // E-mail único sem diferenciar maiúsculas: o cadastro já normaliza pra minúsculas, mas conta
   // criada pelo adapter do Auth.js (OAuth) grava como o provedor mandou — "Ana@x.com" e
@@ -105,3 +112,18 @@ export const passwordResetTokens = authSchema.table(
   (table) => [index("password_reset_tokens_user_idx").on(table.userId), index("password_reset_tokens_expires_idx").on(table.expiresAt)],
 );
 
+// Códigos de recuperação da verificação em duas etapas (uso único, só o hash).
+export const mfaRecoveryCodes = authSchema.table(
+  "mfa_recovery_codes",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    codeHash: text("code_hash").notNull().unique(),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+  },
+  (table) => [index("mfa_recovery_codes_user_idx").on(table.userId)],
+);

@@ -83,10 +83,16 @@ atualização" em `VENORE-DOCKS.md`).
   admin antes de resolver a rota, mesmo que o plugin esqueça o próprio gate.
 - **Dependências:** `next` 16.2.11 → 16.3.6 (advisories crítico/altos), Tiptap 3.29 → 3.31 e
   transitivas (`js-yaml`, `nanoid`, `brace-expansion`, `fast-uri`, `hono`, `qs`). Restam 4
-  moderadas no `esbuild` interno do `drizzle-kit` (só servidor de dev do esbuild, não usado).
+  moderadas no `esbuild` interno do `drizzle-kit` (só servidor de dev do esbuild, não usado) e 2
+  no `vitest` (runner de teste; a correção 4.1.11 esbarra num bug do npm ao resolver peers
+  opcionais — pendente).
 
 ### Added
 
+- **Verificação em duas etapas (TOTP)** no login por senha: ativação em `/account` com QR code e 8
+  códigos de recuperação (uso único), código exigido só depois da senha certa, código não vale duas
+  vezes, desativação exige um código válido e o admin pode redefinir (`/admin/community`). Segredo
+  cifrado com AES-256-GCM derivado do `AUTH_SECRET` (migration 0051).
 - **Busca pública** em `/busca` (Postgres full-text): título pesa mais que o corpo, acha com e sem
   acento, só conteúdo publicado (e "authenticated" só pra quem está logado), paginada e com limite
   por IP. Coluna gerada + índice GIN (migration custom 0050, fora do schema Drizzle).

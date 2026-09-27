@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/contexts/auth";
+import { getCurrentUser, getOwnMfaStatus } from "@/contexts/auth";
 import { getMediaAsset } from "@/contexts/media";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AvatarForm } from "./_components/avatar-form";
 import { NameForm } from "./_components/name-form";
 import { ChangePasswordForm, RevokeSessionsForm } from "./_components/security-forms";
+import { DisableMfa, EnableMfa } from "./_components/mfa-forms";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,8 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
   }
 
   const user = currentUser.data;
+  const mfaResult = await getOwnMfaStatus();
+  const mfa = mfaResult.success ? mfaResult.data : null;
   const avatarMediaResult = user.avatarMediaId ? await getMediaAsset({ id: user.avatarMediaId }) : null;
   const avatarMedia =
     avatarMediaResult?.success && avatarMediaResult.data
@@ -71,6 +74,13 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
         <CardContent>
           <ChangePasswordForm hasPasswordLogin={user.authProvider === "credentials"} />
         </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Verificação em duas etapas</CardTitle>
+        </CardHeader>
+        <CardContent>{mfa?.enabled ? <DisableMfa recoveryCodesLeft={mfa.recoveryCodesLeft} /> : <EnableMfa />}</CardContent>
       </Card>
 
       <Card>

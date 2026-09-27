@@ -14,8 +14,12 @@ export const BLOCKED_ACCOUNT_CODES = {
 
 export type BlockedAccountCode = (typeof BLOCKED_ACCOUNT_CODES)[keyof typeof BLOCKED_ACCOUNT_CODES];
 
+// Verificação em duas etapas — também só depois da senha certa.
+export const MFA_LOGIN_CODES = { required: "mfa_required", invalid: "mfa_invalid" } as const;
+export type MfaLoginCode = (typeof MFA_LOGIN_CODES)[keyof typeof MFA_LOGIN_CODES];
+
 export class BlockedAccountError extends CredentialsSignin {
-  constructor(code: BlockedAccountCode) {
+  constructor(code: BlockedAccountCode | MfaLoginCode) {
     super();
     this.code = code;
   }
@@ -23,4 +27,8 @@ export class BlockedAccountError extends CredentialsSignin {
 
 export function isBlockedAccountCode(code: unknown): code is BlockedAccountCode {
   return typeof code === "string" && (Object.values(BLOCKED_ACCOUNT_CODES) as string[]).includes(code);
+}
+
+export function isMfaLoginCode(code: unknown): code is MfaLoginCode {
+  return typeof code === "string" && (Object.values(MFA_LOGIN_CODES) as string[]).includes(code);
 }

@@ -124,3 +124,14 @@ export { deleteStaleResetTokens as deleteStalePasswordResetTokens } from "./feat
 // @venore/plugin-sdk (lista explícita lá).
 export { findApprovedUserContacts as listApprovedUserContacts } from "./features/identity/list-user-contacts/store";
 export type { UserContact } from "./features/identity/list-user-contacts/store";
+
+// Verificação em duas etapas (TOTP) do login por senha: autoatendimento (/account) e reset pelo
+// admin (mesma hierarquia de congelar conta).
+export {
+  getOwnMfaStatusHandler as getOwnMfaStatus,
+  startMfaEnrollmentHandler as startMfaEnrollment,
+  confirmMfaEnrollmentHandler as confirmMfaEnrollment,
+  disableOwnMfaHandler as disableOwnMfa,
+} from "./features/mfa/manage-own-mfa/handler";
+export { adminResetMfaHandler as adminResetMfa } from "./features/mfa/admin-reset-mfa/handler";
+export type { MfaStatus, MfaEnrollment } from "./features/mfa/manage-own-mfa/types";

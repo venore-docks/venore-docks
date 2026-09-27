@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import {
   adminCreateUser,
+  adminResetMfa,
   adminSetUserPassword,
   freezeUser,
   removeUser,
@@ -54,6 +55,16 @@ export async function freezeUserAction(_prevState: CommunityActionState, formDat
 export async function revokeUserSessionsAction(_prevState: CommunityActionState, formData: FormData): Promise<CommunityActionState> {
   const targetUserId = String(formData.get("targetUserId") ?? "");
   const result = await revokeUserSessions({ targetUserId });
+  if (!result.success) return { error: result.error.message };
+
+  revalidateCommunity(targetUserId);
+  return { error: null };
+}
+
+// Celular perdido: desliga a verificação em duas etapas da pessoa (ela reativa depois).
+export async function resetUserMfaAction(_prevState: CommunityActionState, formData: FormData): Promise<CommunityActionState> {
+  const targetUserId = String(formData.get("targetUserId") ?? "");
+  const result = await adminResetMfa({ targetUserId });
   if (!result.success) return { error: result.error.message };
 
   revalidateCommunity(targetUserId);

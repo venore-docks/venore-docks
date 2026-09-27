@@ -11,7 +11,7 @@ import {
   signIn,
   signOut,
 } from "@/contexts/auth";
-import { isBlockedAccountCode } from "@/contexts/auth/contracts/login-errors";
+import { isBlockedAccountCode, isMfaLoginCode } from "@/contexts/auth/contracts/login-errors";
 import { checkRateLimit, getClientIp } from "@/infrastructure/rate-limit";
 import { toSafeCallbackUrl } from "@/platform/auth-flow/safe-callback-url";
 import { bootstrapSuperadmin } from "@/platform/registration/bootstrap-superadmin";
@@ -54,6 +54,7 @@ export async function signInWithProviderAction(formData: FormData) {
 export async function signInWithPasswordAction(formData: FormData) {
   const username = String(formData.get("username") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  const otp = String(formData.get("otp") ?? "").trim();
   const callbackUrl = toSafeCallbackUrl(formData.get("callbackUrl"));
 
   const ip = await clientIp();
@@ -66,11 +67,11 @@ export async function signInWithPasswordAction(formData: FormData) {
   }
 
   try {
-    await signIn("credentials", { username, password, redirect: false });
+    await signIn("credentials", { username, password, otp, redirect: false });
   } catch (error) {
     // Status da conta (pendente, congelada...) só chega aqui quando a senha estava CERTA — o
     // authorize() recusa com um código específico depois do verify (contracts/login-errors.ts).
-    if (error instanceof CredentialsSignin && isBlockedAccountCode(error.code)) {
+    if (error instanceof CredentialsSignin && (isBlockedAccountCode(error.code) || isMfaLoginCode(error.code))) {
       redirect(loginPath({ error: error.code }, callbackUrl));
     }
     if (error instanceof AuthError) {

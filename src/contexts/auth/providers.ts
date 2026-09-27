@@ -10,7 +10,8 @@ import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id";
 import { findUserByEmailHandler as findUserByEmail } from "./features/identity/find-user-by-email/handler";
 import { burnPasswordVerificationTime, verifyPasswordHash } from "./features/identity/password-hashing";
 import { rehashPasswordHandler as rehashPassword } from "./features/identity/rehash-password/handler";
-import { BLOCKED_ACCOUNT_CODES, BlockedAccountError } from "./contracts/login-errors";
+import { BLOCKED_ACCOUNT_CODES, BlockedAccountError, MFA_LOGIN_CODES } from "./contracts/login-errors";
+import { isMfaEnabled, verifyMfaCode } from "./features/mfa/verify-mfa-login/service";
 import type { AuthProviderDescriptor, UserRegistrationStatus } from "./contracts/types";
 
 function readEnvValue(key: string): string {
@@ -129,6 +130,7 @@ export function buildAuthProviders() {
       credentials: {
         username: { label: "Email ou usuário", type: "text" },
         password: { label: "Senha", type: "password" },
+        otp: { label: "Código de verificação", type: "text" },
       },
       async authorize(credentials) {
         const username = typeof credentials?.username === "string" ? credentials.username.trim() : "";
@@ -153,6 +155,14 @@ export function buildAuthProviders() {
           const code = BLOCKED_ACCOUNT_CODES[status as keyof typeof BLOCKED_ACCOUNT_CODES];
           if (code) throw new BlockedAccountError(code);
           return null;
+        }
+
+        // Verificação em duas etapas (features/mfa): exigida só depois da senha certa — quem não
+        // sabe a senha não descobre se a conta tem o segundo fator.
+        if (await isMfaEnabled(found.data.id)) {
+          const otp = typeof credentials?.otp === "string" ? credentials.otp.trim() : "";
+          if (!otp) throw new BlockedAccountError(MFA_LOGIN_CODES.required);
+          if (!(await verifyMfaCode(found.data.id, otp))) throw new BlockedAccountError(MFA_LOGIN_CODES.invalid);
         }
 
         // Hash legado (parâmetros scrypt antigos) é regravado agora que a senha em claro existe.

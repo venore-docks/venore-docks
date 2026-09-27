@@ -2,7 +2,18 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { revokeOwnSessions, setOwnName, setOwnPassword, updateOwnAvatar } from "@/contexts/auth";
+import QRCode from "qrcode";
+import {
+  confirmMfaEnrollment,
+  disableOwnMfa,
+  getOwnMfaStatus,
+  revokeOwnSessions,
+  setOwnName,
+  setOwnPassword,
+  startMfaEnrollment,
+  updateOwnAvatar,
+} from "@/contexts/auth";
+import { getBrandConfig } from "@/platform/brand/get-brand-config";
 import { uploadAvatarMediaAsset } from "@/contexts/media";
 
 export type AccountActionState = { error: string | null };
@@ -92,4 +103,49 @@ export async function revokeOtherSessionsAction(): Promise<AccountActionState> {
   }
 
   redirect("/account?aviso=sessoes-encerradas");
+}
+
+// Verificação em duas etapas: 1) gerar o segredo (QR + texto), 2) confirmar com um código do app
+// (devolve os códigos de recuperação, mostrados uma vez), 3) desligar com um código válido.
+export type MfaActionState = {
+  error: string | null;
+  step: "idle" | "scan" | "done";
+  qrSvg: string | null;
+  secret: string | null;
+  recoveryCodes: string[] | null;
+};
+
+export async function startMfaEnrollmentAction(): Promise<MfaActionState> {
+  // Sessão primeiro: getBrandConfig grava defaults de settings e não deve rodar pra anônimo.
+  const status = await getOwnMfaStatus();
+  if (!status.success) {
+    return { error: status.error.message, step: "idle", qrSvg: null, secret: null, recoveryCodes: null };
+  }
+  const { siteName } = await getBrandConfig();
+  const result = await startMfaEnrollment({ issuer: siteName });
+  if (!result.success) {
+    return { error: result.error.message, step: "idle", qrSvg: null, secret: null, recoveryCodes: null };
+  }
+  // SVG gerado aqui a partir do URI otpauth (nada vindo do usuário vai no SVG).
+  const qrSvg = await QRCode.toString(result.data.otpauthUri, { type: "svg", margin: 2, width: 200, color: { dark: "#000000", light: "#ffffff" } });
+  return { error: null, step: "scan", qrSvg, secret: result.data.secret, recoveryCodes: null };
+}
+
+export async function confirmMfaEnrollmentAction(prev: MfaActionState, formData: FormData): Promise<MfaActionState> {
+  const result = await confirmMfaEnrollment({ code: String(formData.get("code") ?? "") });
+  if (!result.success) {
+    return { ...prev, error: result.error.message };
+  }
+  // Sem revalidatePath de propósito: re-renderizar /account trocaria este formulário pelo de
+  // "desativar" (MFA já ativo) e os códigos de recuperação sumiriam antes de a pessoa guardá-los.
+  return { error: null, step: "done", qrSvg: null, secret: null, recoveryCodes: result.data.recoveryCodes };
+}
+
+export async function disableMfaAction(_prev: AccountActionState, formData: FormData): Promise<AccountActionState> {
+  const result = await disableOwnMfa({ code: String(formData.get("code") ?? "") });
+  if (!result.success) {
+    return { error: result.error.message };
+  }
+  revalidatePath("/account");
+  return { error: null };
 }
