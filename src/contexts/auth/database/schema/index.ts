@@ -1,5 +1,6 @@
 import type { AdapterAccountType } from "next-auth/adapters";
-import { integer, pgSchema, primaryKey, text, timestamp } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { integer, pgSchema, primaryKey, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 
 export const authSchema = pgSchema("auth");
 
@@ -31,7 +32,12 @@ export const users = authSchema.table("users", {
   // atividade do perfil admin (/admin/community/[userId]), não é usado por nenhuma checagem de
   // autorização.
   lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
-});
+}, (table) => [
+  // E-mail único sem diferenciar maiúsculas: o cadastro já normaliza pra minúsculas, mas conta
+  // criada pelo adapter do Auth.js (OAuth) grava como o provedor mandou — "Ana@x.com" e
+  // "ana@x.com" viravam duas contas. Também atende a busca por e-mail (lower(email) = ...).
+  uniqueIndex("users_email_lower_idx").on(sql`lower(${table.email})`),
+]);
 
 export const accounts = authSchema.table(
   "accounts",

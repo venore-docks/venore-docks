@@ -1,6 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { UserRbacContext } from "./contracts/types";
 
+let dbVersion = 0;
+const bumpCacheVersion = vi.fn(async () => {
+  dbVersion += 1;
+});
+vi.mock("@/infrastructure/cache/cache-version", () => ({
+  bumpCacheVersion: () => bumpCacheVersion(),
+  readCacheVersion: async () => dbVersion,
+}));
+
 function makeContext(overrides: Partial<UserRbacContext> = {}): UserRbacContext {
   return {
     userId: "user-1",
@@ -16,6 +25,9 @@ describe("user-context-cache", () => {
   beforeEach(() => {
     vi.resetModules();
     vi.useFakeTimers();
+    delete (globalThis as { __venoreRbacUserContextCache?: unknown }).__venoreRbacUserContextCache;
+    dbVersion = 0;
+    bumpCacheVersion.mockClear();
   });
 
   afterEach(() => {
@@ -49,8 +61,31 @@ describe("user-context-cache", () => {
     const { getCachedUserContext, setCachedUserContext, invalidateUserContext } = await import("./user-context-cache");
     setCachedUserContext("user-1", makeContext());
 
-    invalidateUserContext("user-1");
+    await invalidateUserContext("user-1");
 
     expect(getCachedUserContext("user-1")).toBeNull();
+    expect(bumpCacheVersion).toHaveBeenCalledTimes(1);
+  });
+
+  it("drops the local cache once another instance bumps the version", async () => {
+    const { getCachedUserContext, setCachedUserContext, syncUserContextCacheVersion } = await import("./user-context-cache");
+    await syncUserContextCacheVersion();
+    setCachedUserContext("user-1", makeContext());
+
+    dbVersion += 1; // outra instância removeu um papel
+    await syncUserContextCacheVersion();
+    expect(getCachedUserContext("user-1")).not.toBeNull(); // ainda dentro do intervalo de checagem
+
+    vi.advanceTimersByTime(5 * 1000 + 1);
+    await syncUserContextCacheVersion();
+    expect(getCachedUserContext("user-1")).toBeNull();
+  });
+
+  it("is shared through globalThis across module copies", async () => {
+    const first = await import("./user-context-cache");
+    first.setCachedUserContext("user-1", makeContext());
+    vi.resetModules();
+    const second = await import("./user-context-cache");
+    expect(second.getCachedUserContext("user-1")).not.toBeNull();
   });
 });

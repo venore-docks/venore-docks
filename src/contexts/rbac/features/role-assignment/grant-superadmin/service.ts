@@ -24,7 +24,7 @@ export async function grantSuperadmin(command: GrantSuperadminInput): Promise<Gr
   }
 
   await insertUserRole(command.userId, roleId);
-  invalidateUserContext(command.userId);
+  await invalidateUserContext(command.userId);
   endOperation(handle, {
     success: true,
     summary: `Usuário ${command.userId} recebeu o papel superadmin.`,

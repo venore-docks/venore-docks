@@ -32,7 +32,7 @@ export async function assignRoleToUser(command: AssignRoleToUserCommand): Promis
   }
 
   await insertUserRole(command.userId, command.roleId);
-  invalidateUserContext(command.userId);
+  await invalidateUserContext(command.userId);
 
   const summary = `user:${command.actor.id} atribuiu o papel "${role.key}" ao usuário ${command.userId}.`;
   endOperation(handle, { success: true, summary });

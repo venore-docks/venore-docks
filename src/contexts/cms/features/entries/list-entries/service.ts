@@ -7,7 +7,8 @@ const PUBLISHED_ENTRIES_CACHE_TTL_SECONDS = 60;
 
 function cacheKeyFor(query: ListEntriesQuery): string {
   const categoryIds = query.categoryIds && query.categoryIds.length > 0 ? [...query.categoryIds].sort().join(",") : "*";
-  return `cms:entries:published:${query.contentTypeId ?? "*"}:${query.categoryId ?? "*"}:${categoryIds}:${query.visibility ?? "*"}:${query.includeInternallyOwned ? "withInternal" : "*"}`;
+  const page = query.limit === undefined ? "all" : `${query.limit}@${query.offset ?? 0}`;
+  return `cms:entries:published:${query.contentTypeId ?? "*"}:${query.categoryId ?? "*"}:${categoryIds}:${query.visibility ?? "*"}:${query.includeInternallyOwned ? "withInternal" : "*"}:${page}`;
 }
 
 export async function listEntries(query: ListEntriesQuery): Promise<ListEntriesResult> {

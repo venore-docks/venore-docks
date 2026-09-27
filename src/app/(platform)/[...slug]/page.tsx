@@ -4,16 +4,16 @@ import { notFound, unstable_rethrow } from "next/navigation";
 import { cache } from "react";
 import { ArrowLeft, ArrowRight, BookOpen, Calendar } from "lucide-react";
 import {
+  extractEntryComposition,
   getCachedCategoryBySlug,
   getCachedPublishedEntryBySlug,
   getEntryBody,
-  getEntryComposition,
   listEntries,
   recordEntryView,
 } from "@/contexts/cms";
 import type { Block, EntryRecord } from "@/contexts/cms";
 import { getCurrentUser } from "@/contexts/auth";
-import { getMediaAsset } from "@/contexts/media";
+import { getMediaAssetUrls } from "@/contexts/media";
 import { resolvePublicPluginRoute } from "@/platform/plugin-routing/resolve-public-route";
 import { BlockRenderer } from "@/components/page-builder/block-renderer";
 import { EmptyState } from "@/components/empty-state";
@@ -53,12 +53,16 @@ export async function generateMetadata({ params, searchParams }: CatchAllProps):
   }
 }
 
+const isViewerAuthenticated = cache(async (): Promise<boolean> => {
+  const currentUser = await getCurrentUser();
+  return currentUser.success && Boolean(currentUser.data);
+});
+
 // C7: "authenticated" nunca aparece pra visitante sem sessão — nem como entry única (notFound),
 // nem como item de listagem (BL1: filtrado antes de renderizar, não link que ia dar 404).
 async function isVisibleToCurrentViewer(entry: EntryRecord): Promise<boolean> {
   if (entry.visibility === "public") return true;
-  const currentUser = await getCurrentUser();
-  return currentUser.success && Boolean(currentUser.data);
+  return isViewerAuthenticated();
 }
 
 function formatDate(date: Date | null): string | null {
@@ -107,27 +111,42 @@ function extractExcerpt(composition: Block[] | null, maxLength = 160): string | 
 // status="published") e visibilidade por entry (C7). Capa do card vem de entry.mediaId (campo
 // dedicado de "imagem de destaque", exposto no form de edição da entry via MediaPickerField) —
 // não da composição, pra não depender de onde o autor colocou a imagem dentro do corpo.
-async function renderCategoryBlogroll(category: { id: string; name: string; slug: string; description: string | null }) {
-  const entriesResult = await listEntries({ categoryId: category.id });
-  const allEntries = entriesResult.success ? entriesResult.data : [];
+const BLOGROLL_PAGE_SIZE = 12;
 
-  const visibleFlags = await Promise.all(allEntries.map(isVisibleToCurrentViewer));
-  const visibleEntries = allEntries.filter((_, index) => visibleFlags[index]);
-  const sorted = [...visibleEntries].sort(
-    (a, b) => (b.publishedAt?.getTime() ?? 0) - (a.publishedAt?.getTime() ?? 0),
-  );
+function parsePage(value: string | string[] | undefined): number {
+  const raw = Array.isArray(value) ? value[0] : value;
+  const page = Number(raw);
+  return Number.isInteger(page) && page >= 1 && page <= 10_000 ? page : 1;
+}
 
-  const cards = await Promise.all(
-    sorted.map(async (entry) => {
-      const [coverResult, compositionResult] = await Promise.all([
-        entry.mediaId ? getMediaAsset({ id: entry.mediaId }) : Promise.resolve(null),
-        getEntryComposition({ id: entry.id }),
-      ]);
-      const coverUrl = coverResult?.success ? (coverResult.data?.url ?? null) : null;
-      const composition = compositionResult.success ? compositionResult.data : null;
-      return { entry, coverUrl, excerpt: extractExcerpt(composition) };
-    }),
-  );
+// Uma consulta de entries (a página pedida + 1, pra saber se há próxima), uma de mídia pra todas
+// as capas, e o resumo vem do `data` que a listagem já trouxe. Antes: todas as entries da
+// categoria + getMediaAsset + getEntryComposition POR card.
+async function renderCategoryBlogroll(
+  category: { id: string; name: string; slug: string; description: string | null },
+  page: number,
+) {
+  const viewerIsAuthenticated = await isViewerAuthenticated();
+  const entriesResult = await listEntries({
+    categoryId: category.id,
+    // C7: visitante sem sessão só vê "public" — filtrado no banco, antes da paginação.
+    ...(viewerIsAuthenticated ? {} : { visibility: "public" as const }),
+    limit: BLOGROLL_PAGE_SIZE + 1,
+    offset: (page - 1) * BLOGROLL_PAGE_SIZE,
+  });
+  const fetched = entriesResult.success ? entriesResult.data : [];
+  const hasNextPage = fetched.length > BLOGROLL_PAGE_SIZE;
+  const pageEntries = fetched.slice(0, BLOGROLL_PAGE_SIZE);
+
+  const coverIds = pageEntries.map((entry) => entry.mediaId).filter((id): id is string => Boolean(id));
+  const coversResult = await getMediaAssetUrls({ ids: coverIds });
+  const coverUrls = coversResult.success ? coversResult.data : {};
+
+  const cards = pageEntries.map((entry) => ({
+    entry,
+    coverUrl: entry.mediaId ? (coverUrls[entry.mediaId] ?? null) : null,
+    excerpt: extractExcerpt(extractEntryComposition(entry.data)),
+  }));
 
   return (
     <div className="space-y-8">
@@ -178,6 +197,23 @@ async function renderCategoryBlogroll(category: { id: string; name: string; slug
           ))}
         </div>
       )}
+
+      {(page > 1 || hasNextPage) && (
+        <nav aria-label="Paginação" className="flex items-center justify-between gap-4 text-sm">
+          {page > 1 ? (
+            <Link href={page === 2 ? `/${category.slug}` : `/${category.slug}?page=${page - 1}`} className="flex items-center gap-1 font-medium text-primary">
+              <ArrowLeft className="size-3.5" aria-hidden="true" /> Mais recentes
+            </Link>
+          ) : (
+            <span />
+          )}
+          {hasNextPage && (
+            <Link href={`/${category.slug}?page=${page + 1}`} className="flex items-center gap-1 font-medium text-primary">
+              Mais antigos <ArrowRight className="size-3.5" aria-hidden="true" />
+            </Link>
+          )}
+        </nav>
+      )}
     </div>
   );
 }
@@ -218,7 +254,7 @@ export default async function CatchAllPage({ params, searchParams }: CatchAllPro
     // existir.
     const categoryResult = await getCachedCategoryBySlug(segments[0]);
     if (categoryResult.success && categoryResult.data) {
-      return renderCategoryBlogroll(categoryResult.data);
+      return renderCategoryBlogroll(categoryResult.data, parsePage((await searchParams).page));
     }
 
     entryResult = await getCachedPublishedEntryBySlug(null, segments[0]);
@@ -249,8 +285,8 @@ export default async function CatchAllPage({ params, searchParams }: CatchAllPro
 
   recordEntryView(entry.id);
 
-  const compositionResult = await getEntryComposition({ id: entry.id });
-  const composition = compositionResult.success ? compositionResult.data : null;
+  // A entry publicada já veio com `data` — extrair a composição dali evita um segundo SELECT.
+  const composition = extractEntryComposition(entry.data);
   const publishedLabel = formatDate(entry.publishedAt);
 
   return (

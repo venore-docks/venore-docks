@@ -27,6 +27,8 @@ export async function GET(): Promise<NextResponse> {
       "Content-Type": "application/zip",
       "Content-Disposition": `attachment; filename="${filename}"`,
       "Content-Length": String(zip.byteLength),
+      // Quantos arquivos de mídia ficaram de fora (motivos em manifest.skippedAssets).
+      "X-Export-Skipped-Assets": String(result.data.manifest.skippedAssets?.length ?? 0),
     },
   });
 }

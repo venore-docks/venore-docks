@@ -84,6 +84,17 @@ export const entries = cmsSchema.table(
     uniqueIndex("entries_null_category_slug_idx")
       .on(entry.slug)
       .where(sql`${entry.categoryId} is null`),
+    // Blogroll/feed: publicadas de uma categoria, mais recentes primeiro.
+    index("entries_category_status_published_at_idx").on(entry.categoryId, entry.status, entry.publishedAt),
+    // Varreduras de agendamento (cms/scheduling.ts) — só as linhas agendadas entram no índice.
+    index("entries_scheduled_publish_at_idx")
+      .on(entry.scheduledPublishAt)
+      .where(sql`${entry.status} = 'scheduled'`),
+    index("entries_scheduled_archive_at_idx")
+      .on(entry.scheduledArchiveAt)
+      .where(sql`${entry.scheduledArchiveAt} is not null`),
+    // count-entries-by-author, remoção de usuário e o FK pra auth.users.
+    index("entries_author_id_idx").on(entry.authorId),
   ],
 );
 

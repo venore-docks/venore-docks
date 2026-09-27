@@ -5,6 +5,7 @@ import { computeSha256Hex } from "@/infrastructure/storage/checksum";
 import { validateMediaUploadCandidate } from "../request-media-upload-ticket/service";
 import { resolveMediaStorageFolder } from "../../../resolve-media-storage-folder";
 import { sanitizeSvgBuffer } from "../../../sanitize-svg-buffer";
+import { CONTENT_MISMATCH_ERROR, contentMatchesDeclaredType } from "../../../content-sniffing";
 import { insertAsset } from "./store";
 import type { UploadMediaAssetCommand, UploadMediaAssetResult } from "./types";
 import { resolveAssetUrl } from "../../../asset-url";
@@ -31,6 +32,13 @@ export async function uploadMediaAsset(command: UploadMediaAssetCommand): Promis
   if (!validation.success) {
     endOperation(handle, validation);
     return validation;
+  }
+
+  // Tipo declarado precisa bater com os bytes (content-sniffing.ts).
+  if (!contentMatchesDeclaredType(command.contentType, command.data)) {
+    const mismatch = { success: false as const, error: { ...CONTENT_MISMATCH_ERROR } };
+    endOperation(handle, mismatch);
+    return mismatch;
   }
 
   // SVG pode carregar script embutido — sanitiza os bytes antes de gravar no storage (nunca o

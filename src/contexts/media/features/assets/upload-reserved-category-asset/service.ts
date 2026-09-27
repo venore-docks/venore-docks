@@ -5,6 +5,7 @@ import { computeSha256Hex } from "@/infrastructure/storage/checksum";
 import { getOrCreateReservedCategory } from "../../../get-or-create-reserved-category";
 import { resolveMediaStorageFolder } from "../../../resolve-media-storage-folder";
 import { sanitizeSvgBuffer } from "../../../sanitize-svg-buffer";
+import { CONTENT_MISMATCH_ERROR, contentMatchesDeclaredType } from "../../../content-sniffing";
 import { insertAsset } from "../upload-media-asset/store";
 import type { UploadReservedCategoryAssetCommand, UploadReservedCategoryAssetResult } from "./types";
 import { resolveAssetUrl } from "../../../asset-url";
@@ -28,6 +29,13 @@ export async function uploadReservedCategoryAsset(
   });
 
   const category = await getOrCreateReservedCategory(command.categoryKey, command.categoryName);
+
+  // Tipo declarado precisa bater com os bytes (content-sniffing.ts).
+  if (!contentMatchesDeclaredType(command.contentType, command.data)) {
+    const mismatch = { success: false as const, error: { ...CONTENT_MISMATCH_ERROR } };
+    endOperation(handle, mismatch);
+    return mismatch;
+  }
 
   let dataToStore = command.data;
   if (command.contentType === "image/svg+xml") {

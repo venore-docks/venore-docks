@@ -63,6 +63,24 @@ atualização" em `VENORE-DOCKS.md`).
   usa tamanho/tipo reais; a URL informada pelo cliente é ignorada (antes dava pra registrar URL
   arbitrária, que o export baixava no servidor); checksum informado pelo browser não deduplica.
 - **SVG servido com CSP `sandbox`** e `nosniff` pelas rotas de mídia.
+- **Import de pacote autoriza antes de ler o corpo** e recusa `Content-Length` ausente (411) ou
+  acima de 256 MB (413); o .zip tem teto de arquivos e de tamanho descomprimido declarado (um
+  zip-bomba é recusado sem descomprimir).
+- **Tipo do arquivo conferido pelos bytes** (PNG, JPEG, GIF, WebP, SVG, PDF, MP4, WebM, MP3, WAV,
+  OGG) no upload pelo servidor e no registro do upload direto — HTML ou executável rotulado como
+  imagem é recusado.
+- **Push só para os serviços dos navegadores.** Endpoint de inscrição precisa ser `https` em FCM,
+  Mozilla, Apple ou WNS (`WEB_PUSH_EXTRA_HOSTS` acrescenta outros); inscrição fora da lista nunca é
+  chamada e é apagada no envio (antes o servidor fazia POST em qualquer URL cadastrada).
+- **Permissões revogadas valem em todas as instâncias em até 5 s.** O cache de papéis por usuário
+  fica em `globalThis` e é invalidado entre instâncias por um contador em
+  `platform.cache_versions` (migration 0046); antes um papel removido seguia valendo até 5 min.
+- **SDK de plugin com lista explícita de exports.** `@venore/plugin-sdk/auth` e `/rbac` deixam de
+  reexportar o barrel inteiro: saem `activateUser`, `provisionUser`, `registerWithPassword`,
+  `grantSuperadmin`, gestão de papéis e o fluxo do Auth.js; `findUserByEmail` do SDK não devolve
+  mais o hash da senha; `/media` perde os primitivos de sistema da lixeira. Todos os plugins
+  oficiais usam só o que ficou. O despachante de `/admin/<plugin>` exige sessão com acesso ao
+  admin antes de resolver a rota, mesmo que o plugin esqueça o próprio gate.
 - **Dependências:** `next` 16.2.11 → 16.3.6 (advisories crítico/altos), Tiptap 3.29 → 3.31 e
   transitivas (`js-yaml`, `nanoid`, `brace-expansion`, `fast-uri`, `hono`, `qs`). Restam 4
   moderadas no `esbuild` interno do `drizzle-kit` (só servidor de dev do esbuild, não usado).
@@ -79,11 +97,28 @@ atualização" em `VENORE-DOCKS.md`).
   Plugins declaram `scheduledJobs` em `contributions.ts`. Em serverless, logs e visualizações
   também são gravados logo após a resposta (`waitUntil`). `IN_PROCESS_JOBS=false` desliga os
   timers em processo.
+- **Paginação** no blogroll (`?page=`, 12 por página), em `/admin/cms/entries` (50 por página,
+  busca/status/tag filtrados no banco pela URL) e em `/admin/media` (60 por página).
+- `getMediaAssetUrls` (media) — URLs de vários assets numa consulta, com a mesma regra de
+  visibilidade de `getMediaAsset`.
 - **Login volta pra página de origem** (`?callbackUrl=`, só caminho relativo da própria origem) e
   telas próprias do Auth.js (`pages.signIn`/`pages.error` → `/login`, erros OAuth em português).
 
 ### Fixed
 
+- **Export do site funciona com mídia privada e com o driver filesystem.** Os arquivos são lidos
+  pelo storage (antes: `fetch` da URL, relativa nesses casos); leitura com concorrência limitada e
+  arquivo que falha fica de fora com o motivo em `manifest.skippedAssets` (header
+  `X-Export-Skipped-Assets`) em vez de derrubar o export inteiro.
+- **Blogroll sem N+1:** uma consulta pras entries da página, uma pras capas; o resumo sai do
+  `data` já carregado (antes eram duas consultas por card, mais sessão/RBAC por capa).
+- **Índices** em `cms.entries` (categoria+status+publicação, agendamentos, autor) e
+  `rbac.user_roles(role_id)`; **e-mail único sem diferenciar maiúsculas**
+  (`users_email_lower_idx`, migration 0047 — se já houver duplicatas o índice não é criado e o
+  Postgres registra um WARNING; resolva e crie à mão) e busca por e-mail com `lower()`.
+- **Pool do Postgres com limites:** `max` 5 na Vercel / 10 fora (`DATABASE_POOL_MAX`), timeout de
+  conexão de 10 s e `statement_timeout` de 30 s só no runtime do Next
+  (`DATABASE_STATEMENT_TIMEOUT_MS`; migrations via script ficam sem limite).
 - Usuário OAuth pendente caía em `/login` sem explicação depois de entrar — agora vai pra
   `/pending-approval`.
 - Driver de mídia padrão (em memória) em produção sem `MEDIA_STORAGE_DRIVER` agora falha no upload

@@ -66,7 +66,7 @@ describe("upload pipeline — caminho principal com InMemoryStorageAdapter", () 
     // O MESMO storagePort que o service consulta (driver "local" em memória nos testes) — o
     // registro agora confere se o objeto existe no storage antes de criar a linha.
     const storage = storagePort as InMemoryStorageAdapter;
-    const fileBytes = Buffer.from("conteúdo de teste do pipeline de upload");
+    const fileBytes = Buffer.from("%PDF-1.7\nconteúdo de teste do pipeline de upload");
 
     const ticket = await requestMediaUploadTicketHandler({ filename: "relatório final.pdf", contentType: "application/pdf", size: fileBytes.byteLength });
     expect(ticket.success).toBe(true);

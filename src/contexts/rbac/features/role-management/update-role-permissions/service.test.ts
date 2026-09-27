@@ -97,9 +97,8 @@ describe("updateRolePermissions", () => {
 
     expect(result.success).toBe(true);
     expect(replaceRolePermissions).toHaveBeenCalledWith("role-1", ["cms.entries.manage"]);
-    expect(invalidateUserContext).toHaveBeenCalledTimes(2);
-    expect(invalidateUserContext).toHaveBeenCalledWith("user-1");
-    expect(invalidateUserContext).toHaveBeenCalledWith("user-2");
+    expect(invalidateUserContext).toHaveBeenCalledTimes(1);
+    expect(invalidateUserContext).toHaveBeenCalledWith(["user-1", "user-2"]);
   });
 
   it("only checks the ADDED keys against the actor's own permissions and refuses an escalation", async () => {

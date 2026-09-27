@@ -27,3 +27,13 @@ export const scheduledJobRuns = platformSchema.table("scheduled_job_runs", {
   lastError: text("last_error"),
   lockedUntil: timestamp("locked_until", { withTimezone: true }),
 });
+
+// Versão por namespace de cache em memória. Cada instância guarda o último valor que viu; quem
+// muda o dado incrementa a versão aqui, e as outras instâncias descartam o cache local ao notar a
+// diferença (infrastructure/cache/cache-version.ts). Sem isso, um papel removido continuava valendo
+// nas outras instâncias até o TTL vencer.
+export const cacheVersions = platformSchema.table("cache_versions", {
+  namespace: text("namespace").primaryKey(),
+  version: integer("version").notNull().default(0),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});

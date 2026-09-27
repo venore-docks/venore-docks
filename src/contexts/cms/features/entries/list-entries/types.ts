@@ -14,6 +14,10 @@ export type ListEntriesQuery = {
   visibility?: EntryVisibility;
   updatedSince?: Date;
   includeInternallyOwned?: boolean;
+  // Paginação (blogroll): com `limit`, ordena da mais recente pra mais antiga (publishedAt) e
+  // devolve só a fatia pedida. Sem `limit`, devolve tudo sem ordem garantida (comportamento antigo).
+  limit?: number;
+  offset?: number;
 };
 export type EntryView = EntryRecord;
 export type ListEntriesResult = OperationResult<EntryView[]>;

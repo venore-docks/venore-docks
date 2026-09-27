@@ -40,9 +40,7 @@ export async function updateRolePermissions(command: UpdateRolePermissionsComman
   const updated = await replaceRolePermissions(command.roleId, command.permissionKeys);
 
   const affectedUserIds = await findUserIdsWithRole(command.roleId);
-  for (const userId of affectedUserIds) {
-    invalidateUserContext(userId);
-  }
+  await invalidateUserContext(affectedUserIds);
 
   const summary = `user:${command.actor.id} alterou as permissions do papel "${role.key}" (${command.permissionKeys.length} permission${command.permissionKeys.length === 1 ? "" : "s"}), afetando ${affectedUserIds.length} usuário${affectedUserIds.length === 1 ? "" : "s"}.`;
   endOperation(handle, { success: true, summary, detail: { roleId: command.roleId, permissionKeys: command.permissionKeys } });

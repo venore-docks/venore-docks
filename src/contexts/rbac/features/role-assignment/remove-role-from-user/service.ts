@@ -36,7 +36,7 @@ export async function removeRoleFromUser(command: RemoveRoleFromUserCommand): Pr
   }
 
   await deleteUserRole(command.userId, command.roleId);
-  invalidateUserContext(command.userId);
+  await invalidateUserContext(command.userId);
 
   const summary = `user:${command.actor.id} removeu o papel "${role?.key ?? command.roleId}" do usuário ${command.userId}.`;
   endOperation(handle, { success: true, summary });

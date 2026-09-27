@@ -1,7 +1,10 @@
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { NextResponse } from "next/server";
-import { assertTypeAllowedForDirectUpload, validateMediaUploadCandidate } from "@/contexts/media";
-import { registerUploadedMediaHandler } from "@/contexts/media/features/assets/register-uploaded-media/handler";
+import {
+  assertTypeAllowedForDirectUpload,
+  registerUploadedMediaForTrustedActor,
+  validateMediaUploadCandidate,
+} from "@/contexts/media";
 import { authorizeActor } from "@/contexts/rbac";
 import { checkRateLimit, getClientIp } from "@/infrastructure/rate-limit";
 import { storagePort } from "@/infrastructure/storage";
@@ -108,7 +111,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         const bytes = Buffer.from(await new Response(object.body).arrayBuffer());
         const checksum = computeSha256Hex(bytes);
 
-        await registerUploadedMediaHandler({
+        await registerUploadedMediaForTrustedActor({
           filename,
           pathname: blob.pathname,
           url: blob.url,

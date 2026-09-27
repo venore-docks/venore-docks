@@ -24,6 +24,8 @@ export type {
 } from "./features/assets/upload-reserved-category-asset/types";
 export { listMediaAssetsHandler as listMediaAssets } from "./features/assets/list-media-assets/handler";
 export { getMediaAssetHandler as getMediaAsset } from "./features/assets/get-media-asset/handler";
+export { getMediaAssetUrlsHandler as getMediaAssetUrls } from "./features/assets/get-media-asset-urls/handler";
+export type { GetMediaAssetUrlsQuery, GetMediaAssetUrlsResult } from "./features/assets/get-media-asset-urls/types";
 // Leitura do CONTEÚDO de um asset com autorização por asset (visibilidade, dono, URL assinada) —
 // usada pelas rotas que servem mídia (/api/media/asset/[id], /api/media/file/[...key]).
 export { readMediaAssetHandler as readMediaAsset } from "./features/assets/read-media-asset/handler";
@@ -78,14 +80,16 @@ export { clearCategoryAssetsHandler as clearCategoryAssets } from "./features/ca
 
 // Fluxo de client-upload direto ao Blob (docs/media/blob-spec.md) — necessário pra arquivos que
 // excedem o limite de body de uma function (vídeo, principalmente). `confirmMediaUpload` é a
-// entrada pública para a confirmação feita pelo browser depois que upload() resolve — o handler
-// de baixo nível usado pelo webhook onUploadCompleted (que confia num actorId já resolvido via
-// tokenPayload) não é exportado aqui de propósito, só a rota o importa direto.
+// entrada pública para a confirmação feita pelo browser depois que upload() resolve. O handler
+// de baixo nível do webhook onUploadCompleted confia num actorId já resolvido (tokenPayload
+// assinado pelo Blob) — exportado com nome que deixa isso explícito e FORA de
+// @venore/plugin-sdk/media (lista explícita lá); só app/api/media/upload/route.ts o chama.
 export { requestMediaUploadTicketHandler as requestMediaUploadTicket } from "./features/assets/request-media-upload-ticket/handler";
 // Exposta pro route handler revalidar allowlist/limite dentro de onBeforeGenerateToken sem
 // duplicar a regra (blob-spec seção 5, "checado duas vezes").
 export { validateMediaUploadCandidate, assertTypeAllowedForDirectUpload } from "./features/assets/request-media-upload-ticket/service";
 export { confirmMediaUploadHandler as confirmMediaUpload } from "./features/assets/register-uploaded-media/handler";
+export { registerUploadedMediaHandler as registerUploadedMediaForTrustedActor } from "./features/assets/register-uploaded-media/handler";
 
 // Import só pelo efeito colateral: dispara o auto-start da varredura de reconciliação de upload
 // órfão (Fase 4/M2) na primeira vez que qualquer coisa importar o barrel do media — mesmo

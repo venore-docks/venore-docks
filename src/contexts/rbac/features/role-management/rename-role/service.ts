@@ -32,9 +32,7 @@ export async function renameRole(command: RenameRoleCommand): Promise<RenameRole
   const updated = await updateRoleName(command.roleId, command.name);
 
   const affectedUserIds = await findUserIdsWithRole(command.roleId);
-  for (const userId of affectedUserIds) {
-    invalidateUserContext(userId);
-  }
+  await invalidateUserContext(affectedUserIds);
 
   endOperation(handle, {
     success: true,

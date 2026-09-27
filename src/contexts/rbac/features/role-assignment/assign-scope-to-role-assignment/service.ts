@@ -36,7 +36,7 @@ export async function assignScopeToRoleAssignment(
   }
 
   await insertRoleAssignmentScope(command.userId, command.roleId, command.scopeType, command.resourceId);
-  invalidateUserContext(command.userId);
+  await invalidateUserContext(command.userId);
 
   endOperation(handle, { success: true });
 

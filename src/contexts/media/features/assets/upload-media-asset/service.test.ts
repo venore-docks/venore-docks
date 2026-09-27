@@ -134,7 +134,7 @@ describe("uploadMediaAsset", () => {
     insertAsset.mockResolvedValue({ id: "asset-1", filename: "photo.png" });
 
     const { uploadMediaAsset } = await import("./service");
-    const data = Buffer.from("conteúdo");
+    const data = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.from("conteúdo")]);
     const result = await uploadMediaAsset({
       filename: "photo.png",
       contentType: "image/png",

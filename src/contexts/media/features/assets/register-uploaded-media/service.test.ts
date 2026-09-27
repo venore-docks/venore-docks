@@ -15,13 +15,18 @@ vi.mock("./store", () => ({
 }));
 
 const stat = vi.fn();
+const read = vi.fn();
 vi.mock("@/infrastructure/storage", () => ({
   storagePort: {
     stat: (...args: unknown[]) => stat(...args),
+    read: (...args: unknown[]) => read(...args),
     servesPublicly: () => true,
     resolveUrl: (key: string) => `https://example.blob.vercel-storage.com/${key}`,
   },
 }));
+
+const PNG_HEAD = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+const WEBP_HEAD = new Uint8Array([...Buffer.from("RIFF"), 0, 0, 0, 0, ...Buffer.from("WEBP")]);
 
 const baseCommand = {
   filename: "photo.png",
@@ -56,6 +61,7 @@ describe("registerUploadedMedia", () => {
     findActiveAssetByChecksum.mockReset();
     insertAssetIfAbsent.mockReset();
     stat.mockReset().mockResolvedValue({ size: 1024, contentType: "image/png" });
+    read.mockReset().mockImplementation(async () => ({ body: new Blob([PNG_HEAD]).stream(), size: 8, contentType: "image/png", range: null }));
   });
 
   it("registrar duas vezes o mesmo blob não cria dois registros — retorna a linha existente sem inserir de novo", async () => {
@@ -140,9 +146,22 @@ describe("registerUploadedMedia", () => {
     expect(insertAssetIfAbsent).not.toHaveBeenCalled();
   });
 
+  it("refuses an object whose bytes do not match the declared type", async () => {
+    findAssetByPathname.mockResolvedValue(null);
+    read.mockImplementation(async () => ({ body: new Blob(["<html><script>"]).stream(), size: 14, contentType: "image/png", range: null }));
+
+    const { registerUploadedMedia } = await import("./service");
+    const result = await registerUploadedMedia(baseCommand);
+
+    expect(result).toEqual({ success: false, error: { code: "media.upload.content_mismatch", message: expect.any(String) } });
+    expect(read).toHaveBeenCalledWith(baseCommand.pathname, { start: 0, end: 1023 });
+    expect(insertAssetIfAbsent).not.toHaveBeenCalled();
+  });
+
   it("takes size and type from the storage, not from the client", async () => {
     findAssetByPathname.mockResolvedValue(null);
     stat.mockResolvedValue({ size: 2048, contentType: "image/webp" });
+    read.mockImplementation(async () => ({ body: new Blob([WEBP_HEAD]).stream(), size: 12, contentType: "image/webp", range: null }));
     insertAssetIfAbsent.mockResolvedValue(existingAsset);
 
     const { registerUploadedMedia } = await import("./service");

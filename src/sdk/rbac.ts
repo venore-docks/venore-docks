@@ -1,1 +1,43 @@
-export * from "@/contexts/rbac";
+// Lista explícita (não `export * from "@/contexts/rbac"`): o barrel também exporta operações de
+// sistema sem gate — grantSuperadmin, grantDefaultRoleOnRegistration, ensureBaseRbacDataSeeded,
+// aprovação de cadastro — e a gestão de papéis/permissions. Um plugin só precisa AUTORIZAR e LER
+// contexto de acesso; mexer em papel é do core (/admin/rbac).
+export {
+  authorizeActor,
+  authorizeActorOverUser,
+  resolveScope,
+  resolveScopeForActor,
+  getUserContext,
+  listRoles,
+  listUsersByRole,
+  countUsersWithPermissions,
+  listScopesForRoleAssignment,
+  SYSTEM_ROLE_KEYS,
+  RBAC_PERMISSIONS,
+  RBAC_SCOPE_TYPES,
+  isRbacScopeType,
+} from "@/contexts/rbac";
+export type {
+  AuthorizeActorResult,
+  AuthorizeActorOverUserOptions,
+  AuthorizeActorScope,
+  ResolveScopeResult,
+  RoleRef,
+  PermissionDefinition,
+  UserRbacContext,
+  ScopedPermissionMap,
+  SystemRoleKey,
+  RbacScopeType,
+  RoleWithPermissions,
+  ListRolesResult,
+  ListScopesForRoleAssignmentInput,
+  ListScopesForRoleAssignmentResult,
+  RoleAssignmentScopeRef,
+  GetUserContextQuery,
+  GetUserContextResult,
+  ListUsersByRoleInput,
+  ListUsersByRoleResult,
+  RoleUserRef,
+  CountUsersWithPermissionsQuery,
+  CountUsersWithPermissionsResult,
+} from "@/contexts/rbac";

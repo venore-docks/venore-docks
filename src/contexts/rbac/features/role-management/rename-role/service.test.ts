@@ -71,9 +71,8 @@ describe("renameRole", () => {
       data: { id: "role-1", key: "superadmin", name: "Overlord", isSystem: true },
     });
     expect(updateRoleName).toHaveBeenCalledWith("role-1", "Overlord");
-    expect(invalidateUserContext).toHaveBeenCalledTimes(2);
-    expect(invalidateUserContext).toHaveBeenCalledWith("user-1");
-    expect(invalidateUserContext).toHaveBeenCalledWith("user-2");
+    expect(invalidateUserContext).toHaveBeenCalledTimes(1);
+    expect(invalidateUserContext).toHaveBeenCalledWith(["user-1", "user-2"]);
   });
 
   it("renames a custom role's display name", async () => {
@@ -86,6 +85,6 @@ describe("renameRole", () => {
 
     expect(result.success).toBe(true);
     expect(updateRoleName).toHaveBeenCalledWith("role-2", "Editor de conteúdo");
-    expect(invalidateUserContext).not.toHaveBeenCalled();
+    expect(invalidateUserContext).toHaveBeenCalledWith([]);
   });
 });
