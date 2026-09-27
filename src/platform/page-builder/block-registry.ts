@@ -32,6 +32,7 @@ import { faqBlockDefinition } from "./blocks/faq";
 import { codeBlockDefinition } from "./blocks/code";
 import { statsBlockDefinition } from "./blocks/stats";
 import { timelineBlockDefinition } from "./blocks/timeline";
+import { contactFormBlockDefinition } from "./blocks/contact-form";
 
 const CORE_LEAF_BLOCKS: BlockDefinition[] = [
   headingBlockDefinition,
@@ -57,6 +58,7 @@ const CORE_LEAF_BLOCKS: BlockDefinition[] = [
   codeBlockDefinition,
   statsBlockDefinition,
   timelineBlockDefinition,
+  contactFormBlockDefinition,
 ];
 
 // contexts/cms não conhece plugin nenhum (regra de boundary da sessão) — este registry mora em

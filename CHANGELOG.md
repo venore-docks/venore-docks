@@ -89,6 +89,10 @@ atualização" em `VENORE-DOCKS.md`).
 
 ### Added
 
+- **Bloco "Formulário de contato":** mensagem enviada por e-mail (`EMAIL_DRIVER`) com responder-para
+  o visitante; destinatário cifrado no token (não aparece no HTML nem pode ser trocado), honeypot,
+  limite por IP e Cloudflare Turnstile opcional (`NEXT_PUBLIC_TURNSTILE_SITE_KEY` +
+  `TURNSTILE_SECRET_KEY`).
 - **Blocos novos no page builder:** Vídeo/incorporação (YouTube, Vimeo, Google Maps, Spotify —
   só provedores conhecidos viram iframe), Tabela, Arquivo para download (novo campo de mídia
   "file"), Perguntas frequentes (com JSON-LD `FAQPage`), Código, Números em destaque e Linha do

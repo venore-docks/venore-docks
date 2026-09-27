@@ -17,7 +17,14 @@ export class ResendEmailAdapter implements EmailPort {
       const response = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: { Authorization: `Bearer ${this.apiKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ from: this.from, to: [message.to], subject: message.subject, text: message.text, html: message.html }),
+        body: JSON.stringify({
+          from: this.from,
+          to: [message.to],
+          subject: message.subject,
+          text: message.text,
+          html: message.html,
+          ...(message.replyTo ? { reply_to: message.replyTo } : {}),
+        }),
         signal: AbortSignal.timeout(10_000),
       });
       if (!response.ok) {

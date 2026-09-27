@@ -18,6 +18,11 @@ import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, Tabl
 import { serializeJsonLd } from "@/shared/json-ld";
 import { FileText } from "lucide-react";
 import { parseEmbedUrl } from "./embed-providers";
+import { ContactFormClient } from "./contact-form-client";
+import { CONTACT_FORM_BLOCK_KEY } from "./blocks/contact-form";
+import { emailPort } from "@/infrastructure/email";
+import { sealContactToken } from "@/platform/contact/contact-token";
+import { isTurnstileEnabled } from "@/platform/contact/send-contact-message";
 import { parseFaqItems, parseStatItems, parseTableRows, parseTimelineItems } from "./text-block-parsers";
 import { cn } from "@/lib/utils";
 import type { VariantProps } from "class-variance-authority";
@@ -974,6 +979,33 @@ function TimelineBlock({ block }: BlockRendererProps) {
   );
 }
 
+function ContactFormBlock({ block, mode }: BlockRendererProps) {
+  const recipient = readString(block.data, "recipient").trim();
+  const title = readString(block.data, "title");
+  if (!emailPort.isEnabled() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) {
+    // Sem envio de e-mail (ou destinatário inválido) o formulário não aparece no site; no editor,
+    // avisa o motivo.
+    return mode === "edit" ? (
+      <p className="rounded-md border border-border bg-muted px-3 py-2 text-sm text-muted-foreground">
+        Formulário de contato inativo: {emailPort.isEnabled() ? "informe um e-mail válido de destino." : "configure o envio de e-mail (EMAIL_DRIVER)."}
+      </p>
+    ) : null;
+  }
+  return (
+    <Card className="shadow-panel">
+      <CardContent className="space-y-3">
+        {title && <h2 className="text-lg font-semibold text-foreground">{title}</h2>}
+        <ContactFormClient
+          token={sealContactToken(recipient)}
+          submitLabel={readString(block.data, "submitLabel") || "Enviar mensagem"}
+          successMessage={readString(block.data, "successMessage") || "Mensagem enviada. Obrigado!"}
+          turnstileSiteKey={isTurnstileEnabled() ? (process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? null) : null}
+        />
+      </CardContent>
+    </Card>
+  );
+}
+
 const CORE_BLOCK_RENDERERS: Record<string, BlockRendererComponent> = {
   [ROW_BLOCK_KEY]: RowBlock,
   "core.content.heading": HeadingBlock,
@@ -1007,6 +1039,7 @@ const CORE_BLOCK_RENDERERS: Record<string, BlockRendererComponent> = {
   "core.content.code": CodeBlock,
   "core.content.stats": StatsBlock,
   "core.content.timeline": TimelineBlock,
+  [CONTACT_FORM_BLOCK_KEY]: ContactFormBlock,
 };
 
 // Renderers de plugin vêm de PLUGIN_CONTRIBUTIONS[key].blockRenderers — um LOADER preguiçoso

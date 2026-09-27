@@ -3,6 +3,8 @@ export type EmailMessage = {
   subject: string;
   text: string;
   html?: string;
+  // Resposta vai pra este endereço (ex: formulário de contato: responder direto a quem escreveu).
+  replyTo?: string;
 };
 
 export type EmailSendResult = { sent: true; id: string | null } | { sent: false; reason: string };
