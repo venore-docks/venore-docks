@@ -104,8 +104,19 @@ atualização" em `VENORE-DOCKS.md`).
 - **Login volta pra página de origem** (`?callbackUrl=`, só caminho relativo da própria origem) e
   telas próprias do Auth.js (`pages.signIn`/`pages.error` → `/login`, erros OAuth em português).
 
+- **Migrations fora do preview.** O `prebuild` usa `scripts/migrate-on-build.mjs`: em preview da
+  Vercel não migra (a não ser com `MIGRATE_ON_PREVIEW=true`); `SKIP_DB_MIGRATIONS=true` pula
+  sempre. Guia de migrations compatíveis em `docs/migrations-guia.md`.
+- **CI em todo branch** (inclusive instância, quando receber este merge), job `plugins`
+  (`test:plugins` com os pacotes instalados), job `e2e` (Playwright: setup + login) e teste que
+  chama toda Server Action sem sessão e falha se ela gravar algo
+  (`src/app/server-actions-authorization.test.ts`). Teste de integração do fluxo de cadastro.
+- `.env.example` versionado com todas as variáveis; README e AGENTS.md atualizados.
+
 ### Fixed
 
+- `getMediaUsageSummaryAction` (onde uma mídia é usada) respondia a qualquer visitante — agora
+  exige `media.manage`.
 - **Export do site funciona com mídia privada e com o driver filesystem.** Os arquivos são lidos
   pelo storage (antes: `fetch` da URL, relativa nesses casos); leitura com concorrência limitada e
   arquivo que falha fica de fora com o motivo em `manifest.skippedAssets` (header

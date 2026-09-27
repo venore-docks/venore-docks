@@ -300,14 +300,21 @@ logBuffer.push({ message, level });
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run test` | Vitest — só `*.test.ts` (unitário, sem banco real) |
 | `npm run test:integration` | Vitest com `vitest.integration.config.ts` — só `*.integration.test.ts` |
-| `npm run db:generate` / `npm run db:migrate` | Drizzle Kit — schema de core/contexts (não plugin). Roda no `prebuild` (logo, em todo `vercel-build`) |
-| `npm run db:migrate:plugins` | Migrations pendentes de cada plugin **já instalado** (`scripts/migrate-installed-plugins.ts`). Roda no `prebuild` depois do `db:migrate` — bump de tag de plugin com migration nova se aplica sozinho no deploy da Vercel, sem `db:update`. Falha de migration derruba o build (o deploy anterior continua no ar). A **primeira** migration de um plugin continua rodando no install (`/admin/plugins` → `platform/plugin-engine/run-plugin-migrations.ts`); plugin nunca instalado é pulado |
+| `npm run db:generate` / `npm run db:migrate` | Drizzle Kit — schema de core/contexts (não plugin). O `prebuild` (logo, todo `vercel-build`) aplica via `scripts/migrate-on-build.mjs` — **exceto em preview da Vercel** (só com `MIGRATE_ON_PREVIEW=true`) e com `SKIP_DB_MIGRATIONS=true`. Migrations compatíveis com o código no ar: `docs/migrations-guia.md` |
+| `npm run db:migrate:plugins` | Migrations pendentes de cada plugin **já instalado** (`scripts/migrate-installed-plugins.ts`). Roda no `prebuild` depois das do core (mesmas exceções de preview) — bump de tag de plugin com migration nova se aplica sozinho no deploy da Vercel, sem `db:update`. Falha de migration derruba o build (o deploy anterior continua no ar). A **primeira** migration de um plugin continua rodando no install (`/admin/plugins` → `platform/plugin-engine/run-plugin-migrations.ts`); plugin nunca instalado é pulado |
 | `npm run db:update` | **Rodar depois de todo `git merge upstream/main`.** Consolida migrations do core + `ensureBaseRbacDataSeeded` (papéis/permissions base do "admin", cobre qualquer chave nova em `contracts/base-role-permissions.ts` sem precisar de script próprio) + `registerPlugins` + migrations de cada plugin com schema já resolvido no registro. Idempotente — seguro rodar mesmo sem nada novo pra aplicar (`scripts/update-instance.ts`). Substituiu os antigos `db:seed:<permission>` pontuais (removidos) — uma permission nova só precisa entrar em `contracts/base-role-permissions.ts`, nunca de um script novo. |
-| `npm run db:bootstrap-superadmin` | Promove usuário existente a `superadmin` fora do fluxo automático |
+| `npm run db:bootstrap-superadmin` | Promove usuário existente a `superadmin` (alternativa ao `/setup` com `SETUP_TOKEN`) |
+| `npm run test:plugins` | Testes dos plugins instalados no branch (`vitest.plugins.config.ts`, procura em `../venore-plugin-<nome>`) |
+| `npm run test:e2e` | Playwright (`e2e/`) — setup + login num banco vazio; exige build, `DATABASE_URL`, `AUTH_SECRET`, `SETUP_TOKEN` |
 
-O job `check` do CI (`.github/workflows/ci.yml`) roda `lint` → `typecheck` → `test`, sem banco. O
-job `integration` é separado, sobe um container Postgres e roda só `test:integration` — não
-substitui o `check`. `drizzle-kit push` é reservado para desenvolvimento local, nunca produção.
+O CI (`.github/workflows/ci.yml`) roda em todo branch (inclusive os de instância) e em PR. O job
+`check` roda `lint` → `typecheck` → `test`, sem banco; `plugins` roda `test:plugins` com os pacotes
+de `node_modules/@venore/plugin-*`; `integration` sobe um Postgres e roda `test:integration`;
+`smoke` e `e2e` fazem o build e sobem o app. Nenhum substitui o `check`.
+
+`src/app/server-actions-authorization.test.ts` chama **toda** função exportada de arquivo
+`"use server"` sem sessão e falha se ela gravar no banco/storage ou chamar a rede. Action pública
+de verdade (login, cadastro, setup) entra na lista `PUBLIC_ACTIONS` do teste, com o motivo. `drizzle-kit push` é reservado para desenvolvimento local, nunca produção.
 
 ### Testes: unitário vs integração
 - `*.test.ts` são unitários e não podem depender de banco real.
@@ -377,15 +384,15 @@ continua sendo a lista geral, derivada da leitura do código:
   [NÃO VERIFICADO] o estado exato do que está mockado vs. resolvido.
 - **TODO explícito em `src/themes/venore-slime/components/UserMenu.tsx:60`** — link para
   `/account` pendente porque a rota ainda não existe.
-- **`src/platform/ui-preferences/` existe como diretório vazio.** O cookie que vivia lá já é
-  tratado como removido (substituído por `useTheme()`/`next-themes`, seção 1), mas a pasta em si
-  não foi apagada.
 - ~~**Permission com escopo dentro de um recurso** (RBAC granular por seção/instância do CMS)~~ —
   **implementado (fases A–D, `docs/rbac-scoped-roles.md`, 2026-08-28):** `rbac.role_assignment_scopes`
   (vínculo usuário × papel), `authorizeActor(perm, scope?)` + `resolveScope`, recorte por
   `cms.category` nos `service.ts` de escrita do CMS (helper `contexts/cms/shared/scoped-authorization`).
   "Admin de seção" ficou como papel custom, sem `scopeType` próprio (Fase D / D7).
-- **Rate limiting e controle de acesso a arquivos de mídia** — ainda não cobertos. Auditoria de
+- ~~**Rate limiting e controle de acesso a arquivos de mídia**~~ — implementados: rate limit em
+  Postgres (`src/infrastructure/rate-limit`, login/cadastro/setup/upload/feed) e mídia não pública
+  servida só por `/api/media/asset/[id]` com autorização por asset ou URL assinada.
+- **Auditoria parcial.** Auditoria de
   ações sensíveis existe desde a sessão do log de eventos legível (`src/observability/audit-log.ts`
   + tabela `audit.security_audit_events`), mas só é chamada explicitamente pelas ações já
   migradas (ver `src/observability/features/clear-events/service.ts` e os `service.ts` apontados

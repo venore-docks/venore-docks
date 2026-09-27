@@ -9,7 +9,7 @@
     "gen:registries": "tsx scripts/gen-plugin-registry.ts && tsx scripts/gen-theme-registry.ts",
     "postinstall": "npm run gen:registries",
     "predev": "npm run gen:registries",
-    "prebuild": "npm run gen:registries && drizzle-kit migrate && npm run db:migrate:plugins",
+    "prebuild": "npm run gen:registries && node scripts/migrate-on-build.mjs",
     "prevercel-build": "npm run gen:registries",
     "pretypecheck": "npm run gen:registries",
     "pretest": "npm run gen:registries",
@@ -24,6 +24,7 @@
     "test": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:plugins": "vitest run --config vitest.plugins.config.ts",
+    "test:e2e": "playwright test",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:migrate:plugins": "tsx --env-file-if-exists=.env scripts/migrate-installed-plugins.ts",
@@ -91,6 +92,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4",
     "@types/jsdom": "^21.1.7",
     "@types/node": "^20",
