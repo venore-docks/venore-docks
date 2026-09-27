@@ -1,5 +1,8 @@
 import { getSetting } from "@/contexts/settings";
-import { REGISTRATION_APPROVAL_REQUIRED_SETTING_KEY } from "@/platform/registration/handle-user-registered";
+import {
+  isSelfRegistrationEnabled,
+  REGISTRATION_APPROVAL_REQUIRED_SETTING_KEY,
+} from "@/platform/registration/registration-settings";
 import { getSettingsPageData } from "@/platform/admin-shell/get-settings-page-data";
 import { RegistrationApprovalToggleForm } from "./_components/registration-approval-toggle-form";
 
@@ -23,6 +26,7 @@ export default async function SettingsAdminPage() {
   // Mesmo fallback de handle-user-registered.ts: setting ausente ou com valor inesperado = aprovação exigida.
   const record = settingResult.data;
   const approvalRequired = !record || typeof record.value !== "boolean" ? true : record.value;
+  const selfRegistration = await isSelfRegistrationEnabled();
 
   return (
     <div className="space-y-8">
@@ -34,11 +38,11 @@ export default async function SettingsAdminPage() {
       <section className="rounded-panel border border-border bg-card ui-panel-padding-roomy">
         <h2 className="text-sm font-semibold text-foreground">Registro de usuários</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Quando ativado, novos registros ficam pendentes até um admin aprovar (exceto o primeiro usuário do sistema,
-          que sempre vira superadmin).
+          Defina se visitantes podem criar conta sozinhos e se novas contas precisam de aprovação de um admin. O
+          primeiro superadmin é criado pelo instalador ou pela tela /setup (com SETUP_TOKEN).
         </p>
         <div className="mt-3">
-          <RegistrationApprovalToggleForm enabled={approvalRequired} />
+          <RegistrationApprovalToggleForm enabled={approvalRequired} selfRegistration={selfRegistration} />
         </div>
       </section>
     </div>

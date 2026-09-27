@@ -1,5 +1,8 @@
 import type {
+  ByteRange,
   RemoteObjectSummary,
+  StoredObjectBody,
+  StoredObjectInfo,
   StoragePort,
   StoragePutInput,
   StoredObject,
@@ -15,6 +18,15 @@ export class InMemoryStorageAdapter implements StoragePort {
   private readonly objects = new Map<string, StoredEntry>();
 
   async store(input: StoragePutInput): Promise<StoredObject> {
+    // Driver padrão quando MEDIA_STORAGE_DRIVER não está definido. Em produção isso "funcionava"
+    // e perdia o arquivo no próximo restart (e cada instância serverless tinha o seu Map) — agora
+    // falha alto, a menos que "local" tenha sido escolhido explicitamente.
+    if (process.env.NODE_ENV === "production" && process.env.MEDIA_STORAGE_DRIVER !== "local") {
+      throw new Error(
+        'Nenhum storage de mídia configurado: defina MEDIA_STORAGE_DRIVER ("vercel-blob" ou "filesystem"). ' +
+          'O driver em memória perde os arquivos a cada reinício.',
+      );
+    }
     this.objects.set(input.key, { data: input.data, contentType: input.contentType, uploadedAt: new Date() });
     return { key: input.key, url: this.resolveUrl(input.key), size: input.data.byteLength };
   }
@@ -43,6 +55,28 @@ export class InMemoryStorageAdapter implements StoragePort {
       entries.push({ key, size: entry.data.byteLength, uploadedAt: entry.uploadedAt });
     }
     return entries;
+  }
+
+  async stat(key: string): Promise<StoredObjectInfo | null> {
+    const entry = this.objects.get(key);
+    return entry ? { size: entry.data.byteLength, contentType: entry.contentType } : null;
+  }
+
+  async read(key: string, range?: ByteRange | null): Promise<StoredObjectBody | null> {
+    const entry = this.objects.get(key);
+    if (!entry) return null;
+    const effective = range && range.start <= range.end && range.end < entry.data.byteLength ? range : null;
+    const slice = effective ? entry.data.subarray(effective.start, effective.end + 1) : entry.data;
+    return {
+      body: new Blob([new Uint8Array(slice)]).stream(),
+      size: entry.data.byteLength,
+      contentType: entry.contentType,
+      range: effective,
+    };
+  }
+
+  servesPublicly(): boolean {
+    return true;
   }
 
   // Só para teste: permite simular um upload que já aconteceu direto no storage, sem passar

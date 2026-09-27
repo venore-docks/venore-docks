@@ -295,6 +295,34 @@
       "when": 1790103937523,
       "tag": "0041_media_uploaded_by_nullable",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1790474945169,
+      "tag": "0042_fail_closed_status_and_rate_limits",
+      "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1790475579554,
+      "tag": "0043_scheduled_job_runs",
+      "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1790475580512,
+      "tag": "0044_private_media_urls",
+      "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1790475846321,
+      "tag": "0045_cms_entry_revisions",
+      "breakpoints": true
     }
   ]
 }

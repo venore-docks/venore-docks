@@ -2,11 +2,13 @@ import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import NextAuth from "next-auth";
 import { db } from "@/infrastructure/database/client";
 import { handleUserRegistered } from "@/platform/registration/handle-user-registered";
+import { isSelfRegistrationEnabled } from "@/platform/registration/registration-settings";
 import * as schema from "./database/schema";
 // Composition root do context de auth (mesmo raciocínio de importar `buildAuthProviders` e
 // `./database/schema` direto): este arquivo não pode passar pelo barrel `./index.ts` sem ciclo,
 // então lê o status de registro pelo store da feature diretamente.
 import { findUserStatusById } from "./features/session/get-current-user-registration-status/store";
+import { findUserByEmailHandler } from "./features/identity/find-user-by-email/handler";
 import { recordUserLogin } from "./features/session/record-user-login/store";
 import { syncUserNameFromProvider } from "./features/session/sync-oauth-name/store";
 import { buildAuthProviders } from "./providers";
@@ -26,7 +28,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: {
     strategy: "jwt",
   },
+  // Telas próprias: /api/auth/signin (página padrão do Auth.js, em inglês) vira /login, e erro de
+  // OAuth (ex: OAuthAccountNotLinked) cai em /login?error=<tipo>, mapeado pra mensagem em PT.
+  pages: {
+    signIn: "/login",
+    error: "/login",
+  },
   callbacks: {
+    // Autocadastro fechado (/admin/settings): o primeiro login OAuth de alguém sem conta seria um
+    // cadastro — recusado aqui, antes do adapter criar o usuário. Quem já tem conta entra normal.
+    async signIn({ user, account }) {
+      if (!account || account.provider === "credentials") return true;
+      const email = user.email?.trim().toLowerCase();
+      if (!email) return "/login?error=AccessDenied";
+      const existing = await findUserByEmailHandler({ email });
+      if (existing.success) return true;
+      if (await isSelfRegistrationEnabled()) return true;
+      return "/login?error=registration-closed";
+    },
     async jwt({ token, user, account, profile }) {
       if (user) token.id = user.id;
       // account/profile só vêm preenchidos na chamada de sign-in (trigger "signIn"/"signUp"),
@@ -65,11 +84,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   events: {
     async createUser({ user }) {
-      await handleUserRegistered({
+      // Fail-closed: se a composição falhar, a conta continua "pending" (default do schema).
+      const result = await handleUserRegistered({
         id: user.id!,
         email: user.email ?? null,
         name: user.name ?? null,
       });
+      if (!result.success) {
+        console.error(`[auth] composição de registro falhou para ${user.id} — conta segue pendente.`, result.error);
+      }
     },
     // Alimenta a aba de atividade do perfil admin (/admin/community/[userId]) — dispara em todo
     // login bem-sucedido (credentials ou OAuth), não a cada request como o callback session()

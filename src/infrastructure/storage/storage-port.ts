@@ -30,6 +30,18 @@ export type RemoteObjectSummary = {
   uploadedAt: Date;
 };
 
+export type StoredObjectInfo = { size: number; contentType: string };
+
+export type ByteRange = { start: number; end: number };
+
+export type StoredObjectBody = {
+  body: ReadableStream<Uint8Array>;
+  size: number;
+  contentType: string;
+  // Presente quando o pedido de range foi atendido (206).
+  range: ByteRange | null;
+};
+
 export interface StoragePort {
   /** Upload server-buffered — o servidor já tem os bytes em memória (arquivos pequenos). */
   store(input: StoragePutInput): Promise<StoredObject>;
@@ -51,4 +63,16 @@ export interface StoragePort {
    * no caminho síncrono de upload/delete, só por `reconcileOrphanUploads`.
    */
   listObjects(prefix?: string): Promise<RemoteObjectSummary[]>;
+
+  /** Metadado real do objeto no storage (tamanho/tipo), ou null se não existe. */
+  stat(key: string): Promise<StoredObjectInfo | null>;
+
+  /** Lê o objeto em streaming (com range opcional) — usado pela rota que serve mídia autorizada. */
+  read(key: string, range?: ByteRange | null): Promise<StoredObjectBody | null>;
+
+  /**
+   * true quando a URL do storage (resolveUrl) é servível publicamente sem passar pelo app.
+   * false = todo acesso passa pela rota autorizada (/api/media/asset/[id]).
+   */
+  servesPublicly(): boolean;
 }

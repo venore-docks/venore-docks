@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
-import { boolean, check, integer, jsonb, pgSchema, primaryKey, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { boolean, check, index, integer, jsonb, pgSchema, primaryKey, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { users } from "@/contexts/auth/database/schema";
 
 export const cmsSchema = pgSchema("cms");
@@ -84,6 +84,45 @@ export const entries = cmsSchema.table(
     uniqueIndex("entries_null_category_slug_idx")
       .on(entry.slug)
       .where(sql`${entry.categoryId} is null`),
+  ],
+);
+
+// Histórico e propostas de uma entry (revisões).
+//   kind "snapshot": estado ANTERIOR gravado antes de cada alteração (restaurável).
+//   kind "proposal": alteração de uma entry PUBLICADA feita por quem não pode publicar (ex: papel
+//     author) — não vai ao ar até alguém com cms.entries.publish aplicar. Antes, editar uma entry
+//     publicada com só cms.entries.manage mudava o site na hora, contornando o fluxo de publicação.
+// status só vale pra proposta: "pending" | "applied" | "discarded".
+export const entryRevisions = cmsSchema.table(
+  "entry_revisions",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    entryId: text("entry_id")
+      .notNull()
+      .references(() => entries.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(),
+    status: text("status"),
+    title: text("title").notNull(),
+    slug: text("slug").notNull(),
+    categoryId: text("category_id"),
+    visibility: text("visibility").notNull(),
+    mediaId: text("media_id"),
+    contentTypeIds: jsonb("content_type_ids").$type<string[]>(),
+    data: jsonb("data").notNull().default({}),
+    createdBy: text("created_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    resolvedBy: text("resolved_by").references(() => users.id, { onDelete: "set null" }),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("entry_revisions_entry_created_idx").on(table.entryId, table.createdAt),
+    check("entry_revisions_kind_valid", sql`${table.kind} IN ('snapshot', 'proposal')`),
+    check(
+      "entry_revisions_status_valid",
+      sql`${table.status} IS NULL OR ${table.status} IN ('pending', 'applied', 'discarded')`,
+    ),
   ],
 );
 

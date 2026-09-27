@@ -31,9 +31,68 @@ atualização" em `VENORE-DOCKS.md`).
 - **Atualização de tema sem injeção no `package.json`.** A tag precisa ser semver e existir no
   repositório do tema; `package.json` e `package-lock.json` são reescritos estruturadamente e
   commitados juntos (um commit, fast-forward) via Git Data API.
+- **Primeiro superadmin só com `SETUP_TOKEN`.** O "próximo cadastro vira superadmin" (anunciado na
+  tela de login) deixava uma instância recém-publicada ser tomada por quem chegasse primeiro. Agora
+  o `/setup` exige o token da variável de ambiente `SETUP_TOKEN` (16+ caracteres) — cria a conta
+  ou promove a conta logada — ou use `npm run db:install:fresh` / `db:bootstrap-superadmin`.
+- **Cadastro fail-closed.** `auth.users.status` nasce `pending` (migration 0042); a conta só vira
+  `approved` por decisão explícita (aprovação, admin, instalador, setup, ou aprovação desligada via
+  `activateUser`). Nova setting "Permitir que visitantes criem conta" (`/admin/settings`) fecha o
+  autocadastro — formulário e primeiro login OAuth. A Server Action de cadastro recusa quando o
+  login por senha está desligado.
+- **Login sem enumeração de contas.** O status da conta (pendente, congelada...) só aparece depois
+  da senha correta (`BlockedAccountError` no `authorize`); e-mail inexistente gasta o mesmo tempo
+  de verificação; "e-mail já cadastrado" responde como cadastro recebido; `?error=` da tela de
+  login só aceita códigos conhecidos (antes exibia texto livre da URL).
+- **Senhas com scrypt N=2^15, r=8, p=3** (formato `scrypt2$…` com parâmetros no hash); hashes
+  antigos seguem válidos e são regravados no próximo login.
+- **Rate limit persistente (Postgres)** — login (por IP e por e-mail), cadastro, setup, upload,
+  feed de conteúdo e relatório de CSP. IP vem de `x-vercel-forwarded-for` / `x-real-ip` / último
+  hop do `x-forwarded-for` (o primeiro hop era falsificável).
+- **Headers de segurança.** `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`,
+  HSTS (produção) e `X-Frame-Options` em todas as respostas; CSP com nonce por request no
+  `proxy.ts` — `frame-ancestors`/`object-src`/`base-uri` sempre aplicados, política completa em
+  `CSP_MODE=report-only` (default; violações vão pra `/api/csp-report` e aparecem em
+  `/admin/diagnostics`), `enforce` ou `off`. `FRAME_ANCESTORS` libera iframes de outros sites.
+- **Mídia privada de verdade.** Asset não público é servido por `/api/media/asset/[id]` com
+  autorização por asset (dono, `media.manage` ou URL assinada de curta duração); a rota do driver
+  filesystem aplica a mesma regra e faz streaming com `Range`. `getMediaAssetForTrustedReview`
+  devolve URL assinada. Migration 0044 troca a URL dos assets não públicos existentes.
+  `MEDIA_BLOB_ACCESS=private` usa um Blob Store privado (nada acessível pela URL do storage).
+- **Upload direto verificado no storage.** O registro confere o objeto (`storagePort.stat`) e
+  usa tamanho/tipo reais; a URL informada pelo cliente é ignorada (antes dava pra registrar URL
+  arbitrária, que o export baixava no servidor); checksum informado pelo browser não deduplica.
+- **SVG servido com CSP `sandbox`** e `nosniff` pelas rotas de mídia.
 - **Dependências:** `next` 16.2.11 → 16.3.6 (advisories crítico/altos), Tiptap 3.29 → 3.31 e
   transitivas (`js-yaml`, `nanoid`, `brace-expansion`, `fast-uri`, `hono`, `qs`). Restam 4
   moderadas no `esbuild` interno do `drizzle-kit` (só servidor de dev do esbuild, não usado).
+
+### Added
+
+- **Revisões e propostas no CMS.** Cada alteração guarda o estado anterior (histórico restaurável,
+  50 por conteúdo). Quem não pode publicar (papel `author`) ao editar um conteúdo publicado cria
+  uma **proposta** — o site não muda até alguém com `cms.entries.publish` aplicar. Arquivar
+  conteúdo publicado também exige publicar. Tela "Histórico e propostas" no conteúdo.
+- **Agendador de tarefas** (`platform/scheduled-jobs`): `/api/cron/tick` protegido por
+  `CRON_SECRET` roda publicação agendada, flush de logs/visualizações, retenção, reconciliação de
+  mídia e limpeza do rate limit, com lock no banco (uma execução por vez entre instâncias).
+  Plugins declaram `scheduledJobs` em `contributions.ts`. Em serverless, logs e visualizações
+  também são gravados logo após a resposta (`waitUntil`). `IN_PROCESS_JOBS=false` desliga os
+  timers em processo.
+- **Login volta pra página de origem** (`?callbackUrl=`, só caminho relativo da própria origem) e
+  telas próprias do Auth.js (`pages.signIn`/`pages.error` → `/login`, erros OAuth em português).
+
+### Fixed
+
+- Usuário OAuth pendente caía em `/login` sem explicação depois de entrar — agora vai pra
+  `/pending-approval`.
+- Driver de mídia padrão (em memória) em produção sem `MEDIA_STORAGE_DRIVER` agora falha no upload
+  em vez de perder o arquivo no próximo reinício.
+
+### Removed
+
+- Atalho `AUTH_ENABLE_DEV_CREDENTIALS` (qualquer usuário/senha em dev): não funcionava (o id
+  `dev-*` não existe no banco) — use `npm run db:install:fresh`.
 
 ## [0.5.0] - 2026-09-25
 

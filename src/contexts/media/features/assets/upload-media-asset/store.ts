@@ -3,6 +3,8 @@ import { assets } from "../../../database/schema";
 import type { MediaAsset, MediaVisibility } from "../../../contracts/types";
 
 export async function insertAsset(input: {
+  // Gerado pelo service antes do insert — a URL de um asset não público depende do id.
+  id: string;
   filename: string;
   pathname: string;
   url: string;

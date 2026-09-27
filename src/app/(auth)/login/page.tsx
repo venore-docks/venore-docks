@@ -1,5 +1,8 @@
+import Link from "next/link";
 import { listAvailableAuthProviders } from "@/contexts/auth";
 import { superadminExists } from "@/contexts/rbac";
+import { toSafeCallbackUrl } from "@/platform/auth-flow/safe-callback-url";
+import { isSelfRegistrationEnabled } from "@/platform/registration/registration-settings";
 import { getBrandConfig } from "@/platform/brand/get-brand-config";
 import { resolveBrandAesthetics } from "@/platform/theme-rendering/resolve-brand-aesthetics";
 import { Button } from "@/components/ui/button";
@@ -7,25 +10,52 @@ import { Input } from "@/components/ui/input";
 import { signInWithPasswordAction, signInWithProviderAction, signUpWithPasswordAction } from "../actions";
 import { PasswordInput } from "./password-input";
 
+// Só mensagens conhecidas, por código — antes `?error=` aceitava texto livre e qualquer um montava
+// um link de login oficial com a mensagem que quisesse (content spoofing).
+const ERROR_MESSAGES: Record<string, string> = {
+  "invalid-credentials": "Usuário ou senha inválidos.",
+  "too-many-attempts": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+  "registration-closed": "O cadastro de novas contas está fechado neste site. Fale com um administrador.",
+  account_pending: "Cadastro aguardando aprovação de um administrador.",
+  account_rejected: "Cadastro rejeitado. Fale com um administrador se acha que isso é engano.",
+  account_frozen: "Conta congelada por um administrador. Fale com um administrador para reativar.",
+  account_removed: "Conta removida.",
+  "auth.registration.invalid_email": "Informe um email válido.",
+  "auth.registration.invalid_name": "Informe seu nome.",
+  "auth.registration.weak_password": "A senha precisa ter ao menos 8 caracteres.",
+  "auth.registration.password_disabled": "O cadastro com senha não está habilitado neste site.",
+  // Erros que o Auth.js devolve na própria URL (?error=...) quando o login OAuth falha.
+  OAuthAccountNotLinked: "Este e-mail já tem uma conta com outra forma de login. Entre pelo método que você usou antes.",
+  AccessDenied: "Acesso negado.",
+  Configuration: "Login temporariamente indisponível. Tente de novo em instantes.",
+};
+
+const NOTICE_MESSAGES: Record<string, string> = {
+  "registration-received":
+    "Cadastro recebido. Se ele for aprovado por um administrador, você poderá entrar com seu e-mail e senha.",
+  "password-reset": "Senha redefinida. Entre com a nova senha.",
+};
+
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; notice?: string }>;
+  searchParams: Promise<{ error?: string; notice?: string; callbackUrl?: string }>;
 }) {
-  const { error, notice } = await searchParams;
+  const { error, notice, callbackUrl: rawCallbackUrl } = await searchParams;
+  const callbackUrl = toSafeCallbackUrl(rawCallbackUrl);
   const providers = listAvailableAuthProviders();
   const oauthProviders = providers.filter((provider) => provider.kind === "oauth" && provider.enabled);
   const passwordProvider = providers.find((provider) => provider.kind === "password" && provider.enabled);
 
   const superadminExistsResult = await superadminExists();
   const showBootstrapNotice = superadminExistsResult.success && !superadminExistsResult.data;
+  const selfRegistrationEnabled = await isSelfRegistrationEnabled();
 
   const aesthetics = await resolveBrandAesthetics();
   const brand = await getBrandConfig(aesthetics.mode);
 
-  // Mesagem de erro: o código PT já vem pronto do service (?error=<message>); "invalid-credentials"
-  // é o único legado por código, mapeado aqui pra não quebrar o link do signInWithPasswordAction.
-  const errorMessage = error === "invalid-credentials" ? "Usuário ou senha inválidos." : (error ?? null);
+  const errorMessage = error ? (ERROR_MESSAGES[error] ?? "Não foi possível entrar. Tente de novo.") : null;
+  const noticeMessage = notice ? (NOTICE_MESSAGES[notice] ?? null) : null;
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background px-4 text-foreground">
@@ -61,13 +91,16 @@ export default async function LoginPage({
 
         {showBootstrapNotice ? (
           <p className="rounded-control border border-border bg-accent/14 px-3 py-2 text-xs text-foreground">
-            Nenhum superadmin foi configurado ainda. O próximo cadastro (ou login) se torna o superadmin inicial.
+            Configuração inicial pendente.{" "}
+            <Link href="/setup" className="underline">
+              Concluir configuração
+            </Link>
           </p>
         ) : null}
 
-        {notice === "registration-pending" ? (
+        {noticeMessage ? (
           <p className="rounded-control border border-border bg-accent/14 px-3 py-2 text-xs text-foreground">
-            Conta criada. Um administrador precisa aprovar seu acesso antes do primeiro login.
+            {noticeMessage}
           </p>
         ) : null}
 
@@ -81,6 +114,7 @@ export default async function LoginPage({
           {oauthProviders.map((provider) => (
             <form key={provider.key} action={signInWithProviderAction}>
               <input type="hidden" name="provider" value={provider.key} />
+              {callbackUrl ? <input type="hidden" name="callbackUrl" value={callbackUrl} /> : null}
               <Button type="submit" variant="outline" className="w-full gap-2">
                 {provider.iconUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -94,6 +128,7 @@ export default async function LoginPage({
 
         {passwordProvider ? (
           <form action={signInWithPasswordAction} className="space-y-2">
+            {callbackUrl ? <input type="hidden" name="callbackUrl" value={callbackUrl} /> : null}
             <div className="space-y-2">
               <Input name="username" placeholder="Email ou usuário" autoComplete="username" required />
               <PasswordInput name="password" placeholder="Senha" autoComplete="current-password" required />
@@ -104,7 +139,7 @@ export default async function LoginPage({
           </form>
         ) : null}
 
-        {passwordProvider ? (
+        {passwordProvider && selfRegistrationEnabled ? (
           <details className="text-sm">
             <summary className="cursor-pointer text-muted-foreground">Criar conta</summary>
             <form action={signUpWithPasswordAction} className="mt-3 space-y-2">

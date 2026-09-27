@@ -18,9 +18,14 @@ export const users = authSchema.table("users", {
   // schema entre contexts já usada em cms.entries.mediaId — validado via getMedia() na aplicação.
   avatarMediaId: text("avatar_media_id"),
   // "pending" | "approved" | "rejected" | "frozen" | "removed" — ver contracts/types.ts
-  // (UserRegistrationStatus). Escrita por provision-user/approve-user-registration/
+  // (UserRegistrationStatus). Escrita por provision-user/activate-user/approve-user-registration/
   // reject-user-registration/freeze-user/unfreeze-user/remove-user.
-  status: text("status").notNull().default("approved"),
+  //
+  // Default "pending" (fail-closed): toda conta nasce sem acesso e só vira "approved" por decisão
+  // explícita (aprovação, conta criada pelo admin, instalador, setup). Antes o default era
+  // "approved" e o registro rebaixava depois — qualquer falha ou corrida no meio deixava a conta
+  // aprovada sem ninguém ter aprovado.
+  status: text("status").notNull().default("pending"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   // Atualizado no evento signIn do Auth.js (auth.config.ts) — só existe pra alimentar a aba de
   // atividade do perfil admin (/admin/community/[userId]), não é usado por nenhuma checagem de

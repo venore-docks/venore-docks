@@ -1,5 +1,6 @@
 import { beginOperation, endOperation } from "@/observability";
 import { compositionSchema } from "../../../contracts/block";
+import { canPublishInCategory, isLive, recordProposal, recordSnapshot, stateOf } from "../../../shared/entry-revisions";
 import { assertCmsCategoryScope } from "../../../shared/scoped-authorization";
 import { validateComposition } from "../../../validate-composition";
 import { findEntryById, saveEntryComposition } from "./store";
@@ -43,8 +44,20 @@ export async function updateEntryComposition(
   }
 
   const existingData = existing.data && typeof existing.data === "object" ? (existing.data as Record<string, unknown>) : {};
-  const entry = await saveEntryComposition(command.id, { ...existingData, blocks: parsed.data });
+  const nextData = { ...existingData, blocks: parsed.data };
+
+  if (isLive(existing) && !(await canPublishInCategory(command.actorId, existing.categoryId))) {
+    const proposal = await recordProposal(existing.id, { ...stateOf(existing), contentTypeIds: null, data: nextData }, command.actorId);
+    endOperation(handle, {
+      success: true,
+      summary: `user:${command.actorId} propôs uma nova composição para a entry publicada "${existing.title}" (aguardando revisão).`,
+    });
+    return { success: true, data: { ...existing, proposalId: proposal.id } };
+  }
+
+  await recordSnapshot({ ...existing, contentTypeIds: existing.contentTypeIds ?? [] }, command.actorId);
+  const entry = await saveEntryComposition(command.id, nextData);
 
   endOperation(handle, { success: true });
-  return { success: true, data: entry };
+  return { success: true, data: { ...entry, proposalId: null } };
 }

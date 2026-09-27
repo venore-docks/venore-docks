@@ -15,13 +15,12 @@ export async function findUserIdByEmail(email: string): Promise<string | null> {
   return row?.id ?? null;
 }
 
-// status não é setado aqui de propósito — o default do schema ("approved") já é o que uma conta
-// criada pelo admin deve ter (diferente do fluxo de auto-registro, que rebaixa pra "pending" via
-// provisionUser logo depois).
+// Conta criada pelo admin já nasce "approved" — explícito, porque o default do schema é
+// "pending" (fail-closed).
 export async function insertUser(input: { email: string; name: string; passwordHash: string }): Promise<CreatedUser> {
   const [row] = await db
     .insert(users)
-    .values({ email: input.email, name: input.name, passwordHash: input.passwordHash })
+    .values({ email: input.email, name: input.name, passwordHash: input.passwordHash, status: "approved" })
     .returning({ id: users.id, email: users.email, name: users.name });
   return row;
 }

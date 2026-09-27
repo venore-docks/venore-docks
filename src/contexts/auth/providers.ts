@@ -8,8 +8,10 @@ import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id";
 // `NextAuth({...})` no top-level e puxa `next/server` — inresolvível em Vitest puro (AGENTS.md
 // seção 5), e este arquivo roda em teste unitário.
 import { findUserByEmailHandler as findUserByEmail } from "./features/identity/find-user-by-email/handler";
-import { verifyPasswordHash } from "./features/identity/password-hashing";
-import type { AuthProviderDescriptor } from "./contracts/types";
+import { burnPasswordVerificationTime, verifyPasswordHash } from "./features/identity/password-hashing";
+import { rehashPasswordHandler as rehashPassword } from "./features/identity/rehash-password/handler";
+import { BLOCKED_ACCOUNT_CODES, BlockedAccountError } from "./contracts/login-errors";
+import type { AuthProviderDescriptor, UserRegistrationStatus } from "./contracts/types";
 
 function readEnvValue(key: string): string {
   const rawValue = process.env[key];
@@ -31,11 +33,6 @@ function hasRequiredProviderEnv(keys: string[]): boolean {
 
 function hasRequiredProviderEnvAliases(keyGroups: string[][]): boolean {
   return keyGroups.every((aliases) => Boolean(readFirstEnvValue(aliases)));
-}
-
-function isDevelopmentCredentialsEnabled(): boolean {
-  // Atalho de dev (usuário/senha sem linha no banco) só fora de produção E com o flag exato.
-  return process.env.NODE_ENV !== "production" && readEnvValue("AUTH_ENABLE_DEV_CREDENTIALS") === "true";
 }
 
 function isCredentialsDisabled(): boolean {
@@ -139,26 +136,33 @@ export function buildAuthProviders() {
 
         if (!username || !password) return null;
 
-        // Email é sempre salvo em lowercase no registro — sem normalizar aqui, um login com
-        // maiúscula não acha o usuário e cai (incorretamente) no fallback de dev credentials
-        // quando AUTH_ENABLE_DEV_CREDENTIALS está ligado, ou num "senha inválida" genérico.
+        // Email é sempre salvo em lowercase no registro — normaliza antes do lookup exato.
         const found = await findUserByEmail({ email: username.toLowerCase() });
-        if (found.success && found.data.passwordHash) {
-          if (!(await verifyPasswordHash(password, found.data.passwordHash))) return null;
-          // P9 (generalizado) — só "approved" autentica por senha; pending/rejected/frozen/removed
-          // são todos recusados aqui (ver get-current-user/service.ts pro mesmo racional do lado
-          // de sessão já estabelecida).
-          if (found.data.status !== "approved") return null;
-
-          return {
-            id: found.data.id,
-            name: found.data.name ?? username,
-            email: found.data.email,
-          };
+        if (!found.success || !found.data.passwordHash) {
+          // Mesmo custo de um verify real: o tempo de resposta não revela se o e-mail existe.
+          await burnPasswordVerificationTime(password);
+          return null;
         }
 
-        if (!isDevelopmentCredentialsEnabled()) return null;
-        return { id: `dev-${username}`, name: username, email: `${username}@dev.local` };
+        const storedHash = found.data.passwordHash;
+        if (!(await verifyPasswordHash(password, storedHash))) return null;
+
+        // Só "approved" autentica. Status bloqueado só é revelado a quem acertou a senha.
+        const status = found.data.status as UserRegistrationStatus;
+        if (status !== "approved") {
+          const code = BLOCKED_ACCOUNT_CODES[status as keyof typeof BLOCKED_ACCOUNT_CODES];
+          if (code) throw new BlockedAccountError(code);
+          return null;
+        }
+
+        // Hash legado (parâmetros scrypt antigos) é regravado agora que a senha em claro existe.
+        await rehashPassword({ userId: found.data.id, password, storedHash });
+
+        return {
+          id: found.data.id,
+          name: found.data.name ?? username,
+          email: found.data.email,
+        };
       },
     }),
   );
@@ -197,7 +201,6 @@ export {
   isCredentialsDisabled,
   isCredentialsEnabled,
   isCredentialsExplicitlyEnabled,
-  isDevelopmentCredentialsEnabled,
   readEnvValue,
   readFirstEnvValue,
 };

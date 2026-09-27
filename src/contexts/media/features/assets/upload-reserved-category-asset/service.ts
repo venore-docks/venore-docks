@@ -7,6 +7,7 @@ import { resolveMediaStorageFolder } from "../../../resolve-media-storage-folder
 import { sanitizeSvgBuffer } from "../../../sanitize-svg-buffer";
 import { insertAsset } from "../upload-media-asset/store";
 import type { UploadReservedCategoryAssetCommand, UploadReservedCategoryAssetResult } from "./types";
+import { resolveAssetUrl } from "../../../asset-url";
 
 const MEDIA_LIST_CACHE_PREFIX = "media:assets:";
 
@@ -42,10 +43,13 @@ export async function uploadReservedCategoryAsset(
   const stored = await storagePort.store({ key: pathname, data: dataToStore, contentType: command.contentType });
   const checksum = computeSha256Hex(dataToStore);
 
+  const id = crypto.randomUUID();
   const asset = await insertAsset({
+    id,
     filename: command.filename,
     pathname: stored.key,
-    url: stored.url,
+    // Não público -> rota autorizada do app; público -> URL direta do storage (asset-url.ts).
+    url: resolveAssetUrl({ id, pathname: stored.key, visibility: "private" }),
     contentType: command.contentType,
     size: stored.size,
     checksum,

@@ -14,6 +14,15 @@ vi.mock("./store", () => ({
   insertAssetIfAbsent: (...args: unknown[]) => insertAssetIfAbsent(...args),
 }));
 
+const stat = vi.fn();
+vi.mock("@/infrastructure/storage", () => ({
+  storagePort: {
+    stat: (...args: unknown[]) => stat(...args),
+    servesPublicly: () => true,
+    resolveUrl: (key: string) => `https://example.blob.vercel-storage.com/${key}`,
+  },
+}));
+
 const baseCommand = {
   filename: "photo.png",
   pathname: "uuid-1-photo.png",
@@ -46,6 +55,7 @@ describe("registerUploadedMedia", () => {
     findAssetByPathname.mockReset();
     findActiveAssetByChecksum.mockReset();
     insertAssetIfAbsent.mockReset();
+    stat.mockReset().mockResolvedValue({ size: 1024, contentType: "image/png" });
   });
 
   it("registrar duas vezes o mesmo blob não cria dois registros — retorna a linha existente sem inserir de novo", async () => {
@@ -63,7 +73,7 @@ describe("registerUploadedMedia", () => {
     findActiveAssetByChecksum.mockResolvedValue(existingAsset);
 
     const { registerUploadedMedia } = await import("./service");
-    const result = await registerUploadedMedia({ ...baseCommand, pathname: "uuid-2-photo-copy.png" });
+    const result = await registerUploadedMedia({ ...baseCommand, pathname: "uuid-2-photo-copy.png", checksumVerified: true });
 
     expect(result).toEqual({ success: true, data: existingAsset });
     expect(insertAssetIfAbsent).not.toHaveBeenCalled();
@@ -106,4 +116,41 @@ describe("registerUploadedMedia", () => {
     expect(result).toEqual({ success: true, data: existingAsset });
     expect(findAssetByPathname).toHaveBeenCalledTimes(2);
   });
+
+  it("does not dedupe on a checksum the browser declared (unverified)", async () => {
+    findAssetByPathname.mockResolvedValue(null);
+    findActiveAssetByChecksum.mockResolvedValue(existingAsset);
+    insertAssetIfAbsent.mockResolvedValue({ ...existingAsset, id: "asset-9" });
+
+    const { registerUploadedMedia } = await import("./service");
+    await registerUploadedMedia({ ...baseCommand, pathname: "uuid-9.png", checksumVerified: false });
+
+    expect(findActiveAssetByChecksum).not.toHaveBeenCalled();
+    expect(insertAssetIfAbsent).toHaveBeenCalled();
+  });
+
+  it("refuses to register an object that is not in the storage, and never trusts the client URL", async () => {
+    findAssetByPathname.mockResolvedValue(null);
+    stat.mockResolvedValue(null);
+
+    const { registerUploadedMedia } = await import("./service");
+    const result = await registerUploadedMedia({ ...baseCommand, url: "http://169.254.169.254/latest" });
+
+    expect(result).toEqual({ success: false, error: { code: "media.register.object_not_found", message: expect.any(String) } });
+    expect(insertAssetIfAbsent).not.toHaveBeenCalled();
+  });
+
+  it("takes size and type from the storage, not from the client", async () => {
+    findAssetByPathname.mockResolvedValue(null);
+    stat.mockResolvedValue({ size: 2048, contentType: "image/webp" });
+    insertAssetIfAbsent.mockResolvedValue(existingAsset);
+
+    const { registerUploadedMedia } = await import("./service");
+    await registerUploadedMedia({ ...baseCommand, size: 1, contentType: "image/png" });
+
+    expect(insertAssetIfAbsent).toHaveBeenCalledWith(
+      expect.objectContaining({ size: 2048, contentType: "image/webp", url: expect.stringContaining("/api/media/asset/") }),
+    );
+  });
 });
+

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { drainEvents, drainTraceEntries } from "./buffer";
 
-vi.mock("./flush", () => ({ flushNow: vi.fn() }));
+vi.mock("./flush", () => ({ flushNow: vi.fn(), scheduleFlushAfterResponse: vi.fn() }));
 
 // origin-registry.ts deriva os nomes de plugin de plugin-keys.generated.ts (vazio no repo do
 // core). Uma key fingida cobre o ramo "plugin:".

@@ -46,7 +46,7 @@ export function EditEntryForm({
 }) {
   const [state, formAction, pending] = useActionState(updateEntryAction, initialState);
   const [titleValue, setTitleValue] = useState(title);
-  useActionToast({ pending, error: state.error, successMessage: "Alterações salvas." });
+  useActionToast({ pending, error: state.error, successMessage: state.notice ?? "Alterações salvas." });
 
   return (
     <form action={formAction} className="space-y-3">

@@ -1,10 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { publishEntry, updateEntry } from "@/contexts/cms";
+import { applyEntryRevision, discardEntryProposal, publishEntry, updateEntry } from "@/contexts/cms";
 import { resolveBlockDefinition } from "@/platform/page-builder/block-registry";
 
-export type EditEntryActionState = { error: string | null };
+export type EditEntryActionState = { error: string | null; notice?: string | null };
+
+const PROPOSAL_NOTICE = "Conteúdo publicado: sua alteração foi enviada como proposta e entra no ar quando um editor aplicar.";
 
 // Mesmo padrão de removeRoleAction (/admin/rbac/actions.ts): erro do handler é devolvido de
 // verdade via useActionState, nunca descartado silenciosamente (docs/venore-docks.md).
@@ -39,7 +41,34 @@ export async function updateEntryAction(
 
   revalidatePath("/admin/cms");
   revalidatePath(`/admin/cms/entries/${id}`);
-  return { error: null };
+  return { error: null, notice: result.data.proposalId ? PROPOSAL_NOTICE : null };
+}
+
+export async function applyEntryRevisionAction(
+  _prevState: EditEntryActionState,
+  formData: FormData,
+): Promise<EditEntryActionState> {
+  const entryId = String(formData.get("entryId") ?? "");
+  const result = await applyEntryRevision({ revisionId: String(formData.get("revisionId") ?? "") });
+  if (!result.success) {
+    return { error: result.error.message };
+  }
+  revalidatePath("/admin/cms");
+  revalidatePath(`/admin/cms/entries/${entryId}`);
+  return { error: null, notice: result.data.proposalId ? PROPOSAL_NOTICE : "Versão aplicada." };
+}
+
+export async function discardEntryProposalAction(
+  _prevState: EditEntryActionState,
+  formData: FormData,
+): Promise<EditEntryActionState> {
+  const entryId = String(formData.get("entryId") ?? "");
+  const result = await discardEntryProposal({ revisionId: String(formData.get("revisionId") ?? "") });
+  if (!result.success) {
+    return { error: result.error.message };
+  }
+  revalidatePath(`/admin/cms/entries/${entryId}`);
+  return { error: null, notice: "Proposta descartada." };
 }
 
 export async function publishEntryFromEditAction(

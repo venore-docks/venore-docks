@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
@@ -57,7 +58,14 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [{ manifest }, activeColorPalette] = await Promise.all([resolveActiveTheme(), resolveActiveColorPalette()]);
+  const [{ manifest }, activeColorPalette, requestHeaders] = await Promise.all([
+    resolveActiveTheme(),
+    resolveActiveColorPalette(),
+    headers(),
+  ]);
+  // Nonce da CSP gerado por request em src/proxy.ts — o script inline do next-themes (evita o
+  // flash de tema) precisa dele pra rodar quando a política estiver em "enforce".
+  const nonce = requestHeaders.get("x-nonce") ?? undefined;
   // `activeColorPalette` vem do catálogo em código de cada tema (src/themes/venore-slime/color-
   // palettes.ts) OU, quando paletteId === "custom", de cor digitada pelo admin (platform/theme-
   // engine/custom-color-palette.ts). dangerouslySetInnerHTML só continua seguro aqui porque esse
@@ -81,8 +89,10 @@ export default async function RootLayout({
         {/* <style> em qualquer posição do body ainda aplica globalmente ao documento (não é
             escopado pela posição no DOM) — evita depender de suporte a <head> customizado em
             root layout do App Router (mesmo padrão de ChartStyle, src/components/ui/chart.tsx). */}
-        {paletteOverrideCss && <style id="color-palette-override" dangerouslySetInnerHTML={{ __html: paletteOverrideCss }} />}
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem forcedTheme={forcedColorMode}>
+        {paletteOverrideCss && (
+          <style id="color-palette-override" nonce={nonce} dangerouslySetInnerHTML={{ __html: paletteOverrideCss }} />
+        )}
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem forcedTheme={forcedColorMode} nonce={nonce}>
           <ThemeDomSync themeKey={manifest.key} />
           {children}
           <Toaster />

@@ -12,7 +12,11 @@ vi.mock("@/infrastructure/cache/memory-cache", () => ({
 
 const storeFn = vi.fn();
 vi.mock("@/infrastructure/storage", () => ({
-  storagePort: { store: (...args: unknown[]) => storeFn(...args) },
+  storagePort: {
+    store: (...args: unknown[]) => storeFn(...args),
+    servesPublicly: () => true,
+    resolveUrl: (key: string) => `https://blob.test/${key}`,
+  },
 }));
 
 const insertAsset = vi.fn();

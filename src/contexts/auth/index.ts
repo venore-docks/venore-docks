@@ -10,6 +10,15 @@ export type { GetCurrentUserRegistrationStatusResult } from "./features/session/
 // registro (src/platform/registration/handle-user-registered.ts, docs/venore-docks.md — regra 12).
 export { provisionUserHandler as provisionUser } from "./features/identity/provision-user/handler";
 export type { ProvisionUserCommand, ProvisionUserResult } from "./features/identity/provision-user/types";
+// Libera (status -> "approved") uma conta por decisão do SISTEMA — cadastro com aprovação
+// desligada e bootstrap do primeiro superadmin. Sem authorizeActor: só pontos de composição em
+// platform/registration e scripts/ chamam. Nunca expor em Server Action nem no SDK de plugin.
+export { activateUserHandler as activateUser } from "./features/identity/activate-user/handler";
+export type { ActivateUserCommand, ActivateUserResult } from "./features/identity/activate-user/types";
+// Identidade da sessão independente do status (inclusive "pending") — só pro setup inicial;
+// nunca usar pra autorizar.
+export { getSessionIdentityHandler as getSessionIdentity } from "./features/session/get-session-identity/handler";
+export type { SessionIdentity, GetSessionIdentityResult } from "./features/session/get-session-identity/types";
 
 // Self-service: atualiza o avatarMediaId do próprio usuário logado — actorId resolvido da sessão
 // dentro do handler, sem RBAC (não há "permission" pra editar o próprio perfil).
@@ -53,8 +62,8 @@ export type { RemoveUserInput, RemoveUserResult } from "./features/identity/remo
 export { purgeUserHandler as purgeUser } from "./features/identity/purge-user/handler";
 export type { PurgeUserInput, PurgeUserResult } from "./features/identity/purge-user/types";
 
-// Criação de conta pelo admin — nasce "approved" (default do schema), diferente do autorregistro
-// que rebaixa pra "pending" via provisionUser. Gated por rbac.users.manage.
+// Criação de conta pelo admin — nasce "approved" (explícito no insert; o default do schema é
+// "pending"). Gated por rbac.users.manage.
 export { adminCreateUserHandler as adminCreateUser } from "./features/identity/admin-create-user/handler";
 export type { AdminCreateUserInput, AdminCreateUserResult, CreatedUser } from "./features/identity/admin-create-user/types";
 

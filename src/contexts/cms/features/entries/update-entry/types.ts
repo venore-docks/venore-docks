@@ -16,4 +16,6 @@ export type UpdateEntryCommand = {
   actorId: string;
 };
 export type UpdateEntryInput = Omit<UpdateEntryCommand, "actorId">;
-export type UpdateEntryResult = OperationResult<EntryRecord>;
+// proposalId != null: a entry estava publicada e o ator não pode publicar — a alteração virou
+// uma PROPOSTA pendente (shared/entry-revisions) e a entry devolvida é a atual, inalterada.
+export type UpdateEntryResult = OperationResult<EntryRecord & { proposalId: string | null }>;

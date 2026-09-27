@@ -24,6 +24,13 @@ export type {
 } from "./features/assets/upload-reserved-category-asset/types";
 export { listMediaAssetsHandler as listMediaAssets } from "./features/assets/list-media-assets/handler";
 export { getMediaAssetHandler as getMediaAsset } from "./features/assets/get-media-asset/handler";
+// Leitura do CONTEÚDO de um asset com autorização por asset (visibilidade, dono, URL assinada) —
+// usada pelas rotas que servem mídia (/api/media/asset/[id], /api/media/file/[...key]).
+export { readMediaAssetHandler as readMediaAsset } from "./features/assets/read-media-asset/handler";
+export type { ReadMediaAssetQuery, ReadMediaAssetResult } from "./features/assets/read-media-asset/types";
+// URL temporária assinada pra um asset não público — pra service que JÁ autorizou o ator por
+// outro caminho (ex: revisão de entrega em plugin). Ver asset-url.ts.
+export { createSignedMediaUrl } from "./asset-url";
 // BYPASS deliberado de visibilidade — só pra service que já verificou a própria autorização pro
 // recurso específico (ex: revisão de um upload privado feito por outro ator). Nunca chamar isto a
 // partir de UI/action que não tenha checado permissão antes. Ver comentário em
@@ -84,6 +91,8 @@ export { confirmMediaUploadHandler as confirmMediaUpload } from "./features/asse
 // órfão (Fase 4/M2) na primeira vez que qualquer coisa importar o barrel do media — mesmo
 // mecanismo de cms/index.ts importar ./scheduling.
 import "./reconciliation";
+// Varredura de upload órfão — sistema, sem ator. Só o agendador (platform/scheduled-jobs) chama.
+export { reconcileOrphanUploads } from "./reconciliation";
 
 export { mediaAdminNavigationItems } from "./admin-navigation";
 export { mediaBreadcrumbSegments, getCachedMedia } from "./breadcrumbs";

@@ -1,6 +1,7 @@
 import { listSoftDeletedAssetsOlderThan, purgeMediaAssetAsSystem } from "@/contexts/media";
 import { getSetting, registerDefaultSetting } from "@/contexts/settings";
 import { collectMediaUsage } from "@/platform/media-usage/media-usage-registry";
+import { inProcessJobsEnabled } from "@/shared/in-process-jobs";
 
 const MEDIA_SOFT_DELETE_GRACE_DAYS_SETTING_KEY = "media.softDeleteGraceDays";
 const DEFAULT_GRACE_DAYS = 3;
@@ -72,6 +73,6 @@ export function stopMediaSoftDeleteSweep(): void {
   }
 }
 
-if (process.env.NODE_ENV !== "test") {
+if (inProcessJobsEnabled()) {
   startMediaSoftDeleteSweep();
 }

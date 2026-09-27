@@ -1,6 +1,7 @@
 import { db } from "@/infrastructure/database/client";
 import { storagePort } from "@/infrastructure/storage";
 import { assets } from "./database/schema";
+import { inProcessJobsEnabled } from "@/shared/in-process-jobs";
 
 // Upload órfão (Fase 4/M2 — docs/implementation-roadmap.md, docs/media/blob-spec.md seção 8):
 // o browser subiu o blob mas fechou a aba antes de confirmar (confirmMediaUpload nunca chegou a
@@ -55,6 +56,6 @@ export function stopMediaReconciliationSweep(): void {
   }
 }
 
-if (process.env.NODE_ENV !== "test") {
+if (inProcessJobsEnabled()) {
   startMediaReconciliationSweep();
 }
