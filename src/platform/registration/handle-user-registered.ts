@@ -2,6 +2,7 @@ import { activateUser, provisionUser } from "@/contexts/auth";
 import { grantDefaultRoleOnRegistration } from "@/contexts/rbac";
 import { registerPlugins } from "@/platform/plugin-engine/register-plugins";
 import type { OperationResult } from "@/shared/types";
+import { notifyPendingRegistration } from "./notify-pending-registration";
 import { ensureRegistrationSettingsRegistered, isApprovalRequired } from "./registration-settings";
 
 export { REGISTRATION_APPROVAL_REQUIRED_SETTING_KEY } from "./registration-settings";
@@ -28,7 +29,9 @@ export async function handleUserRegistered(user: UserRegisteredInput): Promise<O
   await ensureRegistrationSettingsRegistered();
 
   if (await isApprovalRequired()) {
-    return provisionUser(user);
+    const provisioned = await provisionUser(user);
+    if (provisioned.success) await notifyPendingRegistration(user);
+    return provisioned;
   }
 
   const activated = await activateUser({ userId: user.id, reason: "registration-auto-approval" });

@@ -1,3 +1,4 @@
+import { deleteStalePasswordResetTokens } from "@/contexts/auth";
 import { processScheduledEntries, flushEntryViews } from "@/contexts/cms";
 import { reconcileOrphanUploads } from "@/contexts/media";
 import { deleteExpiredRateLimits } from "@/infrastructure/rate-limit";
@@ -23,4 +24,9 @@ export const CORE_SCHEDULED_JOBS: ScheduledJob[] = [
   { key: "media.reconcile-orphan-uploads", intervalMinutes: 6 * 60, run: async () => ({ success: true, data: await reconcileOrphanUploads() }) },
   { key: "media.sweep-soft-deleted", intervalMinutes: 24 * 60, run: async () => ({ success: true, data: await sweepSoftDeletedMedia() }) },
   { key: "platform.rate-limit-cleanup", intervalMinutes: 60, run: async () => ({ success: true, data: await deleteExpiredRateLimits() }) },
+  {
+    key: "auth.password-reset-tokens-cleanup",
+    intervalMinutes: 6 * 60,
+    run: async () => ({ success: true, data: await deleteStalePasswordResetTokens(new Date()) }),
+  },
 ];

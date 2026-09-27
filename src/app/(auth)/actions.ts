@@ -3,18 +3,29 @@
 import { AuthError, CredentialsSignin } from "next-auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { listAvailableAuthProviders, registerWithPassword, signIn, signOut } from "@/contexts/auth";
+import {
+  listAvailableAuthProviders,
+  registerWithPassword,
+  requestPasswordReset,
+  resetPasswordWithToken,
+  signIn,
+  signOut,
+} from "@/contexts/auth";
 import { isBlockedAccountCode } from "@/contexts/auth/contracts/login-errors";
 import { checkRateLimit, getClientIp } from "@/infrastructure/rate-limit";
 import { toSafeCallbackUrl } from "@/platform/auth-flow/safe-callback-url";
 import { bootstrapSuperadmin } from "@/platform/registration/bootstrap-superadmin";
 import { handleUserRegistered } from "@/platform/registration/handle-user-registered";
 import { isSelfRegistrationEnabled } from "@/platform/registration/registration-settings";
+import { getSiteOrigin } from "@/platform/seo/site-origin";
 
 // Limites por IP e por e-mail — força bruta de senha, credential stuffing e spam de cadastro.
 const LOGIN_IP_LIMIT = { limit: 30, windowMs: 15 * 60 * 1000 };
 const LOGIN_EMAIL_LIMIT = { limit: 10, windowMs: 15 * 60 * 1000 };
 const REGISTER_IP_LIMIT = { limit: 5, windowMs: 60 * 60 * 1000 };
+const RESET_REQUEST_IP_LIMIT = { limit: 5, windowMs: 15 * 60 * 1000 };
+const RESET_REQUEST_EMAIL_LIMIT = { limit: 3, windowMs: 60 * 60 * 1000 };
+const RESET_SUBMIT_IP_LIMIT = { limit: 10, windowMs: 15 * 60 * 1000 };
 
 async function clientIp(): Promise<string> {
   return getClientIp(await headers());
@@ -163,4 +174,42 @@ export async function bootstrapSuperadminAction(_prev: SetupActionState, formDat
     }
   }
   redirect("/admin");
+}
+
+export type PasswordResetActionState = { error: string | null };
+
+// "Esqueci minha senha": resposta igual exista ou não a conta (a página diz "se houver conta...").
+export async function requestPasswordResetAction(
+  _prev: PasswordResetActionState,
+  formData: FormData,
+): Promise<PasswordResetActionState> {
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const ipLimit = await checkRateLimit(`auth.reset-request.ip:${await clientIp()}`, RESET_REQUEST_IP_LIMIT);
+  const emailLimit = await checkRateLimit(`auth.reset-request.email:${email}`, RESET_REQUEST_EMAIL_LIMIT);
+  if (!ipLimit.allowed || !emailLimit.allowed) {
+    return { error: "Muitas tentativas. Aguarde alguns minutos e tente de novo." };
+  }
+
+  const result = await requestPasswordReset({ email, resetUrl: `${await getSiteOrigin()}/reset-password` });
+  if (!result.success) {
+    return { error: result.error.message };
+  }
+  redirect("/forgot-password?enviado=1");
+}
+
+export async function resetPasswordAction(_prev: PasswordResetActionState, formData: FormData): Promise<PasswordResetActionState> {
+  const newPassword = String(formData.get("password") ?? "");
+  if (newPassword !== String(formData.get("confirmPassword") ?? "")) {
+    return { error: "A confirmação não bate com a nova senha." };
+  }
+  const limit = await checkRateLimit(`auth.reset-submit.ip:${await clientIp()}`, RESET_SUBMIT_IP_LIMIT);
+  if (!limit.allowed) {
+    return { error: "Muitas tentativas. Aguarde alguns minutos e tente de novo." };
+  }
+
+  const result = await resetPasswordWithToken({ token: String(formData.get("token") ?? ""), newPassword });
+  if (!result.success) {
+    return { error: result.error.message };
+  }
+  redirect(loginPath({ notice: "password-reset" }, null));
 }

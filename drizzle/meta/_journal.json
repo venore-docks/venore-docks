@@ -344,6 +344,13 @@
       "when": 1790492050778,
       "tag": "0048_session_version",
       "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1790492700991,
+      "tag": "0049_password_reset_tokens",
+      "breakpoints": true
     }
   ]
 }

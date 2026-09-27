@@ -110,3 +110,17 @@ export { rejectUserRegistrationHandler as rejectUserRegistration } from "./featu
 export type { PendingUserRef, ListPendingUsersResult } from "./features/registration/list-pending-users/types";
 export type { ApproveUserRegistrationInput, ApproveUserRegistrationResult } from "./features/registration/approve-user-registration/types";
 export type { RejectUserRegistrationInput, RejectUserRegistrationResult } from "./features/registration/reject-user-registration/types";
+
+// Recuperação de senha por e-mail (só com EMAIL_DRIVER configurado). Público: quem chama (Server
+// Action) limita tentativas por IP e por e-mail.
+export { requestPasswordResetHandler as requestPasswordReset } from "./features/identity/request-password-reset/handler";
+export { resetPasswordWithTokenHandler as resetPasswordWithToken } from "./features/identity/reset-password-with-token/handler";
+export type { RequestPasswordResetInput, RequestPasswordResetResult } from "./features/identity/request-password-reset/types";
+export type { ResetPasswordWithTokenInput, ResetPasswordWithTokenResult } from "./features/identity/reset-password-with-token/types";
+export { isPasswordResetAvailable } from "./password-reset-availability";
+// Varredura de tokens vencidos/usados — sistema, só o agendador chama.
+export { deleteStaleResetTokens as deleteStalePasswordResetTokens } from "./features/identity/reset-password-with-token/store";
+// Sistema, SEM gate — e-mail de contas ativas por id, pra avisos (platform/registration). Fora do
+// @venore/plugin-sdk (lista explícita lá).
+export { findApprovedUserContacts as listApprovedUserContacts } from "./features/identity/list-user-contacts/store";
+export type { UserContact } from "./features/identity/list-user-contacts/store";

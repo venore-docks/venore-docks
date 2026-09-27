@@ -87,6 +87,14 @@ atualização" em `VENORE-DOCKS.md`).
 
 ### Added
 
+- **E-mail (provedor plugável)** em `src/infrastructure/email`: `EMAIL_DRIVER=resend`
+  (`RESEND_API_KEY`, `EMAIL_FROM`), `console` (dev) ou desligado.
+- **Recuperação de senha:** "Esqueci minha senha" no `/login` (só com e-mail configurado),
+  `/forgot-password` e `/reset-password`. Link de uso único, 1 hora, só o hash no banco
+  (migration 0049), resposta igual exista ou não a conta, limite por IP e por e-mail, sessões
+  antigas derrubadas. Tokens vencidos saem pelo agendador.
+- **Aviso de cadastro pendente:** com aprovação exigida, quem tem `rbac.users.manage` (e todo
+  superadmin) recebe um e-mail com o link de `/admin/community`.
 - **Sessões revogáveis.** "Sair dos outros dispositivos" em `/account` e "Encerrar sessões" no
   perfil do usuário em `/admin/community`; trocar a senha (própria ou pelo admin) também derruba
   as sessões abertas. O JWT guarda `users.session_version` (migration 0048) e a sessão atual é

@@ -6,7 +6,8 @@ import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { db } from "@/infrastructure/database/client";
 import { users } from "@/contexts/auth/database/schema";
-import { ensureBaseRbacDataSeeded } from "@/contexts/rbac";
+import { ensureBaseRbacDataSeeded, listUserIdsWithPermission } from "@/contexts/rbac";
+import { seedUserWithSystemRole } from "@/test-support/integration/rbac-seed";
 import { getUserContext } from "@/contexts/rbac/features/role-assignment/get-user-context/service";
 import { setSetting } from "@/contexts/settings/features/set-setting/service";
 import { handleUserRegistered, REGISTRATION_APPROVAL_REQUIRED_SETTING_KEY } from "@/platform/registration/handle-user-registered";
@@ -51,5 +52,15 @@ describe("registration flow (auth + rbac + settings)", () => {
     if (!context.success) return;
     expect(context.data.roles.length).toBeGreaterThan(0);
     expect(context.data.isSuperadmin).toBe(false);
+  });
+
+  it("finds who can approve registrations (admin by permission, superadmin always), but not members", async () => {
+    const admin = await seedUserWithSystemRole("admin");
+    const member = await seedUserWithSystemRole("member");
+
+    const approvers = await listUserIdsWithPermission("rbac.users.manage");
+
+    expect(approvers).toContain(admin.userId);
+    expect(approvers).not.toContain(member.userId);
   });
 });

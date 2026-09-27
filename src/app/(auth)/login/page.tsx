@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { listAvailableAuthProviders } from "@/contexts/auth";
+import { isPasswordResetAvailable, listAvailableAuthProviders } from "@/contexts/auth";
 import { superadminExists } from "@/contexts/rbac";
 import { toSafeCallbackUrl } from "@/platform/auth-flow/safe-callback-url";
 import { isSelfRegistrationEnabled } from "@/platform/registration/registration-settings";
@@ -136,6 +136,11 @@ export default async function LoginPage({
             <Button type="submit" className="w-full">
               Entrar com senha
             </Button>
+            {isPasswordResetAvailable() ? (
+              <Link href="/forgot-password" className="block text-center text-xs font-medium text-primary">
+                Esqueci minha senha
+              </Link>
+            ) : null}
           </form>
         ) : null}
 

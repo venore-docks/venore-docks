@@ -1,6 +1,6 @@
 import type { AdapterAccountType } from "next-auth/adapters";
 import { sql } from "drizzle-orm";
-import { integer, pgSchema, primaryKey, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { index, integer, pgSchema, primaryKey, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 
 export const authSchema = pgSchema("auth");
 
@@ -84,3 +84,24 @@ export const verificationTokens = authSchema.table(
     primaryKey({ columns: [verificationToken.identifier, verificationToken.token] }),
   ],
 );
+
+// Recuperação de senha por e-mail (features/identity/request-password-reset e
+// reset-password-with-token). Só o sha256 do token fica no banco; o token vai no link do e-mail.
+// Uso único (used_at) e validade curta (expires_at).
+export const passwordResetTokens = authSchema.table(
+  "password_reset_tokens",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    tokenHash: text("token_hash").notNull().unique(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("password_reset_tokens_user_idx").on(table.userId), index("password_reset_tokens_expires_idx").on(table.expiresAt)],
+);
+

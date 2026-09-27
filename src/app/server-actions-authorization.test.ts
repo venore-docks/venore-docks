@@ -23,6 +23,9 @@ const PUBLIC_ACTIONS = new Set([
   "app/(auth)/actions.ts#signOutAction",
   // Exige SETUP_TOKEN (ausente aqui) — mas a checagem é do próprio fluxo, não de sessão.
   "app/(auth)/actions.ts#bootstrapSuperadminAction",
+  // Recuperação de senha: quem esqueceu a senha não tem sessão; a posse do link é a autorização.
+  "app/(auth)/actions.ts#requestPasswordResetAction",
+  "app/(auth)/actions.ts#resetPasswordAction",
 ]);
 
 const ALLOWED_TABLES = new Set(["rate_limits"]);

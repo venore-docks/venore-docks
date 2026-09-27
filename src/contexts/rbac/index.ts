@@ -37,6 +37,9 @@ export { listScopesForRoleAssignmentHandler as listScopesForRoleAssignment } fro
 export { getUserContextHandler as getUserContext } from "./features/role-assignment/get-user-context/handler";
 export { listUsersByRoleHandler as listUsersByRole } from "./features/role-assignment/list-users-by-role/handler";
 export { countUsersWithPermissionsHandler as countUsersWithPermissions } from "./features/role-assignment/count-users-with-permissions/handler";
+// Sistema, SEM gate — ids de quem tem a permission (superadmin incluso). Só platform/ (avisos por
+// e-mail em platform/registration/notify-pending-registration.ts); fora do @venore/plugin-sdk.
+export { findUserIdsWithPermission as listUserIdsWithPermission } from "./features/role-assignment/count-users-with-permissions/store";
 // Concessão automática do fluxo de registro (docs/venore-docks.md — Autenticação / Fluxo de
 // registro) — sem authorizeActor de propósito, ver nota em assign-default-role/handler.ts.
 export { grantDefaultRoleOnRegistrationHandler as grantDefaultRoleOnRegistration } from "./features/role-assignment/assign-default-role/handler";
