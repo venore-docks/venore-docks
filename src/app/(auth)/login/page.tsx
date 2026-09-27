@@ -36,6 +36,7 @@ const NOTICE_MESSAGES: Record<string, string> = {
   "registration-received":
     "Cadastro recebido. Se ele for aprovado por um administrador, você poderá entrar com seu e-mail e senha.",
   "password-reset": "Senha redefinida. Entre com a nova senha.",
+  "invitation-accepted": "Conta criada. Entre com seu e-mail e a senha que você escolheu.",
 };
 
 export default async function LoginPage({

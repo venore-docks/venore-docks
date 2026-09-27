@@ -4,8 +4,8 @@ import { rolePermissions, roles, userRoles } from "../../../database/schema";
 
 export async function findRoleWithPermissions(
   roleId: string,
-): Promise<{ id: string; key: string; permissionKeys: string[] } | null> {
-  const [role] = await db.select({ id: roles.id, key: roles.key }).from(roles).where(eq(roles.id, roleId)).limit(1);
+): Promise<{ id: string; key: string; name: string; permissionKeys: string[] } | null> {
+  const [role] = await db.select({ id: roles.id, key: roles.key, name: roles.name }).from(roles).where(eq(roles.id, roleId)).limit(1);
   if (!role) return null;
   const rows = await db
     .select({ permissionKey: rolePermissions.permissionKey })

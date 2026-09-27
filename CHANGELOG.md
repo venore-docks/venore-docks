@@ -89,6 +89,10 @@ atualização" em `VENORE-DOCKS.md`).
 
 ### Added
 
+- **Convites:** em `/admin/community`, quem tem `rbac.users.manage` convida por e-mail com um papel
+  (mesmas travas de atribuir papel); o link `/convite/<token>` (7 dias, uso único) cria a conta já
+  aprovada — funciona com o autocadastro fechado. Sem e-mail configurado, o link aparece para
+  copiar. Convites pendentes listados e canceláveis (migration 0052).
 - **Bloco "Formulário de contato":** mensagem enviada por e-mail (`EMAIL_DRIVER`) com responder-para
   o visitante; destinatário cifrado no token (não aparece no HTML nem pode ser trocado), honeypot,
   limite por IP e Cloudflare Turnstile opcional (`NEXT_PUBLIC_TURNSTILE_SITE_KEY` +

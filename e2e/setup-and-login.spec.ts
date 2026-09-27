@@ -7,6 +7,8 @@ import { currentTotpStep, totpAt } from "../src/contexts/auth/shared/totp";
 const setupToken = process.env.SETUP_TOKEN ?? "";
 const email = `e2e-${Date.now()}@example.test`;
 const password = "E2e-senha-segura-123";
+// Códigos de recuperação do 2FA ativado no meio da suíte — os testes seguintes entram com eles.
+let spareRecoveryCodes: string[] = [];
 
 test.describe.serial("primeiro acesso", () => {
   test.beforeAll(() => {
@@ -105,7 +107,9 @@ test.describe.serial("primeiro acesso", () => {
     await page.getByPlaceholder("Código de 6 dígitos").fill(totpAt(secret, currentTotpStep()));
     await page.getByRole("button", { name: "Ativar", exact: true }).click();
     await expect(page.getByText("Verificação em duas etapas ativada.")).toBeVisible();
-    const recoveryCode = (await page.locator("ul.font-mono li").first().innerText()).trim();
+    const recoveryCodes = (await page.locator("ul.font-mono li").allInnerTexts()).map((code) => code.trim());
+    const recoveryCode = recoveryCodes[0];
+    spareRecoveryCodes = recoveryCodes.slice(1);
 
     await page.context().clearCookies();
     await page.goto("/login?callbackUrl=%2Fadmin", { waitUntil: "networkidle" });
@@ -149,5 +153,39 @@ test.describe.serial("primeiro acesso", () => {
     await page.getByRole("button", { name: "Excluir minha conta" }).click();
     await page.waitForURL((url) => url.pathname === "/");
     expect((await page.request.get("/api/account/export")).status()).toBe(401);
+  });
+
+  test("convite: admin convida, a pessoa cria a conta pelo link e entra", async ({ browser }) => {
+    const admin = await (await browser.newContext()).newPage();
+    await admin.goto("/login?callbackUrl=%2Fadmin%2Fcommunity", { waitUntil: "networkidle" });
+    await admin.getByPlaceholder("Email ou usuário").fill(email);
+    await admin.getByPlaceholder("Senha", { exact: true }).fill(password);
+    // O superadmin do setup ativou 2FA no teste de 2FA: entra com outro código de recuperação.
+    await admin.getByPlaceholder("Código de verificação (se ativado)").fill(spareRecoveryCodes.shift() ?? "");
+    await admin.getByRole("button", { name: "Entrar com senha" }).click();
+    await expect(admin).toHaveURL(/\/admin\/community/);
+
+    const guest = `convidado-${Date.now()}@example.test`;
+    await admin.getByLabel("E-mail").fill(guest);
+    await admin.getByRole("button", { name: "Convidar" }).click();
+    const link = await admin.getByLabel("Link do convite").inputValue();
+    expect(link).toContain("/convite/");
+
+    const page = await (await browser.newContext()).newPage();
+    await page.goto(link, { waitUntil: "networkidle" });
+    await expect(page.getByText(`Convite para ${guest}`)).toBeVisible();
+    await page.getByPlaceholder("Seu nome").fill("Convidado");
+    await page.getByPlaceholder("Senha (mín. 8 caracteres)").fill("senha-convite-1");
+    await page.getByPlaceholder("Repita a senha").fill("senha-convite-1");
+    await page.getByRole("button", { name: "Criar conta" }).click();
+    await expect(page).toHaveURL(/notice=invitation-accepted/);
+
+    await page.getByPlaceholder("Email ou usuário").fill(guest);
+    await page.getByPlaceholder("Senha", { exact: true }).fill("senha-convite-1");
+    await page.getByRole("button", { name: "Entrar com senha" }).click();
+    await page.waitForURL((url) => !url.pathname.startsWith("/login"));
+
+    await page.goto(link, { waitUntil: "networkidle" });
+    await expect(page.getByText("Este convite é inválido, expirou ou já foi usado.")).toBeVisible();
   });
 });

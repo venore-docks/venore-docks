@@ -39,6 +39,11 @@ export { listUsersByRoleHandler as listUsersByRole } from "./features/role-assig
 export { countUsersWithPermissionsHandler as countUsersWithPermissions } from "./features/role-assignment/count-users-with-permissions/handler";
 // Sistema, SEM gate — ids de quem tem a permission (superadmin incluso). Só platform/ (avisos por
 // e-mail em platform/registration/notify-pending-registration.ts); fora do @venore/plugin-sdk.
+// Sistema, SEM gate — convites (platform/registration/invitations.ts): conferir se quem convida
+// pode dar o papel e, no aceite, atribuir em nome de quem convidou (as travas rodam contra ele).
+export { checkActorCanGrantRole } from "./features/role-assignment/check-actor-can-grant-role/service";
+export type { GrantableRole } from "./features/role-assignment/check-actor-can-grant-role/service";
+export { assignRoleToUser as assignRoleOnBehalfOf } from "./features/role-assignment/assign-role-to-user/service";
 export { findUserIdsWithPermission as listUserIdsWithPermission } from "./features/role-assignment/count-users-with-permissions/store";
 // Concessão automática do fluxo de registro (docs/venore-docks.md — Autenticação / Fluxo de
 // registro) — sem authorizeActor de propósito, ver nota em assign-default-role/handler.ts.

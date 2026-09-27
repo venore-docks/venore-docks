@@ -140,3 +140,14 @@ export { deleteOwnAccountHandler as deleteOwnAccount } from "./features/identity
 export type { DeleteOwnAccountInput, DeleteOwnAccountResult } from "./features/identity/delete-own-account/types";
 export { getOwnAccountDataHandler as getOwnAccountData } from "./features/identity/get-own-account-data/handler";
 export type { OwnAccountData, GetOwnAccountDataResult } from "./features/identity/get-own-account-data/types";
+// Convites — operações de dado, SEM gate: só platform/registration/invitations.ts chama (lá ficam
+// a autorização de quem convida e a atribuição do papel). Fora do @venore/plugin-sdk.
+export {
+  createInvitation,
+  getInvitation,
+  acceptInvitation,
+  listPendingInvitations,
+  revokeInvitation,
+  INVITATION_TTL_MS,
+} from "./features/invitations/service";
+export type { InvitationRow } from "./features/invitations/service";

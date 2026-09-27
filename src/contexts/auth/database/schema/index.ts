@@ -127,3 +127,23 @@ export const mfaRecoveryCodes = authSchema.table(
   },
   (table) => [index("mfa_recovery_codes_user_idx").on(table.userId)],
 );
+
+// Convites (features/invitations): link de uso único que cria uma conta já aprovada com um papel.
+// role_id/invited_by sem FK pro rbac (isolamento de schema, mesmo caso de avatar_media_id).
+export const invitations = authSchema.table(
+  "invitations",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    email: text("email").notNull(),
+    roleId: text("role_id").notNull(),
+    invitedBy: text("invited_by").notNull(),
+    tokenHash: text("token_hash").notNull().unique(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("invitations_email_idx").on(table.email)],
+);

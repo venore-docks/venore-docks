@@ -12,6 +12,8 @@ import {
 } from "@/contexts/auth";
 import { approveRegistration, grantDefaultRoleOnRegistration, rejectRegistration } from "@/contexts/rbac";
 import { purgeUserSafely } from "@/platform/identity-lifecycle/purge-user-safely";
+import { cancelInvitation, inviteUser } from "@/platform/registration/invitations";
+import { getSiteOrigin } from "@/platform/seo/site-origin";
 
 export type CommunityActionState = { error: string | null };
 
@@ -126,5 +128,26 @@ export async function addUserAction(_prevState: CommunityActionState, formData: 
   if (!roleGrant.success) return { error: roleGrant.error.message };
 
   revalidateCommunity();
+  return { error: null };
+}
+
+export type InviteActionState = { error: string | null; link: string | null; emailed: boolean };
+
+// Convite: link de uso único que cria a conta já aprovada com o papel escolhido.
+export async function inviteUserAction(_prev: InviteActionState, formData: FormData): Promise<InviteActionState> {
+  const result = await inviteUser({
+    email: String(formData.get("email") ?? ""),
+    roleId: String(formData.get("roleId") ?? ""),
+    origin: await getSiteOrigin(),
+  });
+  if (!result.success) return { error: result.error.message, link: null, emailed: false };
+  revalidatePath("/admin/community");
+  return { error: null, link: result.data.link, emailed: result.data.emailed };
+}
+
+export async function cancelInvitationAction(_prev: CommunityActionState, formData: FormData): Promise<CommunityActionState> {
+  const result = await cancelInvitation(String(formData.get("invitationId") ?? ""));
+  if (!result.success) return { error: result.error.message };
+  revalidatePath("/admin/community");
   return { error: null };
 }

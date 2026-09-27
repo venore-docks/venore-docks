@@ -26,6 +26,8 @@ const PUBLIC_ACTIONS = new Set([
   // Recuperação de senha: quem esqueceu a senha não tem sessão; a posse do link é a autorização.
   "app/(auth)/actions.ts#requestPasswordResetAction",
   "app/(auth)/actions.ts#resetPasswordAction",
+  // Aceitar convite: a posse do link (uso único, criado por quem tem rbac.users.manage) autoriza.
+  "app/(auth)/actions.ts#acceptInvitationAction",
 ]);
 
 const ALLOWED_TABLES = new Set(["rate_limits"]);

@@ -16,6 +16,7 @@ import { checkRateLimit, getClientIp } from "@/infrastructure/rate-limit";
 import { toSafeCallbackUrl } from "@/platform/auth-flow/safe-callback-url";
 import { bootstrapSuperadmin } from "@/platform/registration/bootstrap-superadmin";
 import { handleUserRegistered } from "@/platform/registration/handle-user-registered";
+import { acceptInvitation } from "@/platform/registration/invitations";
 import { isSelfRegistrationEnabled } from "@/platform/registration/registration-settings";
 import { getSiteOrigin } from "@/platform/seo/site-origin";
 
@@ -213,4 +214,32 @@ export async function resetPasswordAction(_prev: PasswordResetActionState, formD
     return { error: result.error.message };
   }
   redirect(loginPath({ notice: "password-reset" }, null));
+}
+
+export type AcceptInvitationActionState = { error: string | null };
+
+const INVITE_ACCEPT_IP_LIMIT = { limit: 10, windowMs: 15 * 60 * 1000 };
+
+// Aceitar convite: cria a conta (já aprovada, com o papel do convite) e manda pro login.
+export async function acceptInvitationAction(
+  _prev: AcceptInvitationActionState,
+  formData: FormData,
+): Promise<AcceptInvitationActionState> {
+  const password = String(formData.get("password") ?? "");
+  if (password !== String(formData.get("confirmPassword") ?? "")) {
+    return { error: "A confirmação não bate com a senha." };
+  }
+  const limit = await checkRateLimit(`auth.invite-accept.ip:${await clientIp()}`, INVITE_ACCEPT_IP_LIMIT);
+  if (!limit.allowed) {
+    return { error: "Muitas tentativas. Aguarde alguns minutos e tente de novo." };
+  }
+  const result = await acceptInvitation({
+    token: String(formData.get("token") ?? ""),
+    name: String(formData.get("name") ?? ""),
+    password,
+  });
+  if (!result.success) {
+    return { error: result.error.message };
+  }
+  redirect(loginPath({ notice: "invitation-accepted" }, null));
 }
