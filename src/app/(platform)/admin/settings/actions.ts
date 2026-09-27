@@ -2,7 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { setSetting } from "@/contexts/settings";
-import { REGISTRATION_APPROVAL_REQUIRED_SETTING_KEY } from "@/platform/registration/handle-user-registered";
+import {
+  REGISTRATION_APPROVAL_REQUIRED_SETTING_KEY,
+  SELF_REGISTRATION_ENABLED_SETTING_KEY,
+} from "@/platform/registration/registration-settings";
 
 export type SettingsActionState = { error: string | null };
 
@@ -12,15 +15,16 @@ export async function updateRegistrationApprovalAction(
   _prevState: SettingsActionState,
   formData: FormData,
 ): Promise<SettingsActionState> {
-  const enabled = formData.get("enabled") === "on";
+  const entries = [
+    { key: REGISTRATION_APPROVAL_REQUIRED_SETTING_KEY, value: formData.get("enabled") === "on" },
+    { key: SELF_REGISTRATION_ENABLED_SETTING_KEY, value: formData.get("selfRegistration") === "on" },
+  ];
 
-  const result = await setSetting({
-    key: REGISTRATION_APPROVAL_REQUIRED_SETTING_KEY,
-    value: enabled,
-  });
-
-  if (!result.success) {
-    return { error: result.error.message };
+  for (const entry of entries) {
+    const result = await setSetting(entry);
+    if (!result.success) {
+      return { error: result.error.message };
+    }
   }
 
   revalidatePath("/admin/settings");

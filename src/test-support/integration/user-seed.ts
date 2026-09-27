@@ -16,6 +16,7 @@ export async function seedUser(
     .values({
       email: overrides.email ?? `${randomUUID()}@integration.test`,
       name: overrides.name ?? "Integration Test User",
+      status: "approved",
     })
     .returning({ id: users.id, email: users.email });
   return row;

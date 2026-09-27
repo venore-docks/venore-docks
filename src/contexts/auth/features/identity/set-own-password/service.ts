@@ -1,7 +1,8 @@
 import { beginOperation, endOperation } from "@/observability";
-import { hashPassword } from "../password-hashing";
-import { writeOwnPasswordHash } from "./store";
+import { hashPassword, verifyPasswordHash } from "../password-hashing";
+import { findOwnPasswordHash, writeOwnPasswordHash } from "./store";
 import type { SetOwnPasswordCommand, SetOwnPasswordResult } from "./types";
+import { incrementSessionVersion } from "../../session/revoke-sessions/store";
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -21,6 +22,13 @@ export async function setOwnPassword(command: SetOwnPasswordCommand): Promise<Se
     return { success: false, error };
   }
 
+  const existingHash = await findOwnPasswordHash(command.actorId);
+  if (existingHash && !(await verifyPasswordHash(command.currentPassword ?? "", existingHash))) {
+    const error = { code: "auth.identity.wrong_current_password", message: "A senha atual não confere." };
+    endOperation(handle, { success: false, error });
+    return { success: false, error };
+  }
+
   const passwordHash = await hashPassword(command.newPassword);
   const updated = await writeOwnPasswordHash(command.actorId, passwordHash);
   if (!updated) {
@@ -33,5 +41,8 @@ export async function setOwnPassword(command: SetOwnPasswordCommand): Promise<Se
   }
 
   endOperation(handle, { success: true, summary: `Usuário ${command.actorId} definiu a própria senha.` });
+  // Senha nova derruba as sessões abertas com a antiga (a action de /account renova a sessão
+  // atual logo em seguida).
+  await incrementSessionVersion(command.actorId);
   return { success: true, data: { id: updated.id } };
 }

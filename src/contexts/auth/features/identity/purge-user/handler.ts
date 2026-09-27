@@ -1,4 +1,4 @@
-import { authorizeActor } from "@/contexts/rbac";
+import { authorizeActorOverUser } from "@/contexts/rbac";
 import { purgeUser } from "./service";
 import type { PurgeUserInput, PurgeUserResult } from "./types";
 
@@ -9,7 +9,7 @@ export async function purgeUserHandler(input: PurgeUserInput): Promise<PurgeUser
     return { success: false, error: { code: "auth.identity.invalid_id", message: "targetUserId não pode ser vazio." } };
   }
 
-  const authz = await authorizeActor("rbac.users.purge");
+  const authz = await authorizeActorOverUser("rbac.users.purge", input.targetUserId);
   if (!authz.authorized) {
     return { success: false, error: authz.error };
   }

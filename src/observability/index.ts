@@ -4,6 +4,9 @@ import type { ClearEventsResult } from "./features/clear-events/types";
 
 export { beginOperation, endOperation } from "./operation-log";
 export { recordAuditEvent } from "./audit-log";
+// Agendador do core (platform/scheduled-jobs) — flush do buffer e retenção por período/volume.
+export { flushNow as flushObservabilityBuffers } from "./flush";
+export { runRetentionSweep as runObservabilityRetention } from "./retention";
 export { observabilityAdminNavigationItems } from "./admin-navigation";
 export { observabilityBreadcrumbSegments } from "./breadcrumbs";
 export { listEventsHandler as listEvents } from "./features/list-events/handler";

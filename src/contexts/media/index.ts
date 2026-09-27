@@ -24,6 +24,17 @@ export type {
 } from "./features/assets/upload-reserved-category-asset/types";
 export { listMediaAssetsHandler as listMediaAssets } from "./features/assets/list-media-assets/handler";
 export { getMediaAssetHandler as getMediaAsset } from "./features/assets/get-media-asset/handler";
+export { getMediaAssetUrlsHandler as getMediaAssetUrls } from "./features/assets/get-media-asset-urls/handler";
+export { listOwnMediaAssetsHandler as listOwnMediaAssets } from "./features/assets/list-own-media-assets/handler";
+export type { OwnMediaAssetSummary, ListOwnMediaAssetsResult } from "./features/assets/list-own-media-assets/types";
+export type { GetMediaAssetUrlsQuery, GetMediaAssetUrlsResult } from "./features/assets/get-media-asset-urls/types";
+// Leitura do CONTEÚDO de um asset com autorização por asset (visibilidade, dono, URL assinada) —
+// usada pelas rotas que servem mídia (/api/media/asset/[id], /api/media/file/[...key]).
+export { readMediaAssetHandler as readMediaAsset } from "./features/assets/read-media-asset/handler";
+export type { ReadMediaAssetQuery, ReadMediaAssetResult } from "./features/assets/read-media-asset/types";
+// URL temporária assinada pra um asset não público — pra service que JÁ autorizou o ator por
+// outro caminho (ex: revisão de entrega em plugin). Ver asset-url.ts.
+export { createSignedMediaUrl } from "./asset-url";
 // BYPASS deliberado de visibilidade — só pra service que já verificou a própria autorização pro
 // recurso específico (ex: revisão de um upload privado feito por outro ator). Nunca chamar isto a
 // partir de UI/action que não tenha checado permissão antes. Ver comentário em
@@ -71,19 +82,23 @@ export { clearCategoryAssetsHandler as clearCategoryAssets } from "./features/ca
 
 // Fluxo de client-upload direto ao Blob (docs/media/blob-spec.md) — necessário pra arquivos que
 // excedem o limite de body de uma function (vídeo, principalmente). `confirmMediaUpload` é a
-// entrada pública para a confirmação feita pelo browser depois que upload() resolve — o handler
-// de baixo nível usado pelo webhook onUploadCompleted (que confia num actorId já resolvido via
-// tokenPayload) não é exportado aqui de propósito, só a rota o importa direto.
+// entrada pública para a confirmação feita pelo browser depois que upload() resolve. O handler
+// de baixo nível do webhook onUploadCompleted confia num actorId já resolvido (tokenPayload
+// assinado pelo Blob) — exportado com nome que deixa isso explícito e FORA de
+// @venore/plugin-sdk/media (lista explícita lá); só app/api/media/upload/route.ts o chama.
 export { requestMediaUploadTicketHandler as requestMediaUploadTicket } from "./features/assets/request-media-upload-ticket/handler";
 // Exposta pro route handler revalidar allowlist/limite dentro de onBeforeGenerateToken sem
 // duplicar a regra (blob-spec seção 5, "checado duas vezes").
 export { validateMediaUploadCandidate, assertTypeAllowedForDirectUpload } from "./features/assets/request-media-upload-ticket/service";
 export { confirmMediaUploadHandler as confirmMediaUpload } from "./features/assets/register-uploaded-media/handler";
+export { registerUploadedMediaHandler as registerUploadedMediaForTrustedActor } from "./features/assets/register-uploaded-media/handler";
 
 // Import só pelo efeito colateral: dispara o auto-start da varredura de reconciliação de upload
 // órfão (Fase 4/M2) na primeira vez que qualquer coisa importar o barrel do media — mesmo
 // mecanismo de cms/index.ts importar ./scheduling.
 import "./reconciliation";
+// Varredura de upload órfão — sistema, sem ator. Só o agendador (platform/scheduled-jobs) chama.
+export { reconcileOrphanUploads } from "./reconciliation";
 
 export { mediaAdminNavigationItems } from "./admin-navigation";
 export { mediaBreadcrumbSegments, getCachedMedia } from "./breadcrumbs";

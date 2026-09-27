@@ -1,31 +1,26 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const provisionUser = vi.fn();
-
+const activateUser = vi.fn();
 vi.mock("@/contexts/auth", () => ({
   provisionUser: (...args: unknown[]) => provisionUser(...args),
+  activateUser: (...args: unknown[]) => activateUser(...args),
 }));
 
 const grantDefaultRoleOnRegistration = vi.fn();
-const superadminExists = vi.fn();
-const grantSuperadmin = vi.fn();
-
 vi.mock("@/contexts/rbac", () => ({
   grantDefaultRoleOnRegistration: (...args: unknown[]) => grantDefaultRoleOnRegistration(...args),
-  superadminExists: (...args: unknown[]) => superadminExists(...args),
-  grantSuperadmin: (...args: unknown[]) => grantSuperadmin(...args),
 }));
 
-const getSetting = vi.fn();
-const registerDefaultSetting = vi.fn();
-
-vi.mock("@/contexts/settings", () => ({
-  getSetting: (...args: unknown[]) => getSetting(...args),
-  registerDefaultSetting: (...args: unknown[]) => registerDefaultSetting(...args),
+const isApprovalRequired = vi.fn();
+const ensureRegistrationSettingsRegistered = vi.fn();
+vi.mock("./registration-settings", () => ({
+  REGISTRATION_APPROVAL_REQUIRED_SETTING_KEY: "auth.registration_approval_required",
+  isApprovalRequired: () => isApprovalRequired(),
+  ensureRegistrationSettingsRegistered: () => ensureRegistrationSettingsRegistered(),
 }));
 
 const registerPlugins = vi.fn();
-
 vi.mock("@/platform/plugin-engine/register-plugins", () => ({
   registerPlugins: (...args: unknown[]) => registerPlugins(...args),
 }));
@@ -34,124 +29,49 @@ describe("handleUserRegistered", () => {
   const user = { id: "user-1", email: "a@b.com", name: "A" };
 
   beforeEach(() => {
-    provisionUser.mockReset();
-    grantDefaultRoleOnRegistration.mockReset();
-    superadminExists.mockReset();
-    grantSuperadmin.mockReset();
-    getSetting.mockReset();
-    registerDefaultSetting.mockReset();
-    registerDefaultSetting.mockResolvedValue({ success: true, data: { key: "auth.registration_approval_required", registered: true } });
-    registerPlugins.mockReset();
+    for (const mock of [provisionUser, activateUser, grantDefaultRoleOnRegistration, isApprovalRequired, ensureRegistrationSettingsRegistered, registerPlugins]) {
+      mock.mockReset();
+    }
     registerPlugins.mockResolvedValue(undefined);
-    superadminExists.mockResolvedValue({ success: true, data: true });
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  it("marks the user as pending (via auth) when approval is required (default, setting absent) and a superadmin already exists", async () => {
-    getSetting.mockResolvedValue({ success: true, data: null });
+    ensureRegistrationSettingsRegistered.mockResolvedValue(undefined);
     provisionUser.mockResolvedValue({ success: true, data: undefined });
-
-    const { handleUserRegistered } = await import("./handle-user-registered");
-    const result = await handleUserRegistered(user);
-
-    expect(registerDefaultSetting).toHaveBeenCalledWith({ key: "auth.registration_approval_required", value: true });
-    expect(getSetting).toHaveBeenCalledWith({ key: "auth.registration_approval_required" });
-    expect(provisionUser).toHaveBeenCalledWith(user);
-    expect(grantDefaultRoleOnRegistration).not.toHaveBeenCalled();
-    expect(grantSuperadmin).not.toHaveBeenCalled();
-    expect(result).toEqual({ success: true, data: undefined });
-  });
-
-  it("marks the user as pending (via auth) when the setting is explicitly true", async () => {
-    getSetting.mockResolvedValue({ success: true, data: { key: "auth.registration_approval_required", value: true, updatedAt: new Date() } });
-    provisionUser.mockResolvedValue({ success: true, data: undefined });
-
-    const { handleUserRegistered } = await import("./handle-user-registered");
-    const result = await handleUserRegistered(user);
-
-    expect(provisionUser).toHaveBeenCalledWith(user);
-    expect(grantDefaultRoleOnRegistration).not.toHaveBeenCalled();
-    expect(result).toEqual({ success: true, data: undefined });
-  });
-
-  it("grants the default role (via rbac) when the setting is \"false\" and a superadmin already exists, without touching auth", async () => {
-    getSetting.mockResolvedValue({ success: true, data: { key: "auth.registration_approval_required", value: false, updatedAt: new Date() } });
+    activateUser.mockResolvedValue({ success: true, data: undefined });
     grantDefaultRoleOnRegistration.mockResolvedValue({ success: true, data: undefined });
-
-    const { handleUserRegistered } = await import("./handle-user-registered");
-    const result = await handleUserRegistered(user);
-
-    expect(provisionUser).not.toHaveBeenCalled();
-    expect(grantDefaultRoleOnRegistration).toHaveBeenCalledWith({ userId: "user-1" });
-    expect(result).toEqual({ success: true, data: undefined });
   });
 
-  it("falls back to approval required when reading the setting fails", async () => {
-    getSetting.mockResolvedValue({ success: false, error: { code: "infra.unexpected", message: "boom" } });
-    provisionUser.mockResolvedValue({ success: true, data: undefined });
-
+  it("keeps the account pending when approval is required", async () => {
+    isApprovalRequired.mockResolvedValue(true);
     const { handleUserRegistered } = await import("./handle-user-registered");
-    const result = await handleUserRegistered(user);
 
+    expect(await handleUserRegistered(user)).toEqual({ success: true, data: undefined });
     expect(provisionUser).toHaveBeenCalledWith(user);
+    expect(activateUser).not.toHaveBeenCalled();
     expect(grantDefaultRoleOnRegistration).not.toHaveBeenCalled();
-    expect(result).toEqual({ success: true, data: undefined });
   });
 
-  it("propagates the error when granting the default role fails", async () => {
-    getSetting.mockResolvedValue({ success: true, data: { key: "auth.registration_approval_required", value: false, updatedAt: new Date() } });
-    const error = { code: "rbac.roles.not_found", message: "não encontrado" };
-    grantDefaultRoleOnRegistration.mockResolvedValue({ success: false, error });
-
+  it("activates the account and grants the default role when approval is off", async () => {
+    isApprovalRequired.mockResolvedValue(false);
     const { handleUserRegistered } = await import("./handle-user-registered");
-    const result = await handleUserRegistered(user);
 
-    expect(result).toEqual({ success: false, error });
+    expect(await handleUserRegistered(user)).toEqual({ success: true, data: undefined });
+    expect(activateUser).toHaveBeenCalledWith({ userId: "user-1", reason: "registration-auto-approval" });
+    expect(grantDefaultRoleOnRegistration).toHaveBeenCalledWith({ userId: "user-1" });
   });
 
-  it("grants superadmin directly, skipping pending, when no superadmin exists yet (approval required)", async () => {
-    getSetting.mockResolvedValue({ success: true, data: null });
-    superadminExists.mockResolvedValue({ success: true, data: false });
-    grantSuperadmin.mockResolvedValue({ success: true, data: undefined });
-
+  it("does not grant a role when activation fails (the account stays pending)", async () => {
+    isApprovalRequired.mockResolvedValue(false);
+    const error = { code: "auth.identity.user_not_found", message: "x" };
+    activateUser.mockResolvedValue({ success: false, error });
     const { handleUserRegistered } = await import("./handle-user-registered");
-    const result = await handleUserRegistered(user);
 
-    expect(grantSuperadmin).toHaveBeenCalledWith({ userId: "user-1" });
-    expect(provisionUser).not.toHaveBeenCalled();
+    expect(await handleUserRegistered(user)).toEqual({ success: false, error });
     expect(grantDefaultRoleOnRegistration).not.toHaveBeenCalled();
-    expect(getSetting).not.toHaveBeenCalled();
-    expect(registerPlugins).toHaveBeenCalledTimes(1);
-    expect(result).toEqual({ success: true, data: undefined });
   });
 
-  it("grants superadmin directly, skipping the default role, when no superadmin exists yet (approval disabled)", async () => {
-    getSetting.mockResolvedValue({ success: true, data: { key: "auth.registration_approval_required", value: false, updatedAt: new Date() } });
-    superadminExists.mockResolvedValue({ success: true, data: false });
-    grantSuperadmin.mockResolvedValue({ success: true, data: undefined });
-
+  it("never grants superadmin, even with no superadmin in the system", async () => {
+    isApprovalRequired.mockResolvedValue(true);
     const { handleUserRegistered } = await import("./handle-user-registered");
-    const result = await handleUserRegistered(user);
-
-    expect(grantSuperadmin).toHaveBeenCalledWith({ userId: "user-1" });
-    expect(provisionUser).not.toHaveBeenCalled();
-    expect(grantDefaultRoleOnRegistration).not.toHaveBeenCalled();
-    expect(result).toEqual({ success: true, data: undefined });
-  });
-
-  it("propagates the error when checking for an existing superadmin fails", async () => {
-    const error = { code: "infra.unexpected", message: "boom" };
-    superadminExists.mockResolvedValue({ success: false, error });
-
-    const { handleUserRegistered } = await import("./handle-user-registered");
-    const result = await handleUserRegistered(user);
-
-    expect(result).toEqual({ success: false, error });
-    expect(provisionUser).not.toHaveBeenCalled();
-    expect(grantDefaultRoleOnRegistration).not.toHaveBeenCalled();
-    expect(grantSuperadmin).not.toHaveBeenCalled();
+    await handleUserRegistered(user);
+    expect(provisionUser).toHaveBeenCalled();
   });
 });

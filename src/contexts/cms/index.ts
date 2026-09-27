@@ -20,8 +20,16 @@ export {
 export { publishEntryHandler as publishEntry } from "./features/entries/publish-entry/handler";
 export { scheduleEntryHandler as scheduleEntry } from "./features/entries/schedule-entry/handler";
 export { archiveEntryHandler as archiveEntry } from "./features/entries/archive-entry/handler";
+// Histórico e propostas (revisões) de uma entry — ver shared/entry-revisions.
+export { listEntryRevisionsHandler as listEntryRevisions } from "./features/entries/list-entry-revisions/handler";
+export { applyEntryRevisionHandler as applyEntryRevision } from "./features/entries/apply-entry-revision/handler";
+export { discardEntryProposalHandler as discardEntryProposal } from "./features/entries/discard-entry-proposal/handler";
+export type { ListEntryRevisionsResult } from "./features/entries/list-entry-revisions/types";
+export type { ApplyEntryRevisionResult } from "./features/entries/apply-entry-revision/types";
 export { deleteEntryHandler as deleteEntry } from "./features/entries/delete-entry/handler";
 export { listEntriesHandler as listEntries } from "./features/entries/list-entries/handler";
+export { searchPublishedEntriesHandler as searchPublishedEntries } from "./features/entries/search-published-entries/handler";
+export type { SearchPublishedEntriesQuery, SearchPublishedEntriesResult } from "./features/entries/search-published-entries/types";
 export { listEntriesForAdminHandler as listEntriesForAdmin } from "./features/entries/list-entries-for-admin/handler";
 export { getEntryHandler as getEntry } from "./features/entries/get-entry/handler";
 export {
@@ -33,6 +41,8 @@ export { findMediaUsageHandler as findCmsMediaUsage } from "./features/entries/f
 // Consumida por platform/identity-lifecycle/purge-user-safely.ts — mesma composição fora de cms e
 // auth (auth não pode importar cms).
 export { countEntriesByAuthorHandler as countCmsEntriesByAuthor } from "./features/entries/count-entries-by-author/handler";
+export { listOwnAuthoredEntriesHandler as listOwnAuthoredEntries } from "./features/entries/list-own-authored-entries/handler";
+export type { OwnAuthoredEntry, ListOwnAuthoredEntriesResult } from "./features/entries/list-own-authored-entries/types";
 export type {
   CountEntriesByAuthorQuery,
   CountEntriesByAuthorResult,
@@ -63,7 +73,10 @@ import "./scheduling";
 // Contador de acesso (Fase 3/C9) — leitura pública sem authorizeActor, chamado pelas páginas
 // públicas depois do gate de visibilidade (C7). Só acumula em memória; grava em lote (ver
 // view-tracking.ts).
-export { recordEntryView } from "./view-tracking";
+export { recordEntryView, flushEntryViews } from "./view-tracking";
+// Transição automática scheduled -> published/archived. Sem authorizeActor (processo de sistema) —
+// chamada só pelo agendador (platform/scheduled-jobs) e pelo timer em processo de ./scheduling.
+export { processScheduledEntries } from "./scheduling";
 
 export { cmsAdminNavigationItems } from "./admin-navigation";
 export {
@@ -127,6 +140,7 @@ export type {
 } from "./features/entries/get-entry-composition/types";
 export type { PublishEntryInput, PublishEntryResult } from "./features/entries/publish-entry/types";
 export type { ScheduleEntryInput, ScheduleEntryResult } from "./features/entries/schedule-entry/types";
+export type { EntryRevisionSummary, EntryRevisionKind, EntryProposalStatus } from "./contracts/types";
 export type { ArchiveEntryInput, ArchiveEntryResult } from "./features/entries/archive-entry/types";
 export type { DeleteEntryInput, DeleteEntryResult } from "./features/entries/delete-entry/types";
 export type { ListEntriesQuery, ListEntriesResult } from "./features/entries/list-entries/types";

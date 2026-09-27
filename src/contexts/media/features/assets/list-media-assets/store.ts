@@ -4,7 +4,11 @@ import { assets } from "../../../database/schema";
 import type { MediaAsset } from "../../../contracts/types";
 import type { MediaActorScope } from "../../../resolve-media-actor-scope";
 
-export async function findAllAssets(scope: MediaActorScope, categoryId?: string): Promise<MediaAsset[]> {
+export async function findAllAssets(
+  scope: MediaActorScope,
+  categoryId?: string,
+  page?: { limit: number; offset: number },
+): Promise<MediaAsset[]> {
   const notDeleted = isNull(assets.deletedAt);
   const visibilityFilter = scope.isMediaAdmin
     ? notDeleted
@@ -12,6 +16,7 @@ export async function findAllAssets(scope: MediaActorScope, categoryId?: string)
 
   const filter = categoryId ? and(visibilityFilter, eq(assets.categoryId, categoryId)) : visibilityFilter;
 
-  const rows = await db.select().from(assets).where(filter).orderBy(desc(assets.createdAt));
+  const query = db.select().from(assets).where(filter).orderBy(desc(assets.createdAt), assets.id);
+  const rows = page ? await query.limit(page.limit).offset(page.offset) : await query;
   return rows as MediaAsset[];
 }

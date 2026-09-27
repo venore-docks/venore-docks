@@ -2,6 +2,7 @@ import { and, eq, inArray, lte, or } from "drizzle-orm";
 import { db } from "@/infrastructure/database/client";
 import { invalidateCacheByPrefix } from "@/infrastructure/cache/memory-cache";
 import { entries } from "./database/schema";
+import { inProcessJobsEnabled } from "@/shared/in-process-jobs";
 
 // Varredura de agendamento (Fase 2/C5 — docs/implementation-roadmap.md): transição automática
 // scheduled -> published e (scheduled | published) -> archived, quando a data agendada já
@@ -90,6 +91,6 @@ export function stopEntrySchedulingSweep(): void {
   }
 }
 
-if (process.env.NODE_ENV !== "test") {
+if (inProcessJobsEnabled()) {
   startEntrySchedulingSweep();
 }

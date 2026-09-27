@@ -6,7 +6,9 @@ import { resolveBlockDefinition } from "@/platform/page-builder/block-registry";
 import { resolveErrorBlockId } from "@/platform/page-builder/composition-tree";
 
 export type SaveCompositionResult =
-  | { success: true }
+  // proposed: entry publicada + ator sem permissão de publicar — a composição virou proposta
+  // pendente de revisão (nada mudou no site ainda).
+  | { success: true; proposed: boolean }
   | { success: false; error: { code: string; message: string; blockId: string | null } };
 
 // A validação roda aqui (fora do handler) só pra recuperar o `path` do erro — o handler devolve
@@ -31,5 +33,5 @@ export async function saveEntryCompositionAction(entryId: string, composition: C
   revalidatePath("/admin/cms");
   revalidatePath(`/admin/cms/entries/${entryId}`);
   revalidatePath(`/admin/cms/entries/${entryId}/builder`);
-  return { success: true };
+  return { success: true, proposed: result.data.proposalId !== null };
 }

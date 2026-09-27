@@ -7,12 +7,21 @@ import { updateRegistrationApprovalAction, type SettingsActionState } from "../a
 
 const initialState: SettingsActionState = { error: null };
 
-export function RegistrationApprovalToggleForm({ enabled }: { enabled: boolean }) {
+export function RegistrationApprovalToggleForm({ enabled, selfRegistration }: { enabled: boolean; selfRegistration: boolean }) {
   const [state, formAction, pending] = useActionState(updateRegistrationApprovalAction, initialState);
   useActionToast({ pending, error: state.error, successMessage: "Configuração salva." });
 
   return (
     <form action={formAction} className="space-y-3">
+      <label className="flex items-center gap-2 text-sm text-muted-foreground">
+        <input
+          type="checkbox"
+          name="selfRegistration"
+          defaultChecked={selfRegistration}
+          className="size-4 rounded-sm border-border outline-none ui-motion-base focus-visible:ring-2 focus-visible:ring-ring"
+        />
+        Permitir que visitantes criem conta (formulário &quot;Criar conta&quot; e primeiro login social)
+      </label>
       <label className="flex items-center gap-2 text-sm text-muted-foreground">
         <input
           type="checkbox"

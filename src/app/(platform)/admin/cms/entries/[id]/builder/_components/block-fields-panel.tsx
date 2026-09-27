@@ -198,6 +198,15 @@ function FieldControl({
           accept="audio/"
         />
       );
+    case "file":
+      return (
+        <MediaField
+          label={field.label}
+          value={readNullableString(block.data, field.name)}
+          onChange={(mediaId) => onChange(field.name, mediaId)}
+          accept=""
+        />
+      );
     default:
       return null;
   }

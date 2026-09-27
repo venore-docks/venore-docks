@@ -23,6 +23,23 @@ export type EntryStatus = "draft" | "scheduled" | "published" | "archived";
 // enforcement em get-published-entry-by-slug (Fase 2/C7 — docs/implementation-roadmap.md).
 export type EntryVisibility = "public" | "authenticated";
 
+export type EntryRevisionKind = "snapshot" | "proposal";
+export type EntryProposalStatus = "pending" | "applied" | "discarded";
+
+// Resumo de uma revisão pra tela de histórico — `data` completo só é lido ao aplicar/restaurar.
+export type EntryRevisionSummary = {
+  id: string;
+  entryId: string;
+  kind: EntryRevisionKind;
+  status: EntryProposalStatus | null;
+  title: string;
+  slug: string;
+  createdBy: string | null;
+  createdAt: Date;
+  resolvedBy: string | null;
+  resolvedAt: Date | null;
+};
+
 export type EntryRecord = {
   id: string;
   // Tag N:N (Fase 2/#2) — substitui o antigo contentTypeId singular (FK notNull, 1:1). O

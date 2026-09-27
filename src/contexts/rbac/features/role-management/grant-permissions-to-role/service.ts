@@ -24,9 +24,7 @@ export async function grantPermissionsToRole(
     return { success: false, error };
   }
 
-  for (const userId of result.affectedUserIds) {
-    invalidateUserContext(userId);
-  }
+  await invalidateUserContext(result.affectedUserIds);
 
   const summary = `Concedidas ${result.grantedCount} permission(s) nova(s) ao papel "${command.roleKey}" (${command.permissionKeys.length} solicitada(s)), afetando ${result.affectedUserIds.length} usuário(s).`;
   endOperation(handle, {

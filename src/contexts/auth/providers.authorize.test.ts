@@ -6,9 +6,23 @@ vi.mock("./features/identity/find-user-by-email/handler", () => ({
 }));
 
 const verifyPasswordHash = vi.fn();
+const burnPasswordVerificationTime = vi.fn();
 vi.mock("./features/identity/password-hashing", () => ({
   verifyPasswordHash: (...args: unknown[]) => verifyPasswordHash(...args),
+  burnPasswordVerificationTime: (...args: unknown[]) => burnPasswordVerificationTime(...args),
   hashPassword: vi.fn(),
+}));
+
+const rehashPasswordHandler = vi.fn();
+vi.mock("./features/identity/rehash-password/handler", () => ({
+  rehashPasswordHandler: (...args: unknown[]) => rehashPasswordHandler(...args),
+}));
+
+const isMfaEnabled = vi.fn(async () => false);
+const verifyMfaCode = vi.fn(async () => false);
+vi.mock("./features/mfa/verify-mfa-login/service", () => ({
+  isMfaEnabled: (...args: unknown[]) => isMfaEnabled(...(args as [])),
+  verifyMfaCode: (...args: unknown[]) => verifyMfaCode(...(args as [])),
 }));
 
 type AuthorizeFn = (credentials: Record<string, unknown>) => Promise<{ id: string; name?: string | null; email?: string | null } | null>;
@@ -37,7 +51,8 @@ describe("credentials provider authorize", () => {
   beforeEach(() => {
     findUserByEmailHandler.mockReset();
     verifyPasswordHash.mockReset();
-    delete process.env.AUTH_ENABLE_DEV_CREDENTIALS;
+    burnPasswordVerificationTime.mockReset();
+    rehashPasswordHandler.mockReset().mockResolvedValue({ success: true, data: { rehashed: false } });
     delete process.env.AUTH_DISABLE_CREDENTIALS;
   });
 
@@ -78,28 +93,55 @@ describe("credentials provider authorize", () => {
     expect(await authorize({ username: "u@e.com", password: "wrong" })).toBeNull();
   });
 
-  it("refuses a pending user even with a matching password (P9)", async () => {
-    findUserByEmailHandler.mockResolvedValue({ success: true, data: { ...APPROVED_USER, status: "pending" } });
+  it("refuses a pending user only after the password matched, with a status-specific code (P9)", async () => {
+    findUserByEmailHandler.mockResolvedValue({ success: true, data: { ...APPROVED_USER, status: "frozen" } });
     verifyPasswordHash.mockResolvedValue(true);
 
     const authorize = await getAuthorize();
-    expect(await authorize({ username: "u@e.com", password: "secret" })).toBeNull();
+    await expect(authorize({ username: "u@e.com", password: "secret" })).rejects.toMatchObject({ code: "account_frozen" });
   });
 
-  it("does not fall through to dev credentials when the flag is unset", async () => {
+  it("does not reveal the status of an account when the password is wrong", async () => {
+    findUserByEmailHandler.mockResolvedValue({ success: true, data: { ...APPROVED_USER, status: "frozen" } });
+    verifyPasswordHash.mockResolvedValue(false);
+
+    const authorize = await getAuthorize();
+    expect(await authorize({ username: "u@e.com", password: "wrong" })).toBeNull();
+  });
+
+  it("burns the same verification time when the email does not exist", async () => {
     findUserByEmailHandler.mockResolvedValue({ success: false, error: { code: "auth.users.not_found", message: "x" } });
 
     const authorize = await getAuthorize();
-    expect(await authorize({ username: "nobody", password: "whatever" })).toBeNull();
+    expect(await authorize({ username: "nobody@e.com", password: "whatever" })).toBeNull();
+    expect(burnPasswordVerificationTime).toHaveBeenCalledWith("whatever");
   });
 
-  it("falls through to dev credentials when enabled outside production", async () => {
-    findUserByEmailHandler.mockResolvedValue({ success: false, error: { code: "auth.users.not_found", message: "x" } });
-    process.env.AUTH_ENABLE_DEV_CREDENTIALS = "true";
+  it("rehashes the stored password after a successful login", async () => {
+    findUserByEmailHandler.mockResolvedValue({ success: true, data: APPROVED_USER });
+    verifyPasswordHash.mockResolvedValue(true);
 
     const authorize = await getAuthorize();
-    const result = await authorize({ username: "dev", password: "whatever" });
+    await authorize({ username: "u@e.com", password: "secret" });
+    expect(rehashPasswordHandler).toHaveBeenCalledWith({ userId: "u1", password: "secret", storedHash: APPROVED_USER.passwordHash });
+  });
 
-    expect(result).toEqual({ id: "dev-dev", name: "dev", email: "dev@dev.local" });
+  it("asks for the second factor only after the right password, and checks it", async () => {
+    findUserByEmailHandler.mockResolvedValue({ success: true, data: APPROVED_USER });
+    verifyPasswordHash.mockResolvedValue(true);
+    isMfaEnabled.mockResolvedValue(true);
+    const authorize = await getAuthorize();
+
+    await expect(authorize({ username: "u@e.com", password: "right" })).rejects.toMatchObject({ code: "mfa_required" });
+    verifyMfaCode.mockResolvedValue(false);
+    await expect(authorize({ username: "u@e.com", password: "right", otp: "000000" })).rejects.toMatchObject({ code: "mfa_invalid" });
+    verifyMfaCode.mockResolvedValue(true);
+    await expect(authorize({ username: "u@e.com", password: "right", otp: "123456" })).resolves.toMatchObject({ id: "u1" });
+
+    verifyPasswordHash.mockResolvedValue(false);
+    isMfaEnabled.mockClear();
+    await expect(authorize({ username: "u@e.com", password: "wrong" })).resolves.toBeNull();
+    expect(isMfaEnabled).not.toHaveBeenCalled();
+    isMfaEnabled.mockResolvedValue(false);
   });
 });

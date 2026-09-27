@@ -1,10 +1,17 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/infrastructure/database/client";
-import { roles, userRoles } from "../../../database/schema";
+import { rolePermissions, roles, userRoles } from "../../../database/schema";
 
-export async function roleExists(roleId: string): Promise<boolean> {
-  const [role] = await db.select({ id: roles.id }).from(roles).where(eq(roles.id, roleId)).limit(1);
-  return role !== undefined;
+export async function findRoleWithPermissions(
+  roleId: string,
+): Promise<{ id: string; key: string; name: string; permissionKeys: string[] } | null> {
+  const [role] = await db.select({ id: roles.id, key: roles.key, name: roles.name }).from(roles).where(eq(roles.id, roleId)).limit(1);
+  if (!role) return null;
+  const rows = await db
+    .select({ permissionKey: rolePermissions.permissionKey })
+    .from(rolePermissions)
+    .where(eq(rolePermissions.roleId, roleId));
+  return { ...role, permissionKeys: rows.map((row) => row.permissionKey) };
 }
 
 export async function insertUserRole(userId: string, roleId: string): Promise<void> {

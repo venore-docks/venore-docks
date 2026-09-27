@@ -1,7 +1,9 @@
+import { waitUntil } from "@vercel/functions";
 import { db } from "@/infrastructure/database/client";
 import { drainEvents, drainTraceEntries } from "./buffer";
 import { getObservabilityConfig } from "./config";
 import { observabilityEvents, observabilityTraceEntries } from "./database/schema";
+import { inProcessJobsEnabled } from "@/shared/in-process-jobs";
 
 export async function flushNow(): Promise<void> {
   const events = drainEvents();
@@ -22,6 +24,22 @@ export async function flushNow(): Promise<void> {
       console.error("[observability] failed to flush trace entries", error);
     }
   }
+}
+
+// Serverless (Vercel): o timer em processo quase nunca dispara antes da função congelar, e o
+// buffer se perdia. Aqui o flush é agendado pra DEPOIS da resposta com waitUntil (a função fica
+// viva até terminar) — um lote por request, não um INSERT por log (AGENTS.md §2).
+let flushScheduled = false;
+
+export function scheduleFlushAfterResponse(): void {
+  if (!process.env.VERCEL || flushScheduled) return;
+  flushScheduled = true;
+  const pending = new Promise<void>((resolve) => setTimeout(resolve, 0))
+    .then(() => flushNow())
+    .finally(() => {
+      flushScheduled = false;
+    });
+  waitUntil(pending);
 }
 
 declare global {
@@ -46,6 +64,6 @@ export function stopFlushScheduler(): void {
   }
 }
 
-if (process.env.NODE_ENV !== "test") {
+if (inProcessJobsEnabled()) {
   startFlushScheduler();
 }

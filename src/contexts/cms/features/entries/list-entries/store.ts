@@ -1,4 +1,4 @@
-import { and, eq, gt, inArray, isNull } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "@/infrastructure/database/client";
 import { entries, entryContentTypes } from "../../../database/schema";
 import { toEntryRecords } from "../../../database/entry-content-types";
@@ -11,6 +11,8 @@ export async function findPublishedEntries(filters: {
   visibility?: EntryVisibility;
   updatedSince?: Date;
   includeInternallyOwned?: boolean;
+  limit?: number;
+  offset?: number;
 }): Promise<EntryRecord[]> {
   const conditions = [eq(entries.status, "published")];
   if (filters.contentTypeId) {
@@ -41,10 +43,18 @@ export async function findPublishedEntries(filters: {
     conditions.push(isNull(entries.internalOwner));
   }
 
-  const rows = await db
+  const query = db
     .select()
     .from(entries)
     .where(and(...conditions));
+
+  const rows =
+    filters.limit === undefined
+      ? await query
+      : await query
+          .orderBy(sql`${entries.publishedAt} desc nulls last`, desc(entries.createdAt), entries.id)
+          .limit(filters.limit)
+          .offset(filters.offset ?? 0);
 
   return toEntryRecords(rows);
 }

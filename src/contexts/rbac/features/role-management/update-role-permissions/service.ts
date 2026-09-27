@@ -1,6 +1,7 @@
 import { beginOperation, endOperation, recordAuditEvent } from "@/observability";
 import { invalidateUserContext } from "../../../user-context-cache";
-import { findRoleById, findUserIdsWithRole, replaceRolePermissions } from "./store";
+import { assertActorHoldsPermissions } from "../../../shared/privilege-guard";
+import { findRoleById, findRolePermissionKeys, findUserIdsWithRole, replaceRolePermissions } from "./store";
 import { toRoleRef } from "./view";
 import type { UpdateRolePermissionsCommand, UpdateRolePermissionsResult } from "./types";
 
@@ -27,12 +28,19 @@ export async function updateRolePermissions(command: UpdateRolePermissionsComman
     return { success: false, error };
   }
 
+  // Só as keys ADICIONADAS passam pela trava: remover permission de um papel nunca escala.
+  const current = new Set(await findRolePermissionKeys(command.roleId));
+  const added = command.permissionKeys.filter((key) => !current.has(key));
+  const escalation = await assertActorHoldsPermissions(command.actor.id, added);
+  if (!escalation.success) {
+    endOperation(handle, escalation);
+    return escalation;
+  }
+
   const updated = await replaceRolePermissions(command.roleId, command.permissionKeys);
 
   const affectedUserIds = await findUserIdsWithRole(command.roleId);
-  for (const userId of affectedUserIds) {
-    invalidateUserContext(userId);
-  }
+  await invalidateUserContext(affectedUserIds);
 
   const summary = `user:${command.actor.id} alterou as permissions do papel "${role.key}" (${command.permissionKeys.length} permission${command.permissionKeys.length === 1 ? "" : "s"}), afetando ${affectedUserIds.length} usuário${affectedUserIds.length === 1 ? "" : "s"}.`;
   endOperation(handle, { success: true, summary, detail: { roleId: command.roleId, permissionKeys: command.permissionKeys } });

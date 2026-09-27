@@ -1,6 +1,6 @@
 import { peekBufferSizes, pushEvent, pushTraceEntry } from "./buffer";
 import { getObservabilityConfig } from "./config";
-import { flushNow } from "./flush";
+import { flushNow, scheduleFlushAfterResponse } from "./flush";
 import { inferOriginFromUseCase } from "./origin-registry";
 import { redactDetail, redactText } from "./redaction";
 import type {
@@ -77,5 +77,7 @@ export function endOperation(handle: OperationHandle, outcome: OperationOutcome)
   const sizes = peekBufferSizes();
   if (sizes.event >= flushBatchSize || sizes.trace >= flushBatchSize) {
     void flushNow();
+  } else if (sizes.event > 0 || sizes.trace > 0) {
+    scheduleFlushAfterResponse();
   }
 }

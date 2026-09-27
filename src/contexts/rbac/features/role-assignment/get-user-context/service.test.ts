@@ -15,6 +15,7 @@ const setCachedUserContext = vi.fn();
 vi.mock("../../../user-context-cache", () => ({
   getCachedUserContext: (...args: unknown[]) => getCachedUserContext(...args),
   setCachedUserContext: (...args: unknown[]) => setCachedUserContext(...args),
+  syncUserContextCacheVersion: async () => undefined,
 }));
 
 describe("getUserContext", () => {

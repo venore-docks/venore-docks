@@ -7,19 +7,22 @@
 // alcançar plugin nenhum. Mantendo a lista explícita, o único jeito de plugin fazer upload sem
 // sessão é uploadReservedCategoryAssetPublic (abaixo), que É gateado por
 // manifest.anonymousUploadCategories.
+//
+// Também ficam de fora os primitivos de SISTEMA sem sessão (purgeMediaAssetAsSystem,
+// listSoftDeletedAssetsOlderThan — usados só pela varredura da lixeira) e readMediaAsset/
+// createSignedMediaUrl (servem a rota de mídia; plugin usa a `url` do asset).
 export {
   uploadMediaAsset,
   uploadAvatarMediaAsset,
   uploadReservedCategoryAsset,
   listMediaAssets,
   getMediaAsset,
+  getMediaAssetUrls,
   getMediaAssetForTrustedReview,
   deleteMediaAsset,
   purgeMediaAsset,
   listDeletedMediaAssets,
   countAssetsByUploader,
-  listSoftDeletedAssetsOlderThan,
-  purgeMediaAssetAsSystem,
   updateMediaAssetVisibility,
   updateMediaAssetCategory,
   listCategories,
@@ -53,6 +56,8 @@ export type {
   ListMediaAssetsResult,
   GetMediaAssetQuery,
   GetMediaAssetResult,
+  GetMediaAssetUrlsQuery,
+  GetMediaAssetUrlsResult,
   DeleteMediaAssetInput,
   DeleteMediaAssetResult,
   PurgeMediaAssetInput,
