@@ -4,6 +4,7 @@ import { listCategories, listMediaAssets } from "@/contexts/media";
 import { getMediaPageData } from "@/platform/admin-shell/get-media-page-data";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
+import { PaginationLinks, parsePageParam } from "@/components/pagination-links";
 import { MediaItem } from "./_components/media-item";
 import { UploadMediaForm } from "./_components/upload-media-form";
 import { CategoryFilter } from "./_components/category-filter";
@@ -16,10 +17,12 @@ import { ManageCategories } from "./_components/manage-categories";
 // disso (regra 12), então o job mora em platform/media-lifecycle/, fora do context.
 import "@/platform/media-lifecycle/sweep-soft-deleted-media";
 
+const PAGE_SIZE = 60;
+
 export default async function MediaAdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string }>;
+  searchParams: Promise<{ category?: string; page?: string }>;
 }) {
   const gate = await getMediaPageData();
 
@@ -32,10 +35,12 @@ export default async function MediaAdminPage({
     );
   }
 
-  const { category: categoryId } = await searchParams;
+  const { category: categoryId, page: pageParam } = await searchParams;
+  const page = parsePageParam(pageParam);
 
+  // Página + 1 item pra saber se há próxima (sem COUNT).
   const [mediaResult, categoriesResult] = await Promise.all([
-    listMediaAssets(categoryId ? { categoryId } : {}),
+    listMediaAssets({ ...(categoryId ? { categoryId } : {}), limit: PAGE_SIZE + 1, offset: (page - 1) * PAGE_SIZE }),
     listCategories(),
   ]);
 
@@ -45,7 +50,8 @@ export default async function MediaAdminPage({
 
   const categories = categoriesResult.success ? categoriesResult.data : [];
   const categoryNameById = new Map(categories.map((category) => [category.id, category.name]));
-  const assets = mediaResult.data;
+  const hasNextPage = mediaResult.data.length > PAGE_SIZE;
+  const assets = mediaResult.data.slice(0, PAGE_SIZE);
   const hasPurgeAccess = gate.actor.isSuperadmin || gate.actor.permissions.includes("media.purge");
 
   return (
@@ -101,6 +107,8 @@ export default async function MediaAdminPage({
           ))}
         </section>
       )}
+
+      <PaginationLinks basePath="/admin/media" params={{ category: categoryId }} page={page} hasNextPage={hasNextPage} />
     </div>
   );
 }

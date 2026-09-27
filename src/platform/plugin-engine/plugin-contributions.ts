@@ -11,6 +11,16 @@ import type { BlockRendererComponent } from "@/platform/page-builder/block-rende
 // OperationResult<void> padrão — nunca lança para erro esperado.
 export type PluginSeedFn = () => Promise<OperationResult<void>>;
 
+// Tarefa periódica de um plugin (lembretes, sincronizações, limpezas). Roda pelo agendador do core
+// (platform/scheduled-jobs — endpoint de cron + timers em processo no self-host), nunca por um
+// setInterval do próprio plugin. `key` é prefixada com a key do plugin; `run` deve ser idempotente
+// e nunca lançar pra erro esperado (devolve OperationResult).
+export type PluginScheduledJob = {
+  key: string;
+  intervalMinutes: number;
+  run: () => Promise<OperationResult<unknown>>;
+};
+
 // O que um plugin contribui pro CORE além de metadado de manifesto (navegação, permissions,
 // settings — esses continuam no manifest.ts, dado puro validado por zod). Aqui vai o CÓDIGO:
 // segmentos de breadcrumb, resolver de alerta, resolver de uso de mídia, item de user-nav, seeds,
@@ -42,4 +52,5 @@ export type PluginContributions = {
   // - publicHomeShowcase: vitrine no meio da home "/" quando não há entry "home" no CMS.
   adminDashboardPanel?: () => Promise<ReactNode>;
   publicHomeShowcase?: () => Promise<ReactNode>;
+  scheduledJobs?: PluginScheduledJob[];
 };

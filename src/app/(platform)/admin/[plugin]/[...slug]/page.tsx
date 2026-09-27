@@ -1,4 +1,6 @@
 import { notFound } from "next/navigation";
+import { AdminAccessDenied } from "@/components/admin-access-denied";
+import { gateAdminPluginRoute } from "@/platform/plugin-routing/admin-route-gate";
 import { resolveAdminPluginRoute } from "@/platform/plugin-routing/resolve-admin-route";
 
 // Sub-rotas de uma rota admin de plugin: /admin/<plugin>/a/b/c. O caso raiz (/admin/<plugin> sem
@@ -14,6 +16,13 @@ export default async function AdminPluginSubRoutePage({
   params: Promise<{ plugin: string; slug: string[] }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  // Piso de acesso antes de qualquer coisa do plugin (admin-route-gate.ts) — nem a existência da
+  // rota é revelada a quem não tem acesso ao admin.
+  const gate = await gateAdminPluginRoute();
+  if (!gate.granted) {
+    return <AdminAccessDenied message="Você não tem permissão para acessar esta área." />;
+  }
+
   const { plugin, slug } = await params;
   const resolved = await resolveAdminPluginRoute(plugin, slug);
   if (!resolved) {

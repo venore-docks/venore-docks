@@ -24,7 +24,7 @@ export function MediaField({
   const [items, setItems] = useState<PickableMedia[]>([]);
   const [isPending, startTransition] = useTransition();
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const mediaKindLabel = accept === "audio/" ? "arquivos de áudio" : "imagens";
+  const mediaKindLabel = accept === "audio/" ? "arquivos de áudio" : accept === "" ? "arquivos" : "imagens";
 
   useEffect(() => {
     if (selected?.id === value) return;

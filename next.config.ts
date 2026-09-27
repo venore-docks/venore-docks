@@ -20,7 +20,20 @@ const nextConfig: NextConfig = {
     },
   },
   async headers() {
+    // Proteções que valem pra toda resposta. A Content Security Policy (com nonce por request)
+    // mora em src/proxy.ts; X-Frame-Options fica de fora quando FRAME_ANCESTORS libera outros
+    // sites a embutir o app (o frame-ancestors da CSP decide nesse caso).
+    const securityHeaders = [
+      { key: "X-Content-Type-Options", value: "nosniff" },
+      { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+      { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=(), usb=()" },
+      ...(process.env.NODE_ENV === "production"
+        ? [{ key: "Strict-Transport-Security", value: "max-age=31536000" }]
+        : []),
+      ...(process.env.FRAME_ANCESTORS ? [] : [{ key: "X-Frame-Options", value: "SAMEORIGIN" }]),
+    ];
     return [
+      { source: "/:path*", headers: securityHeaders },
       {
         // Service worker da PWA (public/sw.js): nunca cacheado pelo navegador (senão uma versão
         // nova nunca chega) e pode controlar todo o site.

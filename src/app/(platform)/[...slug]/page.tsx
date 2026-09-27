@@ -1,30 +1,119 @@
+import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, unstable_rethrow } from "next/navigation";
+import { cache } from "react";
 import { ArrowLeft, ArrowRight, BookOpen, Calendar } from "lucide-react";
 import {
+  extractEntryComposition,
   getCachedCategoryBySlug,
   getCachedPublishedEntryBySlug,
   getEntryBody,
-  getEntryComposition,
   listEntries,
   recordEntryView,
 } from "@/contexts/cms";
-import type { Block, EntryRecord } from "@/contexts/cms";
+import type { EntryRecord } from "@/contexts/cms";
 import { getCurrentUser } from "@/contexts/auth";
-import { getMediaAsset } from "@/contexts/media";
+import { getMediaAssetUrls } from "@/contexts/media";
 import { resolvePublicPluginRoute } from "@/platform/plugin-routing/resolve-public-route";
 import { BlockRenderer } from "@/components/page-builder/block-renderer";
 import { EmptyState } from "@/components/empty-state";
+import { extractExcerpt } from "@/platform/seo/entry-excerpt";
 
 // force-dynamic: mesmo motivo de app/page.tsx — conteúdo e tema ativo mudam em runtime.
 export const dynamic = "force-dynamic";
+
+type CatchAllProps = {
+  params: Promise<{ slug: string[] }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+// generateMetadata e a página resolvem a MESMA rota de plugin no mesmo request — cache() evita
+// ler o registro de plugins ativos (registerPlugins, sem cache próprio) duas vezes. Chave em JSON
+// (não join("/")) porque um segmento decodificado pode conter "/".
+const resolvePublicPluginRouteForRequest = cache((segmentsKey: string) =>
+  resolvePublicPluginRoute(JSON.parse(segmentsKey) as string[]),
+);
+
+// Só rota de plugin com generateMetadata na route-table (ex: página pública de um jogo do
+// erasto-league, com a capa como imagem de compartilhamento) sobrescreve algo aqui — o resto
+// continua herdando o metadata do layout raiz, como antes. Erro no metadata de um plugin não
+// derruba a página: cai pro metadata herdado (a própria página decide se renderiza ou falha);
+// notFound()/redirect() internos do Next continuam valendo (unstable_rethrow).
+export async function generateMetadata({ params, searchParams }: CatchAllProps): Promise<Metadata> {
+  const { slug: segments } = await params;
+  const pluginRoute = await resolvePublicPluginRouteForRequest(JSON.stringify(segments));
+  if (pluginRoute.kind === "not-a-plugin-route") {
+    return generateCmsMetadata(segments);
+  }
+  if (pluginRoute.kind !== "matched" || !pluginRoute.generateMetadata) {
+    return {};
+  }
+  try {
+    return await pluginRoute.generateMetadata({ params: Promise.resolve(pluginRoute.params), searchParams });
+  } catch (error) {
+    unstable_rethrow(error);
+    console.warn(`[plugin-routing] generateMetadata de "/${segments.join("/")}" falhou — usando o metadata herdado.`, error);
+    return {};
+  }
+}
+
+const isViewerAuthenticated = cache(async (): Promise<boolean> => {
+  const currentUser = await getCurrentUser();
+  return currentUser.success && Boolean(currentUser.data);
+});
+
+// <head> das páginas do CMS: título, resumo (primeiro rich text), capa como og:image, canonical.
+// Conteúdo "authenticated" sai com noindex — mesmo pra quem está logado vendo a página.
+async function generateCmsMetadata(segments: string[]): Promise<Metadata> {
+  if (segments.length === 0 || segments.length > 2) return {};
+
+  const categoryResult = await getCachedCategoryBySlug(segments[0]);
+  const category = categoryResult.success ? categoryResult.data : null;
+  if (segments.length === 1 && category) {
+    return {
+      title: category.name,
+      description: category.description ?? undefined,
+      alternates: { canonical: `/${category.slug}`, types: { "application/rss+xml": `/rss.xml?category=${category.slug}` } },
+    };
+  }
+
+  const entryResult =
+    segments.length === 1
+      ? await getCachedPublishedEntryBySlug(null, segments[0])
+      : category
+        ? await getCachedPublishedEntryBySlug(category.id, segments[1])
+        : null;
+  const entry = entryResult?.success ? entryResult.data : null;
+  if (!entry) return {};
+  // Título/resumo de conteúdo fechado não vai pro <head> de quem não pode ver a página.
+  if (!(await isVisibleToCurrentViewer(entry))) return {};
+
+  const description = extractExcerpt(extractEntryComposition(entry.data), 200) ?? undefined;
+  const coverResult = entry.mediaId ? await getMediaAssetUrls({ ids: [entry.mediaId] }) : null;
+  const coverUrl = entry.mediaId && coverResult?.success ? coverResult.data[entry.mediaId] : undefined;
+  const path = category && segments.length === 2 ? `/${category.slug}/${entry.slug}` : `/${entry.slug}`;
+
+  return {
+    title: entry.title,
+    description,
+    alternates: { canonical: path },
+    robots: entry.visibility === "public" ? undefined : { index: false, follow: false },
+    openGraph: {
+      type: "article",
+      title: entry.title,
+      description,
+      url: path,
+      publishedTime: entry.publishedAt?.toISOString(),
+      images: coverUrl ? [{ url: coverUrl }] : undefined,
+    },
+  };
+}
 
 // C7: "authenticated" nunca aparece pra visitante sem sessão — nem como entry única (notFound),
 // nem como item de listagem (BL1: filtrado antes de renderizar, não link que ia dar 404).
 async function isVisibleToCurrentViewer(entry: EntryRecord): Promise<boolean> {
   if (entry.visibility === "public") return true;
-  const currentUser = await getCurrentUser();
-  return currentUser.success && Boolean(currentUser.data);
+  return isViewerAuthenticated();
 }
 
 function formatDate(date: Date | null): string | null {
@@ -32,68 +121,47 @@ function formatDate(date: Date | null): string | null {
   return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "long", year: "numeric" }).format(date);
 }
 
-function textFromRichTextNode(node: unknown): string {
-  if (!node || typeof node !== "object") return "";
-  const record = node as { type?: unknown; text?: unknown; content?: unknown };
-  if (record.type === "text" && typeof record.text === "string") return record.text;
-  if (Array.isArray(record.content)) return record.content.map(textFromRichTextNode).join(" ");
-  return "";
-}
-
-// Entries não têm campo de resumo dedicado (só corpo estruturado em blocos) — o blogroll deriva
-// um preview em texto puro do primeiro bloco de rich text da composição, em vez de exigir que o
-// autor mantenha um resumo duplicado em dois lugares.
-function extractExcerpt(composition: Block[] | null, maxLength = 160): string | null {
-  if (!composition) return null;
-
-  function walk(blocks: Block[]): string | null {
-    for (const block of blocks) {
-      if (block.key === "core.content.richtext") {
-        const content = (block.data as { content?: unknown }).content;
-        if (content && typeof content === "object") {
-          const text = textFromRichTextNode(content).replace(/\s+/g, " ").trim();
-          if (text) return text;
-        }
-      }
-      for (const area of block.areas ?? []) {
-        const found = walk(area.blocks);
-        if (found) return found;
-      }
-    }
-    return null;
-  }
-
-  const text = walk(composition);
-  if (!text) return null;
-  return text.length > maxLength ? `${text.slice(0, maxLength).trimEnd()}…` : text;
-}
-
 // BL1 (docs/implementation-roadmap.md, Fase 4): rota de categoria em formato blog — lista as
 // entries publicadas daquela categoria, respeitando status (listEntries já filtra
 // status="published") e visibilidade por entry (C7). Capa do card vem de entry.mediaId (campo
 // dedicado de "imagem de destaque", exposto no form de edição da entry via MediaPickerField) —
 // não da composição, pra não depender de onde o autor colocou a imagem dentro do corpo.
-async function renderCategoryBlogroll(category: { id: string; name: string; slug: string; description: string | null }) {
-  const entriesResult = await listEntries({ categoryId: category.id });
-  const allEntries = entriesResult.success ? entriesResult.data : [];
+const BLOGROLL_PAGE_SIZE = 12;
 
-  const visibleFlags = await Promise.all(allEntries.map(isVisibleToCurrentViewer));
-  const visibleEntries = allEntries.filter((_, index) => visibleFlags[index]);
-  const sorted = [...visibleEntries].sort(
-    (a, b) => (b.publishedAt?.getTime() ?? 0) - (a.publishedAt?.getTime() ?? 0),
-  );
+function parsePage(value: string | string[] | undefined): number {
+  const raw = Array.isArray(value) ? value[0] : value;
+  const page = Number(raw);
+  return Number.isInteger(page) && page >= 1 && page <= 10_000 ? page : 1;
+}
 
-  const cards = await Promise.all(
-    sorted.map(async (entry) => {
-      const [coverResult, compositionResult] = await Promise.all([
-        entry.mediaId ? getMediaAsset({ id: entry.mediaId }) : Promise.resolve(null),
-        getEntryComposition({ id: entry.id }),
-      ]);
-      const coverUrl = coverResult?.success ? (coverResult.data?.url ?? null) : null;
-      const composition = compositionResult.success ? compositionResult.data : null;
-      return { entry, coverUrl, excerpt: extractExcerpt(composition) };
-    }),
-  );
+// Uma consulta de entries (a página pedida + 1, pra saber se há próxima), uma de mídia pra todas
+// as capas, e o resumo vem do `data` que a listagem já trouxe. Antes: todas as entries da
+// categoria + getMediaAsset + getEntryComposition POR card.
+async function renderCategoryBlogroll(
+  category: { id: string; name: string; slug: string; description: string | null },
+  page: number,
+) {
+  const viewerIsAuthenticated = await isViewerAuthenticated();
+  const entriesResult = await listEntries({
+    categoryId: category.id,
+    // C7: visitante sem sessão só vê "public" — filtrado no banco, antes da paginação.
+    ...(viewerIsAuthenticated ? {} : { visibility: "public" as const }),
+    limit: BLOGROLL_PAGE_SIZE + 1,
+    offset: (page - 1) * BLOGROLL_PAGE_SIZE,
+  });
+  const fetched = entriesResult.success ? entriesResult.data : [];
+  const hasNextPage = fetched.length > BLOGROLL_PAGE_SIZE;
+  const pageEntries = fetched.slice(0, BLOGROLL_PAGE_SIZE);
+
+  const coverIds = pageEntries.map((entry) => entry.mediaId).filter((id): id is string => Boolean(id));
+  const coversResult = await getMediaAssetUrls({ ids: coverIds });
+  const coverUrls = coversResult.success ? coversResult.data : {};
+
+  const cards = pageEntries.map((entry) => ({
+    entry,
+    coverUrl: entry.mediaId ? (coverUrls[entry.mediaId] ?? null) : null,
+    excerpt: extractExcerpt(extractEntryComposition(entry.data)),
+  }));
 
   return (
     <div className="space-y-8">
@@ -144,17 +212,28 @@ async function renderCategoryBlogroll(category: { id: string; name: string; slug
           ))}
         </div>
       )}
+
+      {(page > 1 || hasNextPage) && (
+        <nav aria-label="Paginação" className="flex items-center justify-between gap-4 text-sm">
+          {page > 1 ? (
+            <Link href={page === 2 ? `/${category.slug}` : `/${category.slug}?page=${page - 1}`} className="flex items-center gap-1 font-medium text-primary">
+              <ArrowLeft className="size-3.5" aria-hidden="true" /> Mais recentes
+            </Link>
+          ) : (
+            <span />
+          )}
+          {hasNextPage && (
+            <Link href={`/${category.slug}?page=${page + 1}`} className="flex items-center gap-1 font-medium text-primary">
+              Mais antigos <ArrowRight className="size-3.5" aria-hidden="true" />
+            </Link>
+          )}
+        </nav>
+      )}
     </div>
   );
 }
 
-export default async function CatchAllPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ slug: string[] }>;
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
+export default async function CatchAllPage({ params, searchParams }: CatchAllProps) {
   const { slug: segments } = await params;
 
   // Rota de plugin (ex: /academy, /birthdays, /donations) sempre tem precedência sobre conteúdo
@@ -162,7 +241,7 @@ export default async function CatchAllPage({
   // app/(platform)/**, reservando o slug antes do catch-all existir sequer. Plugin registrado mas
   // desativado, ou sub-rota que não casou, vira notFound() direto — nunca cai pra procurar
   // conteúdo do CMS com aquele slug (ver comentário em resolve-public-route.ts).
-  const pluginRoute = await resolvePublicPluginRoute(segments);
+  const pluginRoute = await resolvePublicPluginRouteForRequest(JSON.stringify(segments));
   if (pluginRoute.kind === "reserved-not-found") {
     notFound();
   }
@@ -190,7 +269,7 @@ export default async function CatchAllPage({
     // existir.
     const categoryResult = await getCachedCategoryBySlug(segments[0]);
     if (categoryResult.success && categoryResult.data) {
-      return renderCategoryBlogroll(categoryResult.data);
+      return renderCategoryBlogroll(categoryResult.data, parsePage((await searchParams).page));
     }
 
     entryResult = await getCachedPublishedEntryBySlug(null, segments[0]);
@@ -221,8 +300,8 @@ export default async function CatchAllPage({
 
   recordEntryView(entry.id);
 
-  const compositionResult = await getEntryComposition({ id: entry.id });
-  const composition = compositionResult.success ? compositionResult.data : null;
+  // A entry publicada já veio com `data` — extrair a composição dali evita um segundo SELECT.
+  const composition = extractEntryComposition(entry.data);
   const publishedLabel = formatDate(entry.publishedAt);
 
   return (

@@ -27,7 +27,7 @@ export async function grantDefaultRoleOnRegistration(command: GrantDefaultRoleIn
   }
 
   await insertUserRole(command.userId, roleId);
-  invalidateUserContext(command.userId);
+  await invalidateUserContext(command.userId);
   endOperation(handle, { success: true });
   return { success: true, data: undefined };
 }

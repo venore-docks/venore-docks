@@ -5,8 +5,10 @@ import { computeSha256Hex } from "@/infrastructure/storage/checksum";
 import { validateMediaUploadCandidate } from "../request-media-upload-ticket/service";
 import { resolveMediaStorageFolder } from "../../../resolve-media-storage-folder";
 import { sanitizeSvgBuffer } from "../../../sanitize-svg-buffer";
+import { CONTENT_MISMATCH_ERROR, contentMatchesDeclaredType } from "../../../content-sniffing";
 import { insertAsset } from "./store";
 import type { UploadMediaAssetCommand, UploadMediaAssetResult } from "./types";
+import { resolveAssetUrl } from "../../../asset-url";
 
 const MEDIA_LIST_CACHE_PREFIX = "media:assets:";
 
@@ -32,6 +34,13 @@ export async function uploadMediaAsset(command: UploadMediaAssetCommand): Promis
     return validation;
   }
 
+  // Tipo declarado precisa bater com os bytes (content-sniffing.ts).
+  if (!contentMatchesDeclaredType(command.contentType, command.data)) {
+    const mismatch = { success: false as const, error: { ...CONTENT_MISMATCH_ERROR } };
+    endOperation(handle, mismatch);
+    return mismatch;
+  }
+
   // SVG pode carregar script embutido — sanitiza os bytes antes de gravar no storage (nunca o
   // que o client mandou como recebido). Só é possível aqui porque este caminho é
   // server-buffered (o servidor já tem os bytes em memória); ver assertTypeAllowedForDirectUpload
@@ -50,10 +59,13 @@ export async function uploadMediaAsset(command: UploadMediaAssetCommand): Promis
   const stored = await storagePort.store({ key: pathname, data: dataToStore, contentType: command.contentType });
   const checksum = computeSha256Hex(dataToStore);
 
+  const id = crypto.randomUUID();
   const asset = await insertAsset({
+    id,
     filename: command.filename,
     pathname: stored.key,
-    url: stored.url,
+    // Não público -> rota autorizada do app; público -> URL direta do storage (asset-url.ts).
+    url: resolveAssetUrl({ id, pathname: stored.key, visibility: command.visibility }),
     contentType: command.contentType,
     size: stored.size,
     checksum,

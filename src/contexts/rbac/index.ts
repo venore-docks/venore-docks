@@ -3,6 +3,10 @@
 // exemplo, por contexts/themes/features/active-theme/activate-theme/handler.ts.
 export { authorizeActor } from "./authorize-actor";
 export type { AuthorizeActorResult } from "./authorize-actor";
+// Ação administrativa sobre OUTRO usuário (auth: congelar/remover/apagar/redefinir senha) —
+// permission + hierarquia (só superadmin age sobre superadmin) + recusa agir sobre si mesmo.
+export { authorizeActorOverUser } from "./authorize-actor";
+export type { AuthorizeActorOverUserOptions } from "./authorize-actor";
 // Resolve o alcance efetivo de uma permission escopável pro ator corrente — para listagens
 // filtrarem por id (Fase B de docs/rbac-scoped-roles.md, D3). Dormente: nenhum call site passa
 // escopo ainda. A resolução das INSTÂNCIAS (nomes de categoria etc.) é composição em platform/.
@@ -33,6 +37,14 @@ export { listScopesForRoleAssignmentHandler as listScopesForRoleAssignment } fro
 export { getUserContextHandler as getUserContext } from "./features/role-assignment/get-user-context/handler";
 export { listUsersByRoleHandler as listUsersByRole } from "./features/role-assignment/list-users-by-role/handler";
 export { countUsersWithPermissionsHandler as countUsersWithPermissions } from "./features/role-assignment/count-users-with-permissions/handler";
+// Sistema, SEM gate — ids de quem tem a permission (superadmin incluso). Só platform/ (avisos por
+// e-mail em platform/registration/notify-pending-registration.ts); fora do @venore/plugin-sdk.
+// Sistema, SEM gate — convites (platform/registration/invitations.ts): conferir se quem convida
+// pode dar o papel e, no aceite, atribuir em nome de quem convidou (as travas rodam contra ele).
+export { checkActorCanGrantRole } from "./features/role-assignment/check-actor-can-grant-role/service";
+export type { GrantableRole } from "./features/role-assignment/check-actor-can-grant-role/service";
+export { assignRoleToUser as assignRoleOnBehalfOf } from "./features/role-assignment/assign-role-to-user/service";
+export { findUserIdsWithPermission as listUserIdsWithPermission } from "./features/role-assignment/count-users-with-permissions/store";
 // Concessão automática do fluxo de registro (docs/venore-docks.md — Autenticação / Fluxo de
 // registro) — sem authorizeActor de propósito, ver nota em assign-default-role/handler.ts.
 export { grantDefaultRoleOnRegistrationHandler as grantDefaultRoleOnRegistration } from "./features/role-assignment/assign-default-role/handler";

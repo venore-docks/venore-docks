@@ -14,6 +14,7 @@ import {
   type MediaVisibility,
   type RequestMediaUploadTicketResult,
 } from "@/contexts/media";
+import { authorizeActor } from "@/contexts/rbac";
 import { deleteMediaSafely } from "@/platform/media-lifecycle/delete-media-safely";
 import { collectMediaUsage } from "@/platform/media-usage/media-usage-registry";
 import type { MediaUsageReference } from "@/platform/media-usage/types";
@@ -90,7 +91,11 @@ export async function confirmMediaUploadAction(input: {
 
 // Consultada pelo client antes de pedir confirmação de exclusão (docs do pedido: "a deleção
 // avisa quantos locais serão afetados e exige confirmação") — leitura pura, sem apagar nada.
+// Lista onde a mídia é usada (títulos de conteúdo, telas de plugin) — só pra quem gerencia mídia;
+// sem o gate, qualquer visitante descobria por id onde cada arquivo aparece.
 export async function getMediaUsageSummaryAction(id: string): Promise<MediaUsageReference[]> {
+  const authz = await authorizeActor("media.manage");
+  if (!authz.authorized) return [];
   return collectMediaUsage(id);
 }
 

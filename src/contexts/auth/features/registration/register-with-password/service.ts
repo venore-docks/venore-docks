@@ -12,8 +12,7 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // nem status final: isso é composição de auth + rbac e mora fora dos dois contexts
 // (src/platform/registration/handle-user-registered.ts — regra 12), chamada pelo Server Action
 // logo depois, igual ao evento `createUser` do Auth.js pro fluxo OAuth. O usuário nasce com o
-// default do schema ("approved") e handle-user-registered rebaixa pra "pending" (ou concede
-// superadmin se for o primeiro).
+// default do schema ("pending") e handle-user-registered decide se aprova (aprovação desligada).
 export async function registerWithPassword(input: RegisterWithPasswordInput): Promise<RegisterWithPasswordResult> {
   const email = input.email.trim().toLowerCase();
   const name = input.name.trim();

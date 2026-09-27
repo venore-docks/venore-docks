@@ -1,4 +1,4 @@
-import { authorizeActor } from "@/contexts/rbac";
+import { authorizeActorOverUser } from "@/contexts/rbac";
 import { adminSetUserPassword } from "./service";
 import type { AdminSetUserPasswordInput, AdminSetUserPasswordResult } from "./types";
 
@@ -26,7 +26,9 @@ export async function adminSetUserPasswordHandler(
     });
   }
 
-  const authz = await authorizeActor("rbac.roles.manage");
+  // Só superadmin redefine a senha de um superadmin — sem isso, rbac.roles.manage (papel "admin")
+  // tomava a conta do dono da instância.
+  const authz = await authorizeActorOverUser("rbac.roles.manage", input.targetUserId, { allowSelf: true });
   if (!authz.authorized) {
     return { success: false, error: authz.error };
   }

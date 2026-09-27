@@ -38,8 +38,7 @@ describe("grantPermissionsToRole", () => {
     expect(result).toEqual({ success: true, data: { grantedCount: 2 } });
     expect(ensureBaseRbacDataSeeded).toHaveBeenCalled();
     expect(grantPermissionsToRoleByKey).toHaveBeenCalledWith("admin", ["academy.courses.manage", "academy.other"]);
-    expect(invalidateUserContext).toHaveBeenCalledWith("u1");
-    expect(invalidateUserContext).toHaveBeenCalledWith("u2");
+    expect(invalidateUserContext).toHaveBeenCalledWith(["u1", "u2"]);
     expect(recordAuditEvent).toHaveBeenCalledWith(
       expect.objectContaining({ action: "rbac.grant-permissions-to-role", outcome: "success" }),
     );

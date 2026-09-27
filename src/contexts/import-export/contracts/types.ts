@@ -89,7 +89,13 @@ export type ExportManifest = {
   categories: ExportedCategory[];
   entries: ExportedEntry[];
   menus: ExportedMenu[];
+  // Assets que não puderam ser lidos do storage na hora do export: continuam em mediaAssets (o
+  // import reporta "arquivo não encontrado no pacote" pra cada um), só o arquivo fica de fora.
+  // Opcional — pacotes antigos não têm a chave.
+  skippedAssets?: ExportSkippedAsset[];
 };
+
+export type ExportSkippedAsset = { ref: string; filename: string; reason: string };
 
 export type ImportReportLineKind = "media-category" | "media-asset" | "content-type" | "category" | "entry" | "menu" | "menu-item";
 export type ImportReportOutcome = "created" | "reused" | "skipped" | "failed";
@@ -121,3 +127,8 @@ export const IMPORT_EXPORT_REQUIRED_PERMISSIONS = [
   "cms.menus.manage",
   "media.manage",
 ] as const;
+
+// Teto do .zip enviado pro import (comprimido). O descomprimido tem teto próprio em zip-codec.ts
+// (DEFAULT_ZIP_READ_LIMITS). Na Vercel o limite de corpo da função é bem menor que isso — este
+// teto vale pra hospedagem própria, onde nada mais limitaria.
+export const IMPORT_MAX_ZIP_BYTES = 256 * 1024 * 1024;

@@ -10,4 +10,6 @@ export type UpdateEntryCompositionCommand = {
   actorId: string;
 };
 export type UpdateEntryCompositionInput = Omit<UpdateEntryCompositionCommand, "actorId">;
-export type UpdateEntryCompositionResult = OperationResult<EntryRecord>;
+// proposalId != null: entry publicada + ator sem permissão de publicar — a composição virou
+// proposta pendente e a entry devolvida é a atual, inalterada (ver update-entry/types.ts).
+export type UpdateEntryCompositionResult = OperationResult<EntryRecord & { proposalId: string | null }>;

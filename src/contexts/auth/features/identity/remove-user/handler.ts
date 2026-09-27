@@ -1,4 +1,4 @@
-import { authorizeActor } from "@/contexts/rbac";
+import { authorizeActorOverUser } from "@/contexts/rbac";
 import { removeUser } from "./service";
 import type { RemoveUserInput, RemoveUserResult } from "./types";
 
@@ -10,7 +10,7 @@ export async function removeUserHandler(input: RemoveUserInput): Promise<RemoveU
     return { success: false, error: { code: "auth.identity.invalid_id", message: "targetUserId não pode ser vazio." } };
   }
 
-  const authz = await authorizeActor("rbac.users.remove");
+  const authz = await authorizeActorOverUser("rbac.users.remove", input.targetUserId);
   if (!authz.authorized) {
     return { success: false, error: authz.error };
   }

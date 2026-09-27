@@ -1,5 +1,6 @@
 import { beginOperation, endOperation } from "@/observability";
 import { invalidateCacheByPrefix } from "../../../../../infrastructure/cache/memory-cache";
+import { canPublishInCategory, isLive } from "../../../shared/entry-revisions";
 import { assertCmsCategoryScope } from "../../../shared/scoped-authorization";
 import { findEntryById, markEntryArchived } from "./store";
 import type { ArchiveEntryCommand, ArchiveEntryResult } from "./types";
@@ -29,6 +30,17 @@ export async function archiveEntry(command: ArchiveEntryCommand): Promise<Archiv
   if (!scope.success) {
     endOperation(handle, { success: false, error: scope.error });
     return { success: false, error: scope.error };
+  }
+
+  // Tirar do ar um conteúdo publicado é decisão editorial: exige poder publicar na categoria
+  // (antes o papel author, só com cms.entries.manage, despublicava qualquer entry do escopo).
+  if (isLive(existing) && !(await canPublishInCategory(command.actorId, existing.categoryId))) {
+    const error = {
+      code: "cms.entries.publish_required",
+      message: "Arquivar um conteúdo publicado exige permissão de publicar.",
+    };
+    endOperation(handle, { success: false, error });
+    return { success: false, error };
   }
 
   const entry = await markEntryArchived(command.id);

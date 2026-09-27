@@ -250,18 +250,21 @@ export type ThemeShellProps = {
 };
 
 // T3 (docs/implementation-roadmap.md — Fase 5, fundação): paleta como DADO em runtime, não CSS
-// estático — decisão confirmada com o usuário. Vocabulário deliberadamente restrito aos tokens de
-// "hue de marca" de theme.css (primary/accent + seus -foreground + ring): trocar só esses cinco
-// já muda a percepção de cor do app sem arriscar contraste dos tokens neutros (background/card/
-// muted/border), que continuam vindo só do theme.css do tema ativo. `light`/`dark` cobrem os dois
-// blocos que theme.css declara ([data-theme] / [data-theme].dark) — uma paleta pode sobrescrever
-// só um dos dois. Cada tema declara seu próprio catálogo (ThemeRegistryEntry.colorPalettes,
-// src/themes/registry.ts) porque os valores partem da paleta base daquele theme.css específico;
-// hoje só venore-slime tem catálogo (Fase 5 pede validação visual só nele), outros temas ficam
-// com [].
-// secondary/background/foreground entraram pro vocabulário pelo pedido de cor personalizada desta
-// sessão (platform/theme-engine/custom-color-palette.ts) — os presets de catálogo (ex: venore-
-// slime/color-palettes.ts) continuam usando só o subconjunto original (primary/accent/ring).
+// estático — decisão confirmada com o usuário. `light`/`dark` cobrem os dois blocos que theme.css
+// declara ([data-theme] / [data-theme].dark) — uma paleta pode sobrescrever só um dos dois. Cada
+// tema declara seu próprio catálogo (ThemeRegistryEntry.colorPalettes, src/themes/registry.ts)
+// porque os valores partem da paleta base daquele theme.css específico.
+//
+// Vocabulário ampliado (pedido de sessão: "a paleta muda só alguns elementos, sidebar nunca
+// muda") — o subconjunto original (primary/accent/-foreground/ring/secondary/background/
+// foreground) cobria só os tokens de "hue de marca"; sidebar/header/app-background usam uma
+// família de tokens PRÓPRIA em todo theme.css do workspace (confirmado nos 16 temas +
+// venore-slime — mesmo scaffold de @venore/theme-sdk), fora desse subconjunto, então a paleta
+// nunca os tocava mesmo sendo `var(...)` legítimo (não é hardcode de plugin/tema — é só vocabulário
+// que faltava aqui). card/popover/muted/border/input são o "vocabulário mínimo" que todo tema já é
+// obrigado a fornecer (VENORE-DOCKS.md §7). Deliberadamente FORA: destructive/success/warning
+// (cor semântica — não deve seguir a marca) e chart-* (paleta categórica, precisa ficar
+// distinguível, não convergir pro mesmo matiz).
 export type PaletteColorToken =
   | "primary"
   | "primary-foreground"
@@ -271,7 +274,23 @@ export type PaletteColorToken =
   | "foreground"
   | "accent"
   | "accent-foreground"
-  | "ring";
+  | "ring"
+  | "card"
+  | "card-foreground"
+  | "popover"
+  | "popover-foreground"
+  | "muted"
+  | "muted-foreground"
+  | "border"
+  | "input"
+  | "sidebar-bg-start"
+  | "sidebar-bg-end"
+  | "sidebar-bg-admin-start"
+  | "sidebar-bg-admin-end"
+  | "header-bg"
+  | "app-bg-start"
+  | "app-bg-mid"
+  | "app-bg-end";
 export type PaletteColorTokens = Partial<Record<PaletteColorToken, string>>;
 export type ColorPalette = {
   id: string;
