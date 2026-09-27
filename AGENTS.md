@@ -399,6 +399,10 @@ continua sendo a lista geral, derivada da leitura do código:
   no comentário de `src/observability/origin-registry.ts`); a maioria das ~130 outras chamadas de
   `beginOperation`/`endOperation` no projeto ainda só gera log operacional, não auditoria — expandir
   a lista de ações que chamam `recordAuditEvent` é trabalho incremental, não builtin automático.
+- **Pendências da avaliação de 27/09/2026** (detalhe em `docs/melhorias-e-recursos.md`, seção
+  "Situação da implementação"): cache de página pública (layout depende da sessão), `db` ainda
+  exposto no SDK de plugin, lint de fronteira nos repositórios dos plugins, imagens otimizadas,
+  i18n, webhooks/tokens de API, consentimento de cookies e retenção de uploads anônimos.
 - **Estratégia de teste por camada não documentada** além do que a seção 5/6 deste arquivo já
   descreve — o documento de arquitetura lista isso como não coberto.
 - **Plugin `birthdays` — ativação/desativação, escopo de `settings.manage`, impressão/identidade

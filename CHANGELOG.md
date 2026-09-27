@@ -14,6 +14,21 @@ atualização" em `VENORE-DOCKS.md`).
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-09-27
+
+Avaliação do core (`docs/melhorias-e-recursos.md`): correções de segurança P0–P3 e os recursos que
+faltavam. **Atenção ao atualizar uma instância:**
+
+- O "primeiro cadastro vira superadmin" não existe mais — use `SETUP_TOKEN` + `/setup` ou
+  `npm run db:install:fresh`.
+- Contas novas nascem `pending`; revise a setting de aprovação em `/admin/settings`.
+- Migrations 0042–0052 rodam no build. A 0047 cria um índice único em `lower(email)` e **não** o
+  cria (só avisa) se houver e-mails duplicados por maiúsculas/minúsculas.
+- Configure `CRON_SECRET` + um cron em `/api/cron/tick` (serverless) e, se quiser e-mail,
+  `EMAIL_DRIVER`. Todas as variáveis estão em `.env.example`.
+- `@venore/plugin-sdk/auth`, `/rbac` e `/media` passaram a exportar uma lista explícita — os
+  plugins oficiais usam só o que ficou.
+
 ### Security
 
 - **Hierarquia do RBAC aplicada no servidor.** Quem não é superadmin não concede nem remove o papel

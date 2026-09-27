@@ -72,3 +72,48 @@ Esforço: Baixo ≈ até 1 dia; Médio ≈ 2 a 5 dias de desenvolvimento.
 2. **Semanas 2 a 3 — endurecimento:** melhorias 6 a 9 e 17; em seguida o provedor de e-mail, que destrava recuperação de senha, verificação e convites.
 3. **Semanas 4 a 6 — confiabilidade em produção:** melhorias 10 a 16 (cron, mídia privada, revisões no CMS, import/export).
 4. **Depois — escala e produto:** melhorias 18 a 21 e os recursos de SEO, busca, formulários, blocos e i18n, conforme a demanda das instâncias.
+
+## Situação da implementação (27/09/2026)
+
+Tudo em `main`, com CI verde (lint, typecheck, testes unitários, integração, plugins, smoke e E2E).
+Detalhe por item no [CHANGELOG](../CHANGELOG.md), seção `[0.6.0]`.
+
+### Melhorias
+
+| # | Situação | Observação |
+| --- | --- | --- |
+| 1–5 (P0) | Feito | Hierarquia do RBAC, JSON-LD seguro, authz no install de plugin, update de tema seguro, dependências. |
+| 6–12 (P1) | Feito | Setup com `SETUP_TOKEN`, cadastro fail-closed, login sem enumeração, scrypt mais forte, rate limit em Postgres, CSP (report-only), agendador, mídia privada, revisões no CMS. |
+| 13 | Feito | Import com limites antes de ler o corpo; export pelo storage, concorrência 4, falha por item. |
+| 14 | Feito | Registro pelo storage (P1) + tipo conferido pelos bytes + allowlist de push. |
+| 15 | Feito | Cache de papéis em `globalThis` com versão no banco (outras instâncias em até 5 s). |
+| 16 | Parcial | SDK com lista explícita (auth/rbac/media) e gate no despachante de admin. **Pendente:** `db` continua no SDK (os plugins têm schema próprio e usam `db` direto) e a regra de fronteira de lint nos repositórios dos plugins — são outros repositórios. |
+| 17 | Feito | (no lote P1) |
+| 18 | Parcial | Paginação, índices, `unique(lower(email))`, pool com limites, blogroll sem N+1. **Pendente:** cache de página pública com `revalidateTag` — o layout depende da sessão (header/menu), exige separar a parte estática antes. |
+| 19 | Feito | Preview não migra sem `MIGRATE_ON_PREVIEW`; guia `docs/migrations-guia.md`. |
+| 20 | Feito | CI em todo branch (instâncias recebem no próximo merge de `main`), `test:plugins`, E2E, teste de Server Actions sem sessão, integrações novas. |
+| 21 | Feito | README, AGENTS.md, `.env.example`, `docs/page-builder-blocos-planejados.md`. |
+
+### Recursos
+
+| Recurso | Situação | Observação |
+| --- | --- | --- |
+| E-mail transacional | Feito | `EMAIL_DRIVER=resend` (ou `console` em dev). Verificação de e-mail no cadastro ficou de fora. |
+| Recuperação e troca de senha | Feito | `/forgot-password`, `/reset-password`, troca em `/account`. |
+| Convite por link | Feito | `/admin/community` → `/convite/<token>`. |
+| MFA | Feito (TOTP) | Passkeys ficaram de fora. |
+| Gestão de sessões | Feito | Sair dos outros dispositivos, encerrar pelo admin, troca de senha derruba sessões. |
+| Revisões de conteúdo | Feito | Histórico e propostas (P1). Comparação visual entre versões ficou de fora. |
+| Preview de rascunho | Feito | Link assinado de 1/3/7 dias. |
+| SEO do CMS | Feito | Metadata, canonical, Open Graph, sitemap, robots, RSS. |
+| Busca pública | Feito | `/busca` com Postgres FTS. |
+| Formulário de contato | Feito | Bloco com e-mail, honeypot, rate limit e Turnstile opcional. |
+| Blocos planejados | Feito, menos Markdown | Vídeo/incorporação, Tabela, Arquivo, FAQ, Código, Números, Linha do tempo. Markdown exige um parser/sanitizador novo. |
+| LGPD self-service | Parcial | Exportar e excluir a própria conta. **Pendente:** consentimento de cookies (o core não usa cookies de rastreamento hoje) e retenção automática de uploads anônimos (os arquivos pertencem a plugins, ex: currículos do `vagas`). |
+| Tarefas agendadas para plugins | Feito | `scheduledJobs` no `contributions.ts` (P1). |
+| Observabilidade externa | Feito | `/api/health`, `onRequestError` → diagnóstico + `ERROR_WEBHOOK_URL`. |
+| Backup agendado | Feito | Workflow diário cifrado; `docs/backup.md`. |
+| Volta ao destino após login / erros de auth | Feito | (P1) |
+| Imagens otimizadas | **Não feito** | Precisa decidir entre o otimizador da Vercel (custo por imagem) e `sharp` com variantes guardadas no storage. |
+| i18n | **Não feito** | Toca todas as telas e os temas externos; precisa definir idiomas e se o conteúdo também é multilíngue. |
+| Webhooks e tokens de API | **Não feito** | Precisa definir quais eventos e quais escopos de API expor. |

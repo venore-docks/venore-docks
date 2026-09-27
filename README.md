@@ -40,6 +40,9 @@ As que costumam importar em produção:
 | `CSP_MODE` / `FRAME_ANCESTORS` | Content Security Policy (`report-only` por padrão) e quem pode exibir o site em iframe. |
 | `GOOGLE_*` / `GITHUB_*` / `MICROSOFT_*` | Login OAuth. Sem nenhum, o login por email + senha é o único caminho. |
 | `MIGRATE_ON_PREVIEW` | Aplicar migrations em deploy de preview (só se o preview tem banco próprio). |
+| `EMAIL_DRIVER` + `RESEND_API_KEY` + `EMAIL_FROM` | E-mail: recuperação de senha, convites, aviso de cadastro pendente, formulário de contato. |
+| `SITE_URL` | Endereço público (sitemap, RSS, canonical, links nos e-mails). |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` + `TURNSTILE_SECRET_KEY` | Captcha opcional do formulário de contato. |
 
 ## Instalação inicial
 
