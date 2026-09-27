@@ -351,6 +351,13 @@
       "when": 1790492700991,
       "tag": "0049_password_reset_tokens",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1790493107766,
+      "tag": "0050_entries_search",
+      "breakpoints": true
     }
   ]
 }

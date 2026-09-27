@@ -13,6 +13,7 @@ import { getCmsPageData } from "@/platform/admin-shell/get-cms-page-data";
 import { EditEntryForm } from "./_components/edit-entry-form";
 import { PublishButton } from "./_components/publish-button";
 import { RevisionHistory, type RevisionHistoryItem } from "./_components/revision-history";
+import { PreviewLink } from "./_components/preview-link";
 
 const DATE_FORMAT = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" });
 
@@ -123,6 +124,12 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
           <PublishButton entryId={entry.id} />
         </div>
       )}
+
+      <section className="rounded-panel border border-border bg-card ui-panel-padding-roomy">
+        <h2 className="mb-1 text-sm font-semibold text-foreground">Link de pré-visualização</h2>
+        <p className="mb-3 text-sm text-muted-foreground">Compartilhe a versão atual com quem não tem acesso ao admin, antes de publicar.</p>
+        <PreviewLink entryId={entry.id} />
+      </section>
 
       <section className="rounded-panel border border-border bg-card ui-panel-padding-roomy">
         <h2 className="mb-2 text-sm font-semibold text-foreground">Histórico e propostas</h2>

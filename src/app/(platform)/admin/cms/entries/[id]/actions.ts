@@ -1,7 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { applyEntryRevision, discardEntryProposal, publishEntry, updateEntry } from "@/contexts/cms";
+import { applyEntryRevision, discardEntryProposal, getEntry, publishEntry, updateEntry } from "@/contexts/cms";
+import { authorizeActor } from "@/contexts/rbac";
+import { PREVIEW_ROUTE, PREVIEW_TTL_OPTIONS_HOURS, createPreviewToken } from "@/platform/cms-preview/preview-token";
+import { getSiteOrigin } from "@/platform/seo/site-origin";
 import { resolveBlockDefinition } from "@/platform/page-builder/block-registry";
 
 export type EditEntryActionState = { error: string | null; notice?: string | null };
@@ -85,4 +88,29 @@ export async function publishEntryFromEditAction(
   revalidatePath("/admin/cms");
   revalidatePath(`/admin/cms/entries/${id}`);
   return { error: null };
+}
+
+export type PreviewLinkState = { error: string | null; url: string | null; expiresAt: string | null };
+
+// Link de pré-visualização (rascunho) pra quem não tem conta. Quem gera precisa poder editar a
+// entry — mesmo recorte por categoria do resto do CMS.
+export async function createPreviewLinkAction(_prev: PreviewLinkState, formData: FormData): Promise<PreviewLinkState> {
+  const entryId = String(formData.get("entryId") ?? "");
+  const ttl = Number(formData.get("ttlHours"));
+  const ttlHours = (PREVIEW_TTL_OPTIONS_HOURS as readonly number[]).includes(ttl) ? ttl : PREVIEW_TTL_OPTIONS_HOURS[0];
+
+  const entry = entryId ? await getEntry({ id: entryId }) : null;
+  if (!entry?.success || !entry.data) {
+    return { error: "Conteúdo não encontrado.", url: null, expiresAt: null };
+  }
+  const authz = await authorizeActor(
+    "cms.entries.manage",
+    entry.data.categoryId ? { type: "cms.category", resourceId: entry.data.categoryId } : undefined,
+  );
+  if (!authz.authorized) {
+    return { error: authz.error.message, url: null, expiresAt: null };
+  }
+
+  const { token, expiresAt } = createPreviewToken(entry.data.id, ttlHours);
+  return { error: null, url: `${await getSiteOrigin()}${PREVIEW_ROUTE}/${token}`, expiresAt: expiresAt.toISOString() };
 }

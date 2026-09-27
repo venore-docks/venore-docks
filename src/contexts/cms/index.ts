@@ -28,6 +28,8 @@ export type { ListEntryRevisionsResult } from "./features/entries/list-entry-rev
 export type { ApplyEntryRevisionResult } from "./features/entries/apply-entry-revision/types";
 export { deleteEntryHandler as deleteEntry } from "./features/entries/delete-entry/handler";
 export { listEntriesHandler as listEntries } from "./features/entries/list-entries/handler";
+export { searchPublishedEntriesHandler as searchPublishedEntries } from "./features/entries/search-published-entries/handler";
+export type { SearchPublishedEntriesQuery, SearchPublishedEntriesResult } from "./features/entries/search-published-entries/types";
 export { listEntriesForAdminHandler as listEntriesForAdmin } from "./features/entries/list-entries-for-admin/handler";
 export { getEntryHandler as getEntry } from "./features/entries/get-entry/handler";
 export {

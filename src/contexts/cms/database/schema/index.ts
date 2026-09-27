@@ -5,6 +5,10 @@ import { users } from "@/contexts/auth/database/schema";
 
 export const cmsSchema = pgSchema("cms");
 
+// Busca pública: a coluna gerada cms.entries.search_vector (+ índice GIN) existe só no banco
+// (migration custom 0050_entries_search) — fora do schema Drizzle de propósito, pra não vir em todo
+// select() de entries. Consultada por features/entries/search-published-entries/store.ts.
+
 export const contentTypes = cmsSchema.table("content_types", {
   id: text("id")
     .primaryKey()

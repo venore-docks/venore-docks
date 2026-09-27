@@ -87,6 +87,11 @@ atualização" em `VENORE-DOCKS.md`).
 
 ### Added
 
+- **Busca pública** em `/busca` (Postgres full-text): título pesa mais que o corpo, acha com e sem
+  acento, só conteúdo publicado (e "authenticated" só pra quem está logado), paginada e com limite
+  por IP. Coluna gerada + índice GIN (migration custom 0050, fora do schema Drizzle).
+- **Link de pré-visualização de rascunho** no editor do conteúdo: link assinado (1, 3 ou 7 dias)
+  em `/visualizar-rascunho/<token>` mostra a versão atual pra quem não tem conta; noindex.
 - **E-mail (provedor plugável)** em `src/infrastructure/email`: `EMAIL_DRIVER=resend`
   (`RESEND_API_KEY`, `EMAIL_FROM`), `console` (dev) ou desligado.
 - **Recuperação de senha:** "Esqueci minha senha" no `/login` (só com e-mail configurado),
