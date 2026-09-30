@@ -71,11 +71,13 @@ Isso é resolvido por **duas peças por plugin** dentro de `src/plugins/<nome>/r
    o componente espera — não tem checagem automática disso.
 
 `src/plugins/route-registry.ts` agrega a `route-table` de cada plugin instalado (mesmo padrão de
-import estático de `src/plugins/registry.ts` pros manifestos). Três pontos em `app/` — só três, pra
-sempre, independente de quantos plugins existirem ou quantas rotas cada um ganhar depois —
-consultam esse registro:
+import estático de `src/plugins/registry.ts` pros manifestos). Cinco pontos em `app/` — só esses,
+pra sempre, independente de quantos plugins existirem ou quantas rotas cada um ganhar depois —
+consultam esse registro (os três abaixo, mais `ext/` e `@sidebarContextual/` nas "exceções
+físicas"):
 
-- `src/app/(platform)/admin/[plugin]/[[...slug]]/page.tsx` — toda rota admin de plugin.
+- `src/app/(platform)/admin/[plugin]/page.tsx` e `src/app/(platform)/admin/[plugin]/[...slug]/page.tsx`
+  — toda rota admin de plugin.
 - `src/app/api/[plugin]/[[...slug]]/route.ts` — toda rota de API de plugin.
 - `src/app/(platform)/[...slug]/page.tsx` (o catch-all do CMS) — antes de tentar resolver
   categoria/entry, chama `resolvePublicPluginRoute(segments)`; um caminho que casa com um plugin
@@ -99,19 +101,19 @@ request.
 **Exceções físicas, não de conteúdo** (continuam existindo por exigência do Next.js, não por
 preguiça de generalizar):
 - Route segment config (`export const dynamic`, `revalidate`, `runtime`) só é lido de export
-  direto no arquivo de rota dentro de `app/`, nunca via import — por isso os três pontos de
+  direto no arquivo de rota dentro de `app/`, nunca via import — por isso os pontos de
   despacho acima declaram `export const dynamic = "force-dynamic"` (ou equivalente) neles mesmos,
   cobrindo toda rota que passa por ali, em vez de cada plugin precisar declarar o seu.
-- Parallel route (`@slotName`, ex: `@sidebarContextual`) continua exigindo um arquivo físico na
-  posição exata da URL que ela cobre — `src/app/(platform)/@sidebarContextual/academy/[courseSlug]/[lessonId]/page.tsx`
-  não generaliza pro registro (é uma única posição, não uma família de rotas), mas seu conteúdo
-  já é só um reexport de `@/plugins/academy/routes/lesson-sidebar/page`.
-- Uma página pública que precisa escapar por completo da shell do `(platform)` (sem
-  header/nav/footer — ex: `src/app/broadcast/out/[token]/`, saída de TV;
-  `src/app/enrollment-dashboard/present/[token]/[institutionKey]/`, telão de apresentação) não
-  pode entrar no catch-all do CMS, porque herdar `(platform)/layout.tsx` é automático assim que a
-  rota mora sob esse route group — continuam como pasta própria fora de `(platform)/`, sempre um
-  shim de reexport.
+- Parallel route (`@slotName`, ex: `@sidebarContextual`) exige um arquivo físico no slot — resolvido
+  com um dispatcher único, `src/app/(platform)/@sidebarContextual/[...slug]/page.tsx`, que casa a
+  URL contra a área `sidebarContextual` das route-tables (`resolveSidebarContextualPluginRoute`).
+  Nenhum segmento de plugin fica físico no slot.
+- Uma página que precisa escapar por completo da shell do `(platform)` (sem header/nav/footer —
+  saída de TV, quiosque, telão) não pode entrar no catch-all do CMS, porque herdar
+  `(platform)/layout.tsx` é automático sob esse route group. Toda rota assim mora sob o prefixo
+  genérico único `src/app/ext/[...slug]/page.tsx` (`/ext/<caminho>`), casada contra a área
+  `standalone` da route-table (`resolveStandalonePluginRoute`) — ex: o `broadcast` declara
+  `broadcast/out/:token` e é servido em `/ext/broadcast/out/<token>`.
 
 **Um plugin pode ser dono de uma URL que não começa pelo seu próprio nome** (ex: `academy` é dono
 de `/cursos`, não só de `/academy/**`) — a `route-table.ts` "public" registra o caminho completo,
@@ -238,8 +240,8 @@ logBuffer.push({ message, level });
   `accent-soft`, `info-*`) foi eliminado de `src/` e não deve reaparecer — ver a tabela de
   mapeamento completa logo abaixo se precisar reconstituir um valor antigo.
 - `--warning-*` (`text-warning`/`bg-warning-soft`/`border-warning-border`) é o único token
-  semântico próprio que sobrevive à migração — sem equivalente shadcn, usado em
-  `src/app/(platform)/academy/**`.
+  semântico próprio que sobrevive à migração — sem equivalente shadcn, usado no admin do core
+  (ex: `src/app/(platform)/admin/cms/**`, `admin/media/**`) e nos blocos do page-builder.
 - **Nada de valor hardcoded** de cor/espaçamento/raio em componente de página, tema ou plugin —
   regra do documento de arquitetura. Só a parte de **cor** tem enforcement mecânico hoje
   (`no-restricted-syntax` em `eslint.config.mjs`, cobrindo `src/app`, `src/themes`,
@@ -318,21 +320,22 @@ de verdade (login, cadastro, setup) entra na lista `PUBLIC_ACTIONS` do teste, co
 
 ### Testes: unitário vs integração
 - `*.test.ts` são unitários e não podem depender de banco real.
-- `*.integration.test.ts` (ex: `client.integration.test.ts`, os do academy) exigem
+- `*.integration.test.ts` (ex: `client.integration.test.ts`, os de `src/test-support/integration/`) exigem
   `TEST_DATABASE_URL` — **nunca reaproveitam `DATABASE_URL`**; sem a env var a suíte falha cedo
   com mensagem clara em vez de rodar contra o banco de desenvolvimento.
 - `vitest.integration.config.ts` aplica, via `globalSetup` (`src/test-support/integration/global-
   setup.ts`), o core (`drizzle/`) e depois a árvore `migrations/` de **cada plugin do
-  `PLUGIN_REGISTRY` que declara `migrationsPath` no manifesto** (hoje `academy`, `birthdays`,
-  `broadcast`, `enrollment-dashboard`) — a lista é derivada do registro, não hardcode. Troca
-  `DATABASE_URL` para `TEST_DATABASE_URL` só dentro do processo de teste (`setup-env.ts`) —
+  `PLUGIN_REGISTRY` que declara `migrationsPath` no manifesto** (em `main` o registro é vazio —
+  os plugins entram pelos branches de instância, seção 8) — a lista é derivada do registro, não
+  hardcode. Troca `DATABASE_URL` para `TEST_DATABASE_URL` só dentro do processo de teste
+  (`setup-env.ts`) —
   `infrastructure/database/client.ts` não muda.
 - **Isolamento entre testes é por `TRUNCATE ... CASCADE`, não transação com rollback** — vários
   `store.ts` abrem sua própria `db.transaction()`, que uma transação externa não commitada não
   cobriria sem DI só para teste.
 - **`test.fileParallelism: false`** — arquivos em paralelo trunc(ariam) tabela que outro arquivo
   tem em uso no meio de um teste (sintoma observado: FK violation e asserções alternando).
-- Helpers de seed ficam em `src/test-support/integration/academy-seed.ts`, fora de
+- Helpers de seed ficam em `src/test-support/integration/` (`user-seed.ts`, `rbac-seed.ts`), fora de
   `src/contexts/*`/`src/plugins/*` de propósito (boundary não classifica esse caminho); insert
   cru em `auth.users` é o único acesso direto (não existe API pública para criar usuário), resto
   passa por `service.ts` real.
@@ -403,12 +406,32 @@ continua sendo a lista geral, derivada da leitura do código:
   "Situação da implementação"): cache de página pública (layout depende da sessão), `db` ainda
   exposto no SDK de plugin, lint de fronteira nos repositórios dos plugins, imagens otimizadas,
   i18n, webhooks/tokens de API, consentimento de cookies e retenção de uploads anônimos.
+- **Docs com trechos anteriores à saída dos plugins do core (2026-09-02) e à 0.6.0** (levantado
+  em 2026-09-30, conferido contra o código):
+  - `docs/implementation-roadmap.md` e `docs/issues.md` descrevem plugins (academy, birthdays,
+    broadcast…) como se morassem em `src/plugins/`; em `main` não há plugin nenhum — o código
+    deles está nos repositórios `venore-plugin-*`. Fase 7 (Academy) e IE2 do roadmap pertencem
+    a esses repositórios, não ao core.
+  - Roadmap: agendamento/flush descritos com `setInterval` em processo — hoje é
+    `/api/cron/tick` + `platform/scheduled-jobs` (o `setInterval` só sobra em self-host, via
+    `IN_PROCESS_JOBS`). P3 ("quem tem `cms.entries.manage` continua publicando") foi revogado
+    pela D6 de `docs/rbac-scoped-roles.md`.
+  - O comentário de `src/app/api/cron/tick/route.ts` cita `vercel.json`, que não existe no
+    repositório — o cron de cada instância é configurado fora dele (painel da Vercel ou cron
+    externo). [NÃO VERIFICADO] onde cada instância configura isso hoje.
+  - `docs/themes/temas-como-pacotes-plano.md` (status "não iniciado", 7 temas) descreve estado
+    anterior ao atual — os temas extras já são pacotes `@venore/theme-*` (seção 3).
+  - `docs/page-builder-blocos-planejados.md` lista os blocos planejados sem marcar quais já
+    existem (33 em `src/platform/page-builder/blocks/`).
+  - `docs/melhorias-e-recursos.md` pede scrypt N=2^17; o implementado é N=2^15
+    (`password-hashing.ts`, CHANGELOG 0.6.0).
 - **Estratégia de teste por camada não documentada** além do que a seção 5/6 deste arquivo já
   descreve — o documento de arquitetura lista isso como não coberto.
-- **Plugin `birthdays` — ativação/desativação, escopo de `settings.manage`, impressão/identidade
-  visual e importação CSV** ficaram fora da sessão que criou o plugin (o block `birthdays-month-
-  list` já foi implementado e revisado — ver `docs/issues.md` G6). Detalhado com contexto e
-  dependências em `docs/issues.md`.
+- **Plugin `birthdays` — escopo de `settings.manage`, impressão/identidade visual e importação
+  CSV** ficaram fora da sessão que criou o plugin (ativação/desativação já foi resolvida pelo G1;
+  o block `birthdays-month-list` já foi implementado e revisado — ver `docs/issues.md` G6). O
+  plugin mora hoje em repositório próprio; detalhado com contexto e dependências em
+  `docs/issues.md`.
 
 ## 8. Branches: `main` (core) vs branches de instância
 

@@ -6,7 +6,11 @@ sai do core** — é o fallback obrigatório do sistema de temas (AGENTS.md §3)
 `src/themes/venore-slime/` e hardcoded em `globals.css` / `registry.ts`. São **7 repos** (todos
 menos o slime).
 
-Status: **não iniciado.** As 10 outras sugestões de tema já estão em `main`.
+Status: **implementado** (atualizado em 2026-09-30). `@venore/theme-sdk` (alias de tsconfig para
+`src/theme-sdk/`) e `scripts/gen-theme-registry.ts` existem; os temas extras de `main` são pacotes
+`@venore/theme-*` fixados por tag no `package.json` (academy, aurora, druids, fearless, halo,
+knights, nebula, nimbus, nite, paladins, sorcerers, vega, volt) — a lista de 7 temas abaixo é a do
+plano original. Texto original: "não iniciado; as 10 outras sugestões de tema já estão em `main`".
 
 ## Por que é uma sessão própria
 

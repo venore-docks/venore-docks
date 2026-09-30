@@ -4,6 +4,12 @@ Lista de trabalho futuro identificado durante o desenvolvimento de um plugin/fea
 deliberadamente deixado fora da sessão que o identificou. Cada entrada diz o que é, por que ficou
 de fora, e (quando aplicável) de que depende para ser retomado.
 
+> **Nota (2026-09-30):** desde 2026-09-02 os plugins (academy, birthdays, broadcast, company-metrics,
+> donations, helpdesk…) não moram mais em `src/plugins/` — cada um tem repositório próprio
+> (`venore-plugin-*`) e entra numa instância como pacote `@venore/plugin-*`. Caminhos
+> `src/plugins/<nome>/...` citados abaixo referem-se a esses repositórios. Divergências conhecidas
+> entre este documento e o código: `AGENTS.md` §7 (Known Gaps).
+
 ## Plugin `birthdays` (Fase 2 — cadastro de aniversariantes)
 
 - **G1 — Ativação/desativação de plugin (persistida, com efeito real em navegação/permissões).**
@@ -47,7 +53,8 @@ de fora, e (quando aplicável) de que depende para ser retomado.
 
 ## Footer + componente de Sitemap
 
-- **`sitemap.xml` (SEO) — não existe.** Não há rota `app/sitemap.ts`/`app/sitemap.xml` nem
+- ~~**`sitemap.xml` (SEO) — não existe.**~~ **Resolvido na 0.6.0** (`src/app/sitemap.ts`, junto de
+  `robots.ts` e `rss.xml`) — o texto abaixo é o registro original. Não há rota `app/sitemap.ts`/`app/sitemap.xml` nem
   equivalente hoje (`find src/app -iname sitemap*` não retorna nada). É trabalho diferente do
   componente de sitemap implementado nesta sessão (`src/components/sitemap.tsx`), e a distinção
   importa o suficiente pra registrar aqui em vez de reaproveitar: o componente mostra o que foi

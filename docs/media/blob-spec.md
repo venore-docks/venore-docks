@@ -262,7 +262,9 @@ const MEDIA_ALLOWED_TYPES: Record<string, { category: "image" | "document" | "vi
 };
 ```
 
-- `image/svg+xml` **deliberadamente fora da allowlist**: SVG pode carregar script embutido — risco de XSS ao servir como asset "de imagem". Se um site precisar de SVG editorial no futuro, isso é uma decisão própria (com sanitização de XML), não uma extensão trivial desta lista.
+- **Atualizado na 0.6.0:** `image/svg+xml` **entrou** na allowlist (2MB), sanitizado por
+  `sanitizeSvgBuffer` antes de ir pro storage e servido com CSP `sandbox` + `nosniff` — ver
+  `src/contexts/media/contracts/types.ts`. Texto original: `image/svg+xml` **deliberadamente fora da allowlist**: SVG pode carregar script embutido — risco de XSS ao servir como asset "de imagem". Se um site precisar de SVG editorial no futuro, isso é uma decisão própria (com sanitização de XML), não uma extensão trivial desta lista.
 - Qualquer `contentType` fora do mapa é rejeitado em `requestMediaUploadTicket`/`uploadMedia` com `media.upload.unsupported_type` — nunca um "provavelmente ok, vamos tentar".
 - O limite de tamanho é **por categoria declarada**, checado duas vezes: no momento do ticket (contra o `size` que o client informa) e de novo em `registerUploadedMedia`/`uploadMedia` contra o `size` real reportado pelo storage — o client pode mentir sobre o `size` ao pedir o ticket, mas não pode mentir sobre quantos bytes o storage efetivamente recebeu.
 - Vídeo **só** é aceito pelo fluxo de client-upload (`requestMediaUploadTicket`) — nunca por `uploadMedia` (server-buffered), porque 200MB não cabe no limite de body de uma function de qualquer forma.
