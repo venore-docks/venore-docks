@@ -3,7 +3,7 @@ import { grantDefaultRoleOnRegistration } from "@/contexts/rbac";
 import { registerPlugins } from "@/platform/plugin-engine/register-plugins";
 import type { OperationResult } from "@/shared/types";
 import { notifyPendingRegistration } from "./notify-pending-registration";
-import { ensureRegistrationSettingsRegistered, isApprovalRequired } from "./registration-settings";
+import { ensureRegistrationSettingsRegistered, getDefaultRegistrationRoleKey, isApprovalRequired } from "./registration-settings";
 
 export { REGISTRATION_APPROVAL_REQUIRED_SETTING_KEY } from "./registration-settings";
 
@@ -38,5 +38,5 @@ export async function handleUserRegistered(user: UserRegisteredInput): Promise<O
   if (!activated.success) {
     return activated;
   }
-  return grantDefaultRoleOnRegistration({ userId: user.id });
+  return grantDefaultRoleOnRegistration({ userId: user.id, roleKey: await getDefaultRegistrationRoleKey() });
 }

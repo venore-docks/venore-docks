@@ -428,4 +428,56 @@ describe("resolveThemeSlotProps", () => {
 
     expect(props.footer.sitemapItems).toEqual(FALLBACK_SITEMAP_ITEMS);
   });
+  it("header.headerNavItems vem do menu 'header' do CMS, com os filhos de item-rótulo subindo um nível", async () => {
+    getCurrentUser.mockResolvedValue({ success: true, data: null });
+    getMenuByLocation.mockImplementation(async ({ location }: { location: string }) => {
+      if (location !== "header") return { success: true, data: [] };
+      return {
+        success: true,
+        data: [
+          { id: "sobre", label: "Sobre", href: "/sobre", isExternal: false, opensInNewTab: false, icon: null, children: [] },
+          {
+            id: "grupo",
+            label: "Grupo",
+            href: null,
+            isExternal: false,
+            opensInNewTab: false,
+            icon: null,
+            children: [{ id: "blog", label: "Blog", href: "/blog", isExternal: false, opensInNewTab: false, icon: "news", children: [] }],
+          },
+        ],
+      };
+    });
+
+    const props = await resolveThemeSlotProps(sidebarNavInput());
+
+    expect(getMenuByLocation).toHaveBeenCalledWith({ location: "header" });
+    expect(props.header.headerNavItems).toEqual([
+      { key: "sobre", label: "Sobre", href: "/sobre", icon: undefined },
+      { key: "blog", label: "Blog", href: "/blog", icon: "news" },
+    ]);
+  });
+
+  it("header.headerNavItems fica vazio quando a leitura do menu 'header' falha", async () => {
+    getCurrentUser.mockResolvedValue({ success: true, data: null });
+    getMenuByLocation.mockImplementation(async ({ location }: { location: string }) =>
+      location === "header" ? { success: false, error: { code: "err", message: "boom" } } : { success: true, data: [] },
+    );
+
+    const props = await resolveThemeSlotProps(sidebarNavInput());
+
+    expect(props.header.headerNavItems).toEqual([]);
+  });
+
+  it("tira 'Entrar' dos menus de exemplo (sidebar e rodapé) quando nav.hideLoginLink está ligado", async () => {
+    getCurrentUser.mockResolvedValue({ success: true, data: null });
+    getMenuByLocation.mockResolvedValue({ success: true, data: [] });
+    getNavVisibility.mockResolvedValue({ hideLoginLink: true, showLoginInFooter: false });
+
+    const props = await resolveThemeSlotProps(sidebarNavInput());
+
+    expect(JSON.stringify(props.sidebarLeft.navItems)).not.toContain("/login");
+    expect(JSON.stringify(props.footer.sitemapItems)).not.toContain("/login");
+    expect(props.sidebarLeft.navItems.length).toBeGreaterThan(0);
+  });
 });

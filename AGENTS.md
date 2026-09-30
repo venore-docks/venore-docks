@@ -379,14 +379,11 @@ continua sendo a lista geral, derivada da leitura do código:
 - **Radius/espaçamento sem enforcement mecânico.** O contrato de tokens proíbe `rounded-lg`/`p-3`
   hardcoded, mas `eslint.config.mjs` só tem `no-restricted-syntax` para cor. Nada bloqueia
   raio/espaçamento cru hoje.
-- **TODO explícito em `assign-default-role/service.ts:7`** — "migrar para settings de plugin
-  quando o manifesto existir": depende do sistema de plugins (`permissions`/`settings` no
-  manifesto) ainda não estar totalmente cablado.
-- **TODO explícito em `src/platform/theme-rendering/resolve-theme-slot-props.ts:7`** —
-  footer/header-nav/sitemap ainda não vêm de composição real de `contexts/cms` + `contexts/rbac`.
-  [NÃO VERIFICADO] o estado exato do que está mockado vs. resolvido.
-- **TODO explícito em `src/themes/venore-slime/components/UserMenu.tsx:60`** — link para
-  `/account` pendente porque a rota ainda não existe.
+- ~~TODOs de `assign-default-role/service.ts`, `resolve-theme-slot-props.ts` e `UserMenu.tsx`~~ —
+  resolvidos (2026-09-30): papel padrão de cadastro virou a setting
+  `auth.registration_default_role` (`/admin/settings`, lida em `platform/registration`, com a env
+  `RBAC_DEFAULT_REGISTRATION_ROLE_KEY` como fallback e `superadmin` sempre recusado); header-nav vem
+  do menu de location `header` do CMS; o link `/account` do `UserMenu` já existe.
 - ~~**Permission com escopo dentro de um recurso** (RBAC granular por seção/instância do CMS)~~ —
   **implementado (fases A–D, `docs/rbac-scoped-roles.md`, 2026-08-28):** `rbac.role_assignment_scopes`
   (vínculo usuário × papel), `authorizeActor(perm, scope?)` + `resolveScope`, recorte por
