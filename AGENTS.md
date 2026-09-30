@@ -413,9 +413,9 @@ continua sendo a lista geral, derivada da leitura do código:
     `/api/cron/tick` + `platform/scheduled-jobs` (o `setInterval` só sobra em self-host, via
     `IN_PROCESS_JOBS`). P3 ("quem tem `cms.entries.manage` continua publicando") foi revogado
     pela D6 de `docs/rbac-scoped-roles.md`.
-  - O comentário de `src/app/api/cron/tick/route.ts` cita `vercel.json`, que não existe no
-    repositório — o cron de cada instância é configurado fora dele (painel da Vercel ou cron
-    externo). [NÃO VERIFICADO] onde cada instância configura isso hoje.
+  - ~~Cron sem configuração no repositório~~ — `.github/workflows/cron.yml` (2026-09-30) chama
+    `/api/cron/tick` de cada instância a cada 5 min (secret `CRON_TARGETS`); cada projeto na
+    Vercel precisa da env `CRON_SECRET`. Sem isso, nada agendado roda em serverless.
   - `docs/themes/temas-como-pacotes-plano.md` (status "não iniciado", 7 temas) descreve estado
     anterior ao atual — os temas extras já são pacotes `@venore/theme-*` (seção 3).
   - `docs/melhorias-e-recursos.md` pede scrypt N=2^17; o implementado é N=2^15

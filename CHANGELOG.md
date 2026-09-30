@@ -20,6 +20,9 @@ contas em `/admin/settings` (sem escolha, continua valendo `RBAC_DEFAULT_REGISTR
 
 ### Added
 
+- **Cron pelo GitHub Actions** (`.github/workflows/cron.yml`): chama `/api/cron/tick` de cada
+  instância a cada 5 min — o plano Hobby da Vercel só permite cron diário. Configure o secret
+  `CRON_TARGETS` no repositório e a env `CRON_SECRET` em cada projeto da Vercel.
 - **Bloco Markdown** (`core.content.markdown`, GFM: tabelas, listas de tarefa, tachado). HTML cru
   vira texto e links `javascript:` são neutralizados.
 - **Papel padrão de novas contas em `/admin/settings`** (setting `auth.registration_default_role`).

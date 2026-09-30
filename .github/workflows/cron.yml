@@ -1,0 +1,51 @@
+name: Cron das instâncias
+
+# Chama /api/cron/tick de cada instância a cada 5 minutos (publicação agendada, flush de logs,
+# retenção, limpeza de mídia, rate limit, jobs de plugin). Existe porque o plano Hobby da Vercel
+# só permite cron diário. Repositório público = minutos de Actions sem custo. O `schedule` do
+# GitHub só roda no branch padrão e pode atrasar alguns minutos em horário de pico; os jobs do
+# core toleram isso (cada um tem lock e roda o que venceu desde a última vez).
+#
+# Secret único com todas as instâncias (mesmo padrão do BACKUP_TARGETS de backup.yml):
+#   CRON_TARGETS = {"broadcast-fem": {"url": "https://exemplo.com.br", "secret": "<CRON_SECRET>"}}
+# O `secret` de cada uma é o valor da env var CRON_SECRET do projeto na Vercel. Sem o secret
+# configurado, o job só avisa e termina.
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: instance-cron
+  cancel-in-progress: false
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      CRON_TARGETS: ${{ secrets.CRON_TARGETS }}
+    steps:
+      - name: Chamar /api/cron/tick de cada instância
+        run: |
+          if [ -z "$CRON_TARGETS" ]; then
+            echo "::warning::CRON_TARGETS não configurado — nada a fazer."
+            exit 0
+          fi
+          failed=0
+          while IFS=$'\t' read -r name url secret; do
+            [ -n "$name" ] || continue
+            echo "::add-mask::$secret"
+            rm -f /tmp/tick.json
+            status=$(curl -sS -o /tmp/tick.json -w '%{http_code}' --max-time 70 \
+              -X POST -H "Authorization: Bearer $secret" "${url%/}/api/cron/tick" || true)
+            echo "$name: HTTP $status $(cat /tmp/tick.json 2>/dev/null)"
+            if [ "$status" != "200" ]; then
+              echo "::error::$name respondeu HTTP $status"
+              failed=1
+            fi
+          done < <(echo "$CRON_TARGETS" | jq -r 'to_entries[] | "\(.key)\t\(.value.url)\t\(.value.secret)"')
+          exit $failed
