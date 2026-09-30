@@ -36,8 +36,11 @@ contas em `/admin/settings` (sem escolha, continua valendo `RBAC_DEFAULT_REGISTR
 - **"Esconder o link de Entrar" funcionava só no Venore Slime.** O core também desliga a userbar
   do visitante deslogado (todos os temas respeitam), tira "Entrar" dos menus de exemplo (sidebar e
   rodapé sem menu configurado) e os 13 temas `@venore/theme-*` ganharam suporte a
-  `showLoginLink`/`loginLinkHref` (versões novas nos repositórios dos temas; as tags ainda precisam
-  ser publicadas antes do bump neste `package.json`).
+  `showLoginLink`/`loginLinkHref` — `package.json` atualizado (academy 1.1.4, aurora 0.1.9,
+  druids 2.0.2, fearless 1.1.3, halo 0.1.5, knights 2.0.2, nebula 0.1.5, nimbus 0.1.2, nite 2.0.2,
+  paladins 2.0.2, sorcerers 2.0.2, vega 0.1.5, volt 0.1.2). Cada repositório de tema agora cria a
+  tag `vX.Y.Z` sozinho quando a versão do `package.json` muda no `master`
+  (`.github/workflows/tag-release.yml`).
 - **Setting salva em `/admin` demorava até 5 min para valer nas outras instâncias** (cache por
   processo). Agora a invalidação é propagada via `platform.cache_versions` em até 5 s.
 - **Um INSERT por setting em toda página:** `registerDefaultSetting` vai ao banco uma vez por chave

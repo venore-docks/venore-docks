@@ -400,9 +400,15 @@ continua sendo a lista geral, derivada da leitura do código:
   `beginOperation`/`endOperation` no projeto ainda só gera log operacional, não auditoria — expandir
   a lista de ações que chamam `recordAuditEvent` é trabalho incremental, não builtin automático.
 - **Pendências da avaliação de 27/09/2026** (detalhe em `docs/melhorias-e-recursos.md`, seção
-  "Situação da implementação"): cache de página pública (layout depende da sessão), `db` ainda
-  exposto no SDK de plugin, lint de fronteira nos repositórios dos plugins, imagens otimizadas,
-  i18n, webhooks/tokens de API, consentimento de cookies e retenção de uploads anônimos.
+  "Situação da implementação"): cache de página pública (layout depende da sessão), lint de
+  fronteira nos repositórios dos plugins, imagens otimizadas, i18n, webhooks/tokens de API,
+  consentimento de cookies e retenção de uploads anônimos.
+- **`db` exposto no SDK de plugin — possibilidade futura, não urgente** (decisão de 2026-09-30).
+  Plugin guarda id de usuário como coluna simples (sem FK entre schemas) e lê dados de outro
+  domínio só pelo SDK/barrel de outro plugin; o `db` compartilhado permite, por erro, ler/escrever
+  fora do próprio schema. Isolar de verdade (um role Postgres por plugin, com GRANT só no schema
+  dele) custa um pool de conexão por plugin e provisionamento no Neon — só compensa se plugins de
+  terceiros passarem a ser aceitos. Até lá, a proteção é o lint de fronteira + revisão.
 - **Docs com trechos anteriores à saída dos plugins do core (2026-09-02) e à 0.6.0** (levantado
   em 2026-09-30, conferido contra o código):
   - `docs/implementation-roadmap.md` e `docs/issues.md` descrevem plugins (academy, birthdays,

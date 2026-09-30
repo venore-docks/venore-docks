@@ -87,7 +87,7 @@ Detalhe por item no [CHANGELOG](../CHANGELOG.md), seção `[0.6.0]`.
 | 13 | Feito | Import com limites antes de ler o corpo; export pelo storage, concorrência 4, falha por item. |
 | 14 | Feito | Registro pelo storage (P1) + tipo conferido pelos bytes + allowlist de push. |
 | 15 | Feito | Cache de papéis em `globalThis` com versão no banco (outras instâncias em até 5 s). |
-| 16 | Parcial | SDK com lista explícita (auth/rbac/media) e gate no despachante de admin. **Pendente:** `db` continua no SDK (os plugins têm schema próprio e usam `db` direto) e a regra de fronteira de lint nos repositórios dos plugins — são outros repositórios. |
+| 16 | Parcial | SDK com lista explícita (auth/rbac/media) e gate no despachante de admin. **Pendente:** regra de fronteira de lint nos repositórios dos plugins (outros repositórios). `db` no SDK fica como possibilidade futura, não urgente (2026-09-30): isolar exige um role Postgres por plugin, só compensa com plugins de terceiros — ver `AGENTS.md` §7. |
 | 17 | Feito | (no lote P1) |
 | 18 | Parcial | Paginação, índices, `unique(lower(email))`, pool com limites, blogroll sem N+1. **Pendente:** cache de página pública com `revalidateTag` — o layout depende da sessão (header/menu), exige separar a parte estática antes. |
 | 19 | Feito | Preview não migra sem `MIGRATE_ON_PREVIEW`; guia `docs/migrations-guia.md`. |
