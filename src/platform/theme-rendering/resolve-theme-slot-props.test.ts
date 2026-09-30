@@ -205,6 +205,36 @@ describe("resolveThemeSlotProps", () => {
     expect(props.footer.loginLinkHref).toBeNull();
   });
 
+  it("header.userbarEnabled is true for a logged-out visitor while nav.hideLoginLink is off", async () => {
+    getCurrentUser.mockResolvedValue({ success: true, data: null });
+
+    const props = await resolveThemeSlotProps(sidebarNavInput());
+
+    expect(props.header.userbarEnabled).toBe(true);
+  });
+
+  // Temas @venore/theme-* não leem showLoginLink — a userbar desligada é o que esconde "Entrar" neles.
+  it("header.userbarEnabled is false for a logged-out visitor when nav.hideLoginLink is on", async () => {
+    getCurrentUser.mockResolvedValue({ success: true, data: null });
+    getNavVisibility.mockResolvedValue({ hideLoginLink: true, showLoginInFooter: false });
+
+    const props = await resolveThemeSlotProps(sidebarNavInput());
+
+    expect(props.header.userbarEnabled).toBe(false);
+  });
+
+  it("header.userbarEnabled stays true for a logged-in user even with nav.hideLoginLink on", async () => {
+    getCurrentUser.mockResolvedValue({
+      success: true,
+      data: { id: "user-1", name: "Ada Lovelace", email: "ada@example.com", image: null },
+    });
+    getNavVisibility.mockResolvedValue({ hideLoginLink: true, showLoginInFooter: false });
+
+    const props = await resolveThemeSlotProps(sidebarNavInput());
+
+    expect(props.header.userbarEnabled).toBe(true);
+  });
+
   it("resolves sidebarLeft.navItems from the main-nav menu when navMode is main", async () => {
     getCurrentUser.mockResolvedValue({ success: true, data: null });
     getMenuByLocation.mockResolvedValue({

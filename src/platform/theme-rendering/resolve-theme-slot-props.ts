@@ -122,7 +122,11 @@ export async function resolveThemeSlotProps(sidebarNav: {
         logoUrl: brandConfig.logoUrl,
         scrolledLogoUrl: brandConfig.scrolledLogoUrl,
       },
-      userbarEnabled: THEME_SLOT_DEFAULTS.userbarEnabled,
+      // nav.hideLoginLink também desliga a userbar pro visitante deslogado: `showLoginLink` é
+      // extensão aditiva do contrato que só o venore-slime lê — os temas @venore/theme-* ignoram e
+      // seguiam mostrando "Entrar". Sem usuário, a userbar de todo tema só tem esse link, então
+      // `userbarEnabled=false` esconde exatamente ele; logado, a userbar (UserMenu) fica intacta.
+      userbarEnabled: THEME_SLOT_DEFAULTS.userbarEnabled && !(navVisibility.hideLoginLink && !user),
       stickyEnabled: headerBehavior.sticky,
       scrollShrinkEnabled: headerBehavior.scrollShrink,
       headerNavItems: [...THEME_SLOT_DEFAULTS.headerNavItems],
