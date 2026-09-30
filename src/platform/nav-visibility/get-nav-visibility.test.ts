@@ -15,13 +15,13 @@ describe("getNavVisibility", () => {
     registerDefaultSetting.mockReset().mockResolvedValue({ success: true, data: { registered: false } });
   });
 
-  it("lê as duas chaves sem o cache em memória por processo (skipCache)", async () => {
+  it("lê as duas chaves de contexts/settings", async () => {
     getSetting.mockResolvedValue({ success: true, data: null });
 
     await getNavVisibility();
 
-    expect(getSetting).toHaveBeenCalledWith({ key: "nav.hideLoginLink", skipCache: true });
-    expect(getSetting).toHaveBeenCalledWith({ key: "nav.showLoginInFooter", skipCache: true });
+    expect(getSetting).toHaveBeenCalledWith({ key: "nav.hideLoginLink" });
+    expect(getSetting).toHaveBeenCalledWith({ key: "nav.showLoginInFooter" });
   });
 
   it("devolve o valor salvo pelo admin", async () => {

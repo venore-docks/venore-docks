@@ -22,13 +22,9 @@ const DEFAULTS: NavVisibility = {
   showLoginInFooter: false,
 };
 
-// skipCache: lido pelo layout de toda rota (resolve-theme-slot-props) e a defasagem é visível na
-// hora — com o cache em memória POR PROCESSO, as instâncias que não atenderam o save continuavam
-// mostrando "Entrar" por até 5 min (mesmo motivo de `theme.active`, ver GetSettingQuery). Uma
-// chamada por request, então custa 1 SELECT indexado por chave.
 async function readBooleanSetting(key: string, defaultValue: boolean): Promise<boolean> {
   await registerDefaultSetting({ key, value: defaultValue });
-  const result = await getSetting({ key, skipCache: true });
+  const result = await getSetting({ key });
   if (!result.success) return defaultValue;
   const record = result.data;
   if (!record || typeof record.value !== "boolean") return defaultValue;

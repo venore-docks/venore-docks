@@ -1,4 +1,5 @@
 import { getCache, setCache } from "../../../../infrastructure/cache/memory-cache";
+import { syncSettingsCacheVersion } from "../../settings-cache-version";
 import { findSettingByKey } from "./store";
 import type { GetSettingQuery, GetSettingResult } from "./types";
 import type { SettingRecord } from "../../contracts/types";
@@ -18,6 +19,9 @@ export async function getSetting(query: GetSettingQuery): Promise<GetSettingResu
   if (query.skipCache) {
     return { success: true, data: await findSettingByKey(query.key) };
   }
+
+  // Descarta o cache local se outra instância gravou alguma setting (settings-cache-version.ts).
+  await syncSettingsCacheVersion();
 
   const cacheKey = cacheKeyFor(query.key);
   const cached = getCache<CachedSetting>(cacheKey);
