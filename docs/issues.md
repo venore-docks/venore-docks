@@ -25,7 +25,12 @@ de fora, e (quando aplicável) de que depende para ser retomado.
   original tinha). Vale essa ressalva antes de priorizar a implementação.
   Detalhado em `docs/plugins/birthdays-port.md`, seção 3 (G1).
 
-- **G5 — `settings.manage` como permission global única pra escrever qualquer setting.**
+- **G5 — RESOLVIDO (2026-09-30).** Setting fora dos namespaces do core
+  (`CORE_SETTING_NAMESPACES`, `src/contexts/settings/contracts/types.ts`) aceita `settings.manage`
+  **ou** `<namespace>.settings.manage` (`permissionsToWriteSetting`, usado em
+  `set-setting/handler.ts`). O plugin que quiser isso declara `<plugin>.settings.manage` no
+  manifesto e concede a quem administra o plugin. Registro original abaixo.
+- ~~**G5 — `settings.manage` como permission global única pra escrever qualquer setting.**~~
   `setSetting` (`src/contexts/settings/features/set-setting/handler.ts`) autoriza só com
   `authorizeActor("settings.manage")` — não há escopo por namespace de chave. Um ator com
   `birthdays.manage` mas sem `settings.manage` não consegue salvar a paleta de aparência do
