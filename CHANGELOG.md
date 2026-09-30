@@ -14,6 +14,47 @@ atualização" em `VENORE-DOCKS.md`).
 
 ## [Unreleased]
 
+**Ao atualizar uma instância:** nada obrigatório. Opcional: escolher o papel padrão de novas
+contas em `/admin/settings` (sem escolha, continua valendo `RBAC_DEFAULT_REGISTRATION_ROLE_KEY` ou
+`member`) e criar um menu de location "Cabeçalho (header)" em `/admin/cms/menus`.
+
+### Added
+
+- **Bloco Markdown** (`core.content.markdown`, GFM: tabelas, listas de tarefa, tachado). HTML cru
+  vira texto e links `javascript:` são neutralizados.
+- **Papel padrão de novas contas em `/admin/settings`** (setting `auth.registration_default_role`).
+  Só aparece para quem gerencia papéis, e só oferece papéis que a pessoa poderia conceder.
+- **Navegação do cabeçalho** vem do menu de location `header` do CMS (antes era sempre vazia).
+- **Permission por namespace para settings de plugin (G5):** uma setting `<plugin>.*` também pode
+  ser gravada com `<plugin>.settings.manage`, se o plugin declarar essa permission.
+
+### Fixed
+
+- **"Esconder o link de Entrar" funcionava só no Venore Slime.** O core também desliga a userbar
+  do visitante deslogado (todos os temas respeitam), tira "Entrar" dos menus de exemplo (sidebar e
+  rodapé sem menu configurado) e os 13 temas `@venore/theme-*` ganharam suporte a
+  `showLoginLink`/`loginLinkHref` (versões novas nos repositórios dos temas; as tags ainda precisam
+  ser publicadas antes do bump neste `package.json`).
+- **Setting salva em `/admin` demorava até 5 min para valer nas outras instâncias** (cache por
+  processo). Agora a invalidação é propagada via `platform.cache_versions` em até 5 s.
+- **Um INSERT por setting em toda página:** `registerDefaultSetting` vai ao banco uma vez por chave
+  por processo.
+- **Desinstalar plugin com limpeza de banco deixava as settings apagadas no cache.**
+- **Aprovar cadastro com papel padrão inexistente deixava a conta aprovada sem papel** — o papel é
+  resolvido antes da aprovação. `superadmin` nunca é aceito como papel padrão.
+
+### Security
+
+- `dompurify` 3.4.16, `undici` 6.29.0/7.30.0 (alerta alto, via `@vercel/blob`), `ip-address`
+  10.7.2 e `vitest` 4.1.11. Resta o `esbuild` antigo do `@esbuild-kit` (via `drizzle-kit`), que só
+  afeta o dev server do esbuild — não usado.
+
+### Docs
+
+- `AGENTS.md`, `docs/venore-docks.md`, `docs/issues.md`, roadmap, `docs/media/*` e o plano de temas
+  alinhados ao código (plugins fora do core, migrations de plugin no build, SVG e auth por asset na
+  mídia). Situação por bloco em `docs/page-builder-blocos-planejados.md`.
+
 ## [0.6.0] - 2026-09-27
 
 Avaliação do core (`docs/melhorias-e-recursos.md`): correções de segurança P0–P3 e os recursos que

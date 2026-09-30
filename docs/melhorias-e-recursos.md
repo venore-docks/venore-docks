@@ -108,7 +108,7 @@ Detalhe por item no [CHANGELOG](../CHANGELOG.md), seção `[0.6.0]`.
 | SEO do CMS | Feito | Metadata, canonical, Open Graph, sitemap, robots, RSS. |
 | Busca pública | Feito | `/busca` com Postgres FTS. |
 | Formulário de contato | Feito | Bloco com e-mail, honeypot, rate limit e Turnstile opcional. |
-| Blocos planejados | Feito, menos Markdown | Vídeo/incorporação, Tabela, Arquivo, FAQ, Código, Números, Linha do tempo. Markdown exige um parser/sanitizador novo. |
+| Blocos planejados | Feito | Vídeo/incorporação, Tabela, Arquivo, FAQ, Código, Números, Linha do tempo e (2026-09-30) Markdown com GFM — situação por bloco em `docs/page-builder-blocos-planejados.md`. |
 | LGPD self-service | Parcial | Exportar e excluir a própria conta. **Pendente:** consentimento de cookies (o core não usa cookies de rastreamento hoje) e retenção automática de uploads anônimos (os arquivos pertencem a plugins, ex: currículos do `vagas`). |
 | Tarefas agendadas para plugins | Feito | `scheduledJobs` no `contributions.ts` (P1). |
 | Observabilidade externa | Feito | `/api/health`, `onRequestError` → diagnóstico + `ERROR_WEBHOOK_URL`. |

@@ -418,8 +418,6 @@ continua sendo a lista geral, derivada da leitura do código:
     externo). [NÃO VERIFICADO] onde cada instância configura isso hoje.
   - `docs/themes/temas-como-pacotes-plano.md` (status "não iniciado", 7 temas) descreve estado
     anterior ao atual — os temas extras já são pacotes `@venore/theme-*` (seção 3).
-  - `docs/page-builder-blocos-planejados.md` lista os blocos planejados sem marcar quais já
-    existem (33 em `src/platform/page-builder/blocks/`).
   - `docs/melhorias-e-recursos.md` pede scrypt N=2^17; o implementado é N=2^15
     (`password-hashing.ts`, CHANGELOG 0.6.0).
 - **Estratégia de teste por camada não documentada** além do que a seção 5/6 deste arquivo já
