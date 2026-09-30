@@ -30,6 +30,7 @@ import { tableBlockDefinition } from "./blocks/table";
 import { fileBlockDefinition } from "./blocks/file";
 import { faqBlockDefinition } from "./blocks/faq";
 import { codeBlockDefinition } from "./blocks/code";
+import { markdownBlockDefinition } from "./blocks/markdown";
 import { statsBlockDefinition } from "./blocks/stats";
 import { timelineBlockDefinition } from "./blocks/timeline";
 import { contactFormBlockDefinition } from "./blocks/contact-form";
@@ -56,6 +57,7 @@ const CORE_LEAF_BLOCKS: BlockDefinition[] = [
   fileBlockDefinition,
   faqBlockDefinition,
   codeBlockDefinition,
+  markdownBlockDefinition,
   statsBlockDefinition,
   timelineBlockDefinition,
   contactFormBlockDefinition,

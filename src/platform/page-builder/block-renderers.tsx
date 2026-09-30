@@ -1,6 +1,8 @@
 import "server-only";
 import type { ReactNode } from "react";
 import Link from "next/link";
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { hasRichTextContent, renderRichTextContent, RICH_TEXT_INLINE_CLASSES } from "./rich-text/render";
 import type { LucideIcon } from "lucide-react";
 import type { Block, Composition } from "@/contexts/cms";
@@ -940,6 +942,29 @@ function CodeBlock({ block }: BlockRendererProps) {
   );
 }
 
+// Mesma base do RICHTEXT_CLASSES + o que o Markdown produz e o editor visual não (tabela GFM,
+// bloco de código, imagem, régua, lista de tarefa).
+const MARKDOWN_CLASSES = cn(
+  RICHTEXT_CLASSES,
+  "[&_code]:rounded-sm [&_code]:bg-muted [&_code]:px-1 [&_code]:text-sm",
+  "[&_pre]:overflow-x-auto [&_pre]:rounded-panel [&_pre]:border [&_pre]:border-border [&_pre]:bg-muted [&_pre]:p-4 [&_pre_code]:bg-transparent [&_pre_code]:p-0",
+  "[&_table]:w-full [&_table]:text-sm [&_th]:border-b [&_th]:border-border [&_th]:py-2 [&_th]:text-left [&_th]:font-semibold [&_td]:border-b [&_td]:border-border [&_td]:py-2",
+  "[&_img]:max-w-full [&_img]:rounded-panel [&_hr]:border-border [&_del]:text-muted-foreground",
+  "[&_li:has(input)]:list-none [&_input]:mr-2",
+);
+
+// react-markdown não renderiza HTML cru (sem rehype-raw) e o urlTransform padrão neutraliza
+// `javascript:`/`data:` em links e imagens — nenhum caminho de XSS a partir do texto do editor.
+function MarkdownBlock({ block }: BlockRendererProps) {
+  const source = readString(block.data, "source");
+  if (!source.trim()) return null;
+  return (
+    <div className={MARKDOWN_CLASSES}>
+      <Markdown remarkPlugins={[remarkGfm]}>{source}</Markdown>
+    </div>
+  );
+}
+
 const STATS_COLUMN_CLASSES: Record<string, string> = {
   "2": "sm:grid-cols-2",
   "3": "sm:grid-cols-2 lg:grid-cols-3",
@@ -1037,6 +1062,7 @@ const CORE_BLOCK_RENDERERS: Record<string, BlockRendererComponent> = {
   "core.content.file": FileBlock,
   "core.content.faq": FaqBlock,
   "core.content.code": CodeBlock,
+  "core.content.markdown": MarkdownBlock,
   "core.content.stats": StatsBlock,
   "core.content.timeline": TimelineBlock,
   [CONTACT_FORM_BLOCK_KEY]: ContactFormBlock,
