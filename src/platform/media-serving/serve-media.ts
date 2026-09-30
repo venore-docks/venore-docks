@@ -34,6 +34,8 @@ export async function serveMediaResponse(
   lookup: { id?: string; pathname?: string },
 ): Promise<Response> {
   const url = new URL(request.url);
+  const rawWidth = Number(url.searchParams.get("w"));
+  const width = Number.isInteger(rawWidth) && rawWidth > 0 ? rawWidth : null;
   const parsedRange = parseRangeHeader(request.headers.get("range"));
 
   // Primeira leitura sem range quando o pedido depende do tamanho (sufixo/fim aberto).
@@ -45,6 +47,7 @@ export async function serveMediaResponse(
     exp: url.searchParams.get("exp"),
     sig: url.searchParams.get("sig"),
     range: exactRange,
+    width,
   });
   if (!result.success) {
     return Response.json({ error: "Arquivo não encontrado." }, { status: 404 });
@@ -56,7 +59,7 @@ export async function serveMediaResponse(
     if (!range) {
       return new Response(null, { status: 416, headers: { "Content-Range": `bytes */${result.data.size}` } });
     }
-    result = await readMediaAsset({ ...lookup, exp: url.searchParams.get("exp"), sig: url.searchParams.get("sig"), range });
+    result = await readMediaAsset({ ...lookup, exp: url.searchParams.get("exp"), sig: url.searchParams.get("sig"), range, width });
     if (!result.success) return Response.json({ error: "Arquivo não encontrado." }, { status: 404 });
   }
 

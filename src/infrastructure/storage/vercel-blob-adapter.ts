@@ -30,6 +30,7 @@ export class VercelBlobAdapter implements StoragePort {
       access: blobAccess(),
       contentType: input.contentType,
       addRandomSuffix: false,
+      allowOverwrite: input.allowOverwrite ?? false,
     });
     return { key: blob.pathname, url: blob.url, size: input.data.byteLength };
   }

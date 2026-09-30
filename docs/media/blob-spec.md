@@ -400,6 +400,29 @@ Se `registerUploadedMedia` só fosse chamado dentro de `onUploadCompleted`, o re
 
 ---
 
+## 10. Variantes de imagem (2026-09-30)
+
+Upload de `image/jpeg|png|webp` gera cópias WebP redimensionadas (`contexts/media/image-variants.ts`),
+gravadas em `media.asset_variants` (uma linha por largura, `pathname` próprio no storage —
+`Imagens/<uuid>-foto.w480.webp`). O original em `media.assets` não muda.
+
+- **Larguras:** 160 / 480 / 960 / 1920 abaixo da largura do original, mais a própria largura
+  (limitada a 1920). Nunca amplia. Qualidade 82 (foto) / 90 (PNG de origem), alpha sem perda,
+  orientação EXIF aplicada. GIF (animado) e SVG (vetor) não geram variante.
+- **Quando:** logo depois de gravar o asset, nos 3 uploads server-buffered (bytes em memória) e no
+  `registerUploadedMedia` do upload direto (lê o original do storage uma vez). Falha nunca
+  derruba o upload: o asset segue servindo o original e `variants_processed_at` fica nulo.
+- **Backfill:** `backfillAssetVariants` (botão "Otimizar imagens antigas" em `/admin/media`,
+  `media.manage`) processa em lotes de até 20 os assets com `variants_processed_at` nulo.
+- **URL:** calculada na leitura, com a mesma regra do original — público + storage servível = URL
+  direta; senão `/api/media/asset/<id>?w=<largura>` (autorização do asset). Por isso trocar a
+  visibilidade vale pras variantes sem regravar nada.
+- **Escolha:** `pickMediaVariantUrl(asset, larguraCss)` pega a menor variante ≥ 2× a largura;
+  `buildMediaSrcSet(asset)` monta o `srcset`; `getMediaAssetUrls({ ids, displayWidth })` faz o
+  mesmo em lote. Sem variante (não é imagem, backfill pendente) = original.
+- **Ciclo de vida:** purge remove os objetos das variantes antes do hard delete (as linhas caem
+  por cascade); `reconcileOrphanUploads` inclui os pathnames de variante no conjunto conhecido.
+
 ## Resumo do que falta para implementar (fora desta sessão)
 
 1. Resolver os dois pré-requisitos da Seção 0.

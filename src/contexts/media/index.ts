@@ -91,6 +91,12 @@ export { requestMediaUploadTicketHandler as requestMediaUploadTicket } from "./f
 // duplicar a regra (blob-spec seção 5, "checado duas vezes").
 export { validateMediaUploadCandidate, assertTypeAllowedForDirectUpload } from "./features/assets/request-media-upload-ticket/service";
 export { confirmMediaUploadHandler as confirmMediaUpload } from "./features/assets/register-uploaded-media/handler";
+// Cópias redimensionadas de imagem (image-variants.ts): gera as que faltam pros uploads antigos,
+// um lote por chamada (botão em /admin/media). Upload novo já gera sozinho.
+export { backfillAssetVariantsHandler as backfillAssetVariants } from "./features/assets/backfill-asset-variants/handler";
+export type { BackfillAssetVariantsResult } from "./features/assets/backfill-asset-variants/types";
+// Escolha de qual cópia exibir — puro, sem banco.
+export { pickMediaVariantUrl, buildMediaSrcSet } from "./variant-selection";
 export { registerUploadedMediaHandler as registerUploadedMediaForTrustedActor } from "./features/assets/register-uploaded-media/handler";
 
 // Import só pelo efeito colateral: dispara o auto-start da varredura de reconciliação de upload
@@ -103,7 +109,14 @@ export { reconcileOrphanUploads } from "./reconciliation";
 export { mediaAdminNavigationItems } from "./admin-navigation";
 export { mediaBreadcrumbSegments, getCachedMedia } from "./breadcrumbs";
 
-export type { MediaAsset, MediaAssetCategory, MediaAllowedTypeRule, MediaCategory, MediaVisibility } from "./contracts/types";
+export type {
+  MediaAsset,
+  MediaAssetCategory,
+  MediaAssetVariant,
+  MediaAllowedTypeRule,
+  MediaCategory,
+  MediaVisibility,
+} from "./contracts/types";
 export { MEDIA_ALLOWED_TYPES, AVATAR_MAX_SIZE_BYTES } from "./contracts/types";
 
 export type { UploadMediaAssetInput, UploadMediaAssetResult } from "./features/assets/upload-media-asset/types";

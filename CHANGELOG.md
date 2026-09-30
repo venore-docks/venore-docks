@@ -16,9 +16,21 @@ atualização" em `VENORE-DOCKS.md`).
 
 **Ao atualizar uma instância:** nada obrigatório. Opcional: escolher o papel padrão de novas
 contas em `/admin/settings` (sem escolha, continua valendo `RBAC_DEFAULT_REGISTRATION_ROLE_KEY` ou
-`member`) e criar um menu de location "Cabeçalho (header)" em `/admin/cms/menus`.
+`member`) e criar um menu de location "Cabeçalho (header)" em `/admin/cms/menus`. Depois do
+deploy, clicar em **"Otimizar imagens antigas"** em `/admin/media` pra gerar as cópias
+redimensionadas das imagens já enviadas (migration `0053` roda sozinha no build).
 
 ### Added
+
+- **Variantes de imagem no MMS** (`media.asset_variants`, `contexts/media/image-variants.ts`):
+  todo upload de JPEG/PNG/WebP gera cópias WebP em 160/480/960/1920 px (nunca ampliando) e grava
+  as dimensões reais do original. O original não muda. `getMediaAsset`/`listMediaAssets` trazem
+  `variants`; `pickMediaVariantUrl(asset, larguraNaTela)`, `buildMediaSrcSet(asset)` e
+  `getMediaAssetUrls({ ids, displayWidth })` escolhem a cópia (também no
+  `@venore/plugin-sdk/media`). Asset não público serve a variante por
+  `/api/media/asset/<id>?w=<largura>`. Purge apaga as variantes e a reconciliação de órfãos não
+  as trata como órfãs. Motivo: fotos de 2–8 MB eram servidas cruas em avatar/card, e a cota de
+  transferência do Blob no Hobby estourava.
 
 - **Cron pelo GitHub Actions** (`.github/workflows/cron.yml`): chama `/api/cron/tick` de cada
   instância a cada 5 min — o plano Hobby da Vercel só permite cron diário. Configure o secret

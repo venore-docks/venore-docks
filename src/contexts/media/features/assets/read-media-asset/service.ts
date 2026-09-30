@@ -1,7 +1,7 @@
 import { storagePort } from "@/infrastructure/storage";
 import { verifyMediaSignature } from "../../../asset-url";
 import type { MediaActorScope } from "../../../resolve-media-actor-scope";
-import { findServableAsset } from "./store";
+import { findServableAsset, findVariantPathname } from "./store";
 import type { ReadMediaAssetQuery, ReadMediaAssetResult } from "./types";
 
 const NOT_FOUND: ReadMediaAssetResult = {
@@ -21,7 +21,8 @@ export async function readMediaAsset(query: ReadMediaAssetQuery, scope: MediaAct
     (scope !== null && (scope.isMediaAdmin || (asset.uploadedBy !== null && asset.uploadedBy === scope.actorId)));
   if (!allowed) return NOT_FOUND;
 
-  const object = await storagePort.read(asset.pathname, query.range ?? null);
+  const variantPathname = query.width ? await findVariantPathname(asset.id, query.width) : null;
+  const object = await storagePort.read(variantPathname ?? asset.pathname, query.range ?? null);
   if (!object) return NOT_FOUND;
 
   return { success: true, data: { ...object, visibility: asset.visibility } };

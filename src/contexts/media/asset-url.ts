@@ -43,3 +43,16 @@ export function verifyMediaSignature(id: string, exp: string | null, sig: string
   const received = Buffer.from(sig);
   return expected.length === received.length && timingSafeEqual(expected, received);
 }
+
+// URL de uma variante (image-variants.ts) — mesma regra do original: público + storage servível =
+// URL direta do storage; senão, a rota autorizada com ?w= (serve-media escolhe a variante, e a
+// autorização continua sendo a do asset).
+export function resolveAssetVariantUrl(
+  asset: { id: string; visibility: MediaVisibility },
+  variant: { pathname: string; width: number },
+): string {
+  if (asset.visibility === "public" && storagePort.servesPublicly()) {
+    return storagePort.resolveUrl(variant.pathname);
+  }
+  return `${MEDIA_ASSET_ROUTE}/${asset.id}?w=${variant.width}`;
+}

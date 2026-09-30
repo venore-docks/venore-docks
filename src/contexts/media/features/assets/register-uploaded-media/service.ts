@@ -1,6 +1,8 @@
 import { storagePort } from "@/infrastructure/storage";
 import { beginOperation, endOperation } from "@/observability";
 import { resolveAssetUrl } from "../../../asset-url";
+import { attachAssetVariantsToOne } from "../../../shared/attach-asset-variants";
+import { generateAssetVariants } from "../generate-asset-variants/service";
 import { CONTENT_MISMATCH_ERROR, SNIFF_BYTES, contentMatchesDeclaredType } from "../../../content-sniffing";
 import { assertTypeAllowedForDirectUpload, validateMediaUploadCandidate } from "../request-media-upload-ticket/service";
 import { findActiveAssetByChecksum, findAssetByPathname, insertAssetIfAbsent } from "./store";
@@ -87,8 +89,12 @@ export async function registerUploadedMedia(command: RegisterUploadedMediaComman
   });
 
   if (inserted) {
+    // Upload direto: os bytes nunca passaram pelo servidor, então a geração lê o original do
+    // storage uma vez. Só aqui (linha recém-criada) — as chamadas repetidas (webhook depois da
+    // confirmação) saem cedo acima, sem gerar de novo. Falha não derruba o registro.
+    await generateAssetVariants({ assetId: inserted.id });
     endOperation(handle, { success: true });
-    return { success: true, data: inserted };
+    return { success: true, data: (await attachAssetVariantsToOne(inserted)) ?? inserted };
   }
 
   // Corrida: outra chamada concorrente inseriu entre o select e o insert. onConflictDoNothing

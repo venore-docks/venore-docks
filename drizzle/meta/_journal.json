@@ -372,6 +372,13 @@
       "when": 1790495289034,
       "tag": "0052_invitations",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1790811920079,
+      "tag": "0053_media_asset_variants",
+      "breakpoints": true
     }
   ]
 }

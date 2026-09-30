@@ -1,5 +1,6 @@
 import { getCache, setCache } from "@/infrastructure/cache/memory-cache";
 import { findAllAssets } from "./store";
+import { attachAssetVariants } from "../../../shared/attach-asset-variants";
 import type { MediaAsset } from "../../../contracts/types";
 import type { MediaActorScope } from "../../../resolve-media-actor-scope";
 import type { ListMediaAssetsQuery, ListMediaAssetsResult } from "./types";
@@ -24,7 +25,7 @@ export async function listMediaAssets(scope: MediaActorScope, query: ListMediaAs
   }
 
   const page = query.limit === undefined ? undefined : { limit: query.limit, offset: query.offset ?? 0 };
-  const media = await findAllAssets(scope, query.categoryId, page);
+  const media = await attachAssetVariants(await findAllAssets(scope, query.categoryId, page));
   setCache(cacheKey, media, MEDIA_LIST_CACHE_TTL_SECONDS);
 
   return { success: true, data: media };
