@@ -426,6 +426,9 @@ continua sendo a lista geral, derivada da leitura do código:
     anterior ao atual — os temas extras já são pacotes `@venore/theme-*` (seção 3).
   - `docs/melhorias-e-recursos.md` pede scrypt N=2^17; o implementado é N=2^15
     (`password-hashing.ts`, CHANGELOG 0.6.0).
+- **Feed de notícias entre sites (`contexts/content-feed`) não funciona ponta a ponta**: sem sync
+  automático, sem exibição no assinante, sem propagar despublicação, cursor no relógio do
+  assinante. Plano em `docs/content-feed-implementacao.md` (2026-10-01), não iniciado.
 - **Estratégia de teste por camada não documentada** além do que a seção 5/6 deste arquivo já
   descreve — o documento de arquitetura lista isso como não coberto.
 - **Plugin `birthdays` — escopo de `settings.manage`, impressão/identidade visual e importação
