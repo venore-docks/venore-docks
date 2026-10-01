@@ -1,5 +1,6 @@
 import { invalidateCacheByPrefix } from "@/infrastructure/cache/memory-cache";
 import { beginOperation, endOperation } from "@/observability";
+import { normalizePathPrefix } from "@/shared/normalize-path-prefix";
 import { findMenuByKey, findMenuByLocation, findMenuByScopePath, insertMenu } from "./store";
 import type { CreateMenuCommand, CreateMenuResult } from "./types";
 
@@ -20,7 +21,10 @@ export async function createMenu(command: CreateMenuCommand): Promise<CreateMenu
   let scopePath: string | null = null;
 
   if (command.location === "contextual") {
-    scopePath = command.scopePath?.trim() || "";
+    // B2: grava sempre na forma canônica (decodificada, NFC, minúscula, "/" inicial, sem "/" final)
+    // — "/RH/", "rh" e "/rh" viram o mesmo escopo, e a checagem de duplicidade enxerga isso.
+    const raw = command.scopePath?.trim() || "";
+    scopePath = raw ? normalizePathPrefix(raw) : "";
     if (!scopePath) {
       const error = {
         code: "cms.menus.scope_path_required",

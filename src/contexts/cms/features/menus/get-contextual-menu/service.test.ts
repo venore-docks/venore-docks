@@ -60,6 +60,35 @@ describe("findLongestScopeMatch", () => {
   });
 });
 
+describe("findLongestScopeMatch normalization (B2)", () => {
+  it.each([
+    ["/rh/", "/rh"],
+    ["rh", "/rh"],
+    ["/RH", "/rh"],
+    ["/rh", "/RH/"],
+    ["/notícias", "/not%C3%ADcias"],
+    ["/not%C3%ADcias", "/notícias/post"],
+    ["/Notícias", "/not%C3%ADcias"],
+  ])("scopePath %j matches pathname %j", async (scopePath, pathname) => {
+    const { findLongestScopeMatch } = await import("./service");
+    expect(findLongestScopeMatch([{ id: "m", scopePath }], pathname)?.id).toBe("m");
+  });
+
+  it("still respects segment boundaries after normalization", async () => {
+    const { findLongestScopeMatch } = await import("./service");
+    expect(findLongestScopeMatch([{ id: "m", scopePath: "/rh/" }], "/rhx")).toBeUndefined();
+  });
+
+  it("ranks by normalized length (a trailing slash does not make a scope longer)", async () => {
+    const { findLongestScopeMatch } = await import("./service");
+    const candidates = [
+      { id: "short", scopePath: "/academy////" },
+      { id: "long", scopePath: "/academy/c" },
+    ];
+    expect(findLongestScopeMatch(candidates, "/academy/c/1")?.id).toBe("long");
+  });
+});
+
 describe("getContextualMenu", () => {
   beforeEach(async () => {
     findContextualMenus.mockReset();

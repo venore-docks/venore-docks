@@ -32,6 +32,15 @@ export type PluginPageRouteEntry = {
   generateMetadata?: PluginMetadataGenerator;
 };
 
+// Entrada da área "sidebarContextual" (coluna contextual). Além do Component, pode declarar
+// `isEmpty(params)`: o core chama antes de decidir a barra contextual (spec v8 §7.5 / B6) — se
+// devolver true, a rota NÃO conta como conteúdo de plugin e o core cai pro menu contextual do CMS
+// (ou pra nenhuma barra). Plugin cujo Component pode renderizar null deve declarar isEmpty; sem
+// ele, o core não tem como saber e a coluna fica vazia (Known Gap documentado).
+export type PluginSidebarContextualRouteEntry = PluginPageRouteEntry & {
+  isEmpty?: (params: PluginRouteParams) => Promise<boolean>;
+};
+
 export type PluginApiMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 // Assinatura idêntica a um handler nomeado (GET/POST/...) de route.ts.
@@ -65,7 +74,7 @@ export type PluginRouteTable = {
   public?: PluginPageRouteEntry[];
   api?: PluginApiRouteEntry[];
   standalone?: PluginPageRouteEntry[];
-  sidebarContextual?: PluginPageRouteEntry[];
+  sidebarContextual?: PluginSidebarContextualRouteEntry[];
 };
 
 // Cada page.tsx/route.ts real declara seu próprio shape de `params` (ex: `{ id: string }`,
