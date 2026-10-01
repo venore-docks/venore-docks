@@ -85,6 +85,14 @@ export const pluginManifestSchema = z
     // propósito, mesmo racional de `permissions`: auditável no manifesto, nunca decidido em
     // runtime por string solta vinda de quem chama.
     anonymousUploadCategories: z.array(z.string().min(1)).optional(),
+    // Categorias reservadas do PRÓPRIO plugin cujos arquivos são dado sensível (ex: currículos em
+    // vagas): nascem "restricted" e só são lidos por superadmin, pelo dono ou por quem tem
+    // `accessPermission` — media.manage sozinho não vê. Também vale retroativamente: o prebuild e o
+    // db:update aplicam a regra aos arquivos que já estão na categoria
+    // (platform/media-lifecycle/apply-restricted-upload-categories.ts).
+    restrictedUploadCategories: z
+      .array(z.object({ key: z.string().min(1), accessPermission: z.string().min(1) }))
+      .optional(),
   })
   .superRefine((manifest, ctx) => {
     // Namespace de permission (docs/venore-docks.md — "Modelo de RBAC": "<plugin>.<recurso>.<acao>")
@@ -95,6 +103,24 @@ export const pluginManifestSchema = z
           code: "custom",
           path: ["permissions"],
           message: `Permission "${permission.key}" precisa começar com o namespace "${manifest.key}.".`,
+        });
+      }
+    }
+    // Categoria restrita só do próprio plugin, e liberada só por uma permission que ele mesmo declara.
+    const declared = new Set((manifest.permissions ?? []).map((permission) => permission.key));
+    for (const category of manifest.restrictedUploadCategories ?? []) {
+      if (!category.key.startsWith(`${manifest.key}.`)) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["restrictedUploadCategories"],
+          message: `Categoria restrita "${category.key}" precisa começar com o namespace "${manifest.key}.".`,
+        });
+      }
+      if (!declared.has(category.accessPermission)) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["restrictedUploadCategories"],
+          message: `A permission "${category.accessPermission}" da categoria "${category.key}" precisa estar em manifest.permissions.`,
         });
       }
     }

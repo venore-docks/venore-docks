@@ -95,4 +95,36 @@ describe("validateManifest", () => {
       expect(result.key).toBe("unknown");
     }
   });
+
+  describe("restrictedUploadCategories", () => {
+    const base = {
+      ...validManifest,
+      key: "vagas",
+      permissions: [{ key: "vagas.applications.review", label: "Ver currículos" }],
+    };
+
+    it("aceita categoria e permission do próprio plugin", () => {
+      const result = validateManifest({
+        ...base,
+        restrictedUploadCategories: [{ key: "vagas.applications", accessPermission: "vagas.applications.review" }],
+      });
+      expect(result.valid).toBe(true);
+    });
+
+    it("recusa categoria fora do namespace do plugin", () => {
+      const result = validateManifest({
+        ...base,
+        restrictedUploadCategories: [{ key: "avatars", accessPermission: "vagas.applications.review" }],
+      });
+      expect(result.valid).toBe(false);
+    });
+
+    it("recusa permission que o plugin não declara (ex: do core)", () => {
+      const result = validateManifest({
+        ...base,
+        restrictedUploadCategories: [{ key: "vagas.applications", accessPermission: "media.manage" }],
+      });
+      expect(result.valid).toBe(false);
+    });
+  });
 });

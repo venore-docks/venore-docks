@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull, or } from "drizzle-orm";
+import { and, desc, eq, isNull, ne, or } from "drizzle-orm";
 import { db } from "@/infrastructure/database/client";
 import { assets } from "../../../database/schema";
 import type { MediaAsset } from "../../../contracts/types";
@@ -10,9 +10,14 @@ export async function findAllAssets(
   page?: { limit: number; offset: number },
 ): Promise<MediaAsset[]> {
   const notDeleted = isNull(assets.deletedAt);
-  const visibilityFilter = scope.isMediaAdmin
+  // Biblioteca/picker: arquivo "restricted" (currículo etc.) só aparece pro superadmin e pro dono —
+  // nunca pra media.manage (shared/can-read-asset.ts). Quem tem a permission do asset o vê na tela
+  // do próprio plugin, não na biblioteca geral.
+  const visibilityFilter = scope.isSuperadmin
     ? notDeleted
-    : and(notDeleted, or(eq(assets.visibility, "public"), eq(assets.uploadedBy, scope.actorId)));
+    : scope.isMediaAdmin
+      ? and(notDeleted, or(ne(assets.visibility, "restricted"), eq(assets.uploadedBy, scope.actorId)))
+      : and(notDeleted, or(eq(assets.visibility, "public"), eq(assets.uploadedBy, scope.actorId)));
 
   const filter = categoryId ? and(visibilityFilter, eq(assets.categoryId, categoryId)) : visibilityFilter;
 

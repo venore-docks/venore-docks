@@ -24,8 +24,17 @@ export type UploadTicket = {
   key: string;
   uploadUrl: string;
   token: string;
+  // Campos de formulário do presigned POST (driver "s3") — o browser manda um multipart com estes
+  // campos + o arquivo pra `uploadUrl`. Ausente nos outros drivers.
+  fields?: Record<string, string>;
   expiresAt: Date;
 };
+
+// Como o browser sobe arquivo grande direto pro storage:
+// - "vercel-blob": cliente do @vercel/blob (upload() + /api/media/upload);
+// - "presigned-post": POST multipart pra uploadUrl com os `fields` do ticket (S3 e compatíveis);
+// - "unsupported": só upload server-buffered (filesystem).
+export type DirectUploadKind = "vercel-blob" | "presigned-post" | "unsupported";
 
 export type RemoteObjectSummary = {
   key: string;
@@ -60,6 +69,9 @@ export interface StoragePort {
    * necessária para arquivos que excedem o limite de body de uma function.
    */
   createUploadTicket(input: UploadTicketInput): Promise<UploadTicket>;
+
+  /** Mecanismo de upload direto do browser que este driver suporta (ver DirectUploadKind). */
+  directUploadKind(): DirectUploadKind;
 
   /**
    * Lista objetos existentes no storage, para reconciliação (blob-spec seção 8) — nunca usado

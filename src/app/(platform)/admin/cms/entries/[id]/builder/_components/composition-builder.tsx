@@ -231,7 +231,11 @@ export function CompositionBuilder({
                 block={selectedBlock}
                 onChange={(htmlId) => mutate(updateBlockHtmlId(composition, selectedBlock.id, htmlId))}
               />
+              {/* key: trocar de bloco recria o painel. Sem ela o React reaproveitava o mesmo
+                  RichTextField (Tiptap só lê `content` ao montar) e o texto digitado no bloco B
+                  era gravado com o conteúdo que ainda aparecia do bloco A. */}
               <SelectedBlockFieldPanel
+                key={selectedBlock.id}
                 block={selectedBlock}
                 definition={selectedDefinition}
                 errorMessage={saveError?.blockId === selectedBlock.id ? saveError.message : null}

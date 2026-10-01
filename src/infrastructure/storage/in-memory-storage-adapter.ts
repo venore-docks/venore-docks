@@ -1,4 +1,5 @@
 import type {
+  DirectUploadKind,
   ByteRange,
   RemoteObjectSummary,
   StoredObjectBody,
@@ -23,7 +24,7 @@ export class InMemoryStorageAdapter implements StoragePort {
     // falha alto, a menos que "local" tenha sido escolhido explicitamente.
     if (process.env.NODE_ENV === "production" && process.env.MEDIA_STORAGE_DRIVER !== "local") {
       throw new Error(
-        'Nenhum storage de mídia configurado: defina MEDIA_STORAGE_DRIVER ("vercel-blob" ou "filesystem"). ' +
+        'Nenhum storage de mídia configurado: defina MEDIA_STORAGE_DRIVER ("vercel-blob", "s3" ou "filesystem"). ' +
           'O driver em memória perde os arquivos a cada reinício.',
       );
     }
@@ -37,6 +38,11 @@ export class InMemoryStorageAdapter implements StoragePort {
 
   resolveUrl(key: string): string {
     return `memory://media/${key}`;
+  }
+
+  // Mantém o fluxo do browser igual ao do Vercel Blob em dev/teste (comportamento anterior).
+  directUploadKind(): DirectUploadKind {
+    return "vercel-blob";
   }
 
   async createUploadTicket(input: UploadTicketInput): Promise<UploadTicket> {

@@ -1,4 +1,5 @@
 import { resolveAssetVariantUrl } from "../../../asset-url";
+import { canReadAsset } from "../../../shared/can-read-asset";
 import type { MediaAssetVariant } from "../../../contracts/types";
 import { findVariantsByAssetIds } from "../../../shared/asset-variants-store";
 import { pickMediaVariantUrl } from "../../../variant-selection";
@@ -18,11 +19,7 @@ export async function getMediaAssetUrls(query: GetMediaAssetUrlsQuery, scope: Me
   }
 
   const rows = await findAssetUrlsByIds(ids);
-  const visibleRows = rows.filter(
-    (row) =>
-      row.visibility === "public" ||
-      (scope !== null && (scope.isMediaAdmin || (row.uploadedBy !== null && row.uploadedBy === scope.actorId))),
-  );
+  const visibleRows = rows.filter((row) => canReadAsset(row, scope));
 
   const variantsByAsset = new Map<string, MediaAssetVariant[]>();
   if (query.displayWidth && visibleRows.length > 0) {
