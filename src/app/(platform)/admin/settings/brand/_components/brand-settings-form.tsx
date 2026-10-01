@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { MediaPickerField } from "@/components/media-picker-field";
-import { PlatformBrand } from "@/themes/venore-slime/components/PlatformBrand";
+import { PlatformBrand } from "@/theme-sdk/kit/platform-brand";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";

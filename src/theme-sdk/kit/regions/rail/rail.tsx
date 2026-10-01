@@ -4,9 +4,11 @@ import { useState, useTransition } from "react";
 import { useFormStatus } from "react-dom";
 import { ChevronLeft, ChevronRight, Globe2, Loader2, ShieldCheck, type LucideIcon } from "lucide-react";
 import type { SidebarLeftSlotProps } from "@/contexts/themes/contracts/types";
+import type { ThemeStrings } from "@/contexts/themes/contracts/v8";
+import { t } from "../../i18n/t";
 import { cn } from "@/lib/utils";
-import { MobileNavDrawer } from "./MobileNavDrawer";
-import { SidebarNavLink } from "./SidebarNavLink";
+import { MobileNavDrawer } from "../mobile-nav/mobile-nav-drawer";
+import { SidebarNavLink } from "./sidebar-nav-link";
 import { SIDEBAR_COLLAPSE_TOOLTIP_COLLAPSED_CLASSES } from "./sidebar-collapse-tooltip";
 
 // Exclusivo de navegação (main-nav ou admin-nav, conforme navMode) — não é área de widgets. O
@@ -40,7 +42,8 @@ export function SidebarLeftSlot({
   onToggleNavMode,
   collapsed: collapsedFromServer,
   onToggleCollapsed,
-}: SidebarLeftSlotProps) {
+  strings,
+}: SidebarLeftSlotProps & { strings?: ThemeStrings }) {
   const [collapsed, setCollapsed] = useState(collapsedFromServer);
   const [, startTransition] = useTransition();
 
@@ -57,6 +60,7 @@ export function SidebarLeftSlot({
 
   return (
     <MobileNavDrawer
+      strings={strings}
       asideClassName={cn(
         // px-5 é fixo em qualquer breakpoint e em qualquer estado de collapsed — a faixa de
         // largura do ícone não pode depender da largura do sidebar (bug desta sessão: padding
@@ -77,7 +81,7 @@ export function SidebarLeftSlot({
           type="button"
           onClick={handleToggleCollapsed}
           aria-expanded={!collapsed}
-          aria-label={collapsed ? "Expandir barra lateral" : "Colapsar barra lateral"}
+          aria-label={collapsed ? t(strings, "rail.expand") : t(strings, "rail.collapse")}
           className="flex size-11 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-panel ui-motion-base outline-none hover:bg-muted hover:border-ring active:border-ring focus-visible:ring-2 focus-visible:ring-ring"
         >
           {collapsed ? (
@@ -93,7 +97,7 @@ export function SidebarLeftSlot({
         // sobreposto ao canto superior direito do frame — mesma folga em expandido/colapsado pra
         // não depender de cálculo fino de onde a coluna direita do pill termina.
         <div className="shrink-0 border-b border-border pt-8 pb-4">
-          <SidebarSurfaceSwitch isAdmin={isAdmin} collapsed={collapsed} onToggleNavMode={onToggleNavMode} />
+          <SidebarSurfaceSwitch isAdmin={isAdmin} collapsed={collapsed} onToggleNavMode={onToggleNavMode} strings={strings} />
         </div>
       )}
 
@@ -149,12 +153,14 @@ function SidebarSurfaceSwitch({
   isAdmin,
   collapsed,
   onToggleNavMode,
+  strings,
 }: {
   isAdmin: boolean;
   collapsed: boolean;
   onToggleNavMode: () => Promise<void>;
+  strings?: ThemeStrings;
 }) {
-  const label = isAdmin ? "Sair do admin" : "Área administrativa";
+  const label = isAdmin ? t(strings, "rail.exitAdmin") : t(strings, "rail.enterAdmin");
 
   return (
     <>
@@ -181,8 +187,8 @@ function SidebarSurfaceSwitch({
           isAdmin ? "left-[calc(50%+0.125rem)]" : "left-1",
         )}
       />
-      <NavModeSegmentButton isActive={!isAdmin} icon={Globe2} text="Site" />
-      <NavModeSegmentButton isActive={isAdmin} icon={ShieldCheck} text="Admin" />
+      <NavModeSegmentButton isActive={!isAdmin} icon={Globe2} text={t(strings, "rail.site")} />
+      <NavModeSegmentButton isActive={isAdmin} icon={ShieldCheck} text={t(strings, "rail.admin")} />
       </form>
     </>
   );

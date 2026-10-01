@@ -56,6 +56,10 @@ export type ContextualMenuItemView = {
   href: string | null;
   isExternal: boolean;
   isActive: boolean;
+  // Aditivos à spec (§15 da foundation-notes): o markup de hoje (ContextualMenuNav) usa ícone e
+  // "abrir em nova aba" — sem eles a barra do kit não reproduziria o HTML atual.
+  icon?: string | null;
+  opensInNewTab?: boolean;
   children: ContextualMenuItemView[];
 };
 export type ContextualBarData =

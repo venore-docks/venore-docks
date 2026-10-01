@@ -1,81 +1,43 @@
 import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
-import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
 import { ServiceWorkerRegistrar } from "@/components/pwa/service-worker-registrar";
 import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { ThemeDomSync } from "@/components/theme-dom-sync";
-import { getBrandConfig } from "@/platform/brand/get-brand-config";
-import { getSiteOrigin } from "@/platform/seo/site-origin";
-import { resolveActiveTheme } from "@/platform/theme-rendering/resolve-active-theme";
-import { resolveActiveColorPalette, buildColorPaletteOverrideCss } from "@/platform/theme-rendering/resolve-active-color-palette";
+import { resolveThemeMetadataDefaults } from "@/platform/seo/metadata-defaults";
+import { generateViewport as generateThemeViewport } from "@/platform/seo/viewport";
+import { resolveDocumentModel } from "@/platform/theme-rendering/document-model";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+// Root layout — congelado depois da Fase F da v8 (spec §6). Toda variação de tema (definição,
+// paleta, opções, fontes, locale, preview, seção) vem de resolveDocumentModel(), atrás de
+// resolvers com dono; este arquivo só aplica o resultado no <html>.
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-export async function generateMetadata(): Promise<Metadata> {
-  const { siteName, footerDescription, faviconUrl } = await getBrandConfig();
-
-  return {
-    // Base das URLs relativas de canonical/og:image (SITE_URL ou o host da requisição).
-    metadataBase: new URL(await getSiteOrigin()),
-    alternates: { types: { "application/rss+xml": "/rss.xml" } },
-    // Título vem do nome do site configurado (contexts/settings, /admin/settings/brand) — as
-    // páginas internas põem só o próprio nome via `title` e o template junta " · <site>".
-    title: { default: siteName, template: `%s · ${siteName}` },
-    description: footerDescription,
-    applicationName: siteName,
-    manifest: "/manifest.webmanifest",
-    appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: siteName },
-    // Sem arquivo-convenção src/app/favicon.ico: o ícone vem SÓ daqui, então o que o admin
-    // escolher em /admin/settings/brand (ou o fallback /brand/favicon.ico) é o que o site usa —
-    // um favicon.ico no app/ ganharia do <link> e travaria a customização.
-    icons: {
-      icon: faviconUrl,
-      shortcut: faviconUrl,
-      apple: "/icons/apple-touch-icon.png",
-    },
-  };
+// Viewport (themeColor etc.) e metadata padrão moram em platform/seo (dono W4). Wrapper em vez
+// de re-export: o Next lê as exports especiais do arquivo de layout.
+export async function generateViewport(): Promise<Viewport> {
+  return generateThemeViewport();
 }
 
-// themeColor no viewport (não no metadata) — mudou de lugar no App Router. Escuro, combinando com
-// o wordmark branco da marca; mesmo valor de app/manifest.ts (CHROME_DARK).
-// viewportFit: "cover" habilita as env(safe-area-inset-*) em telas com notch/ilha (modo standalone).
-export const viewport: Viewport = {
-  width: "device-width",
-  initialScale: 1,
-  viewportFit: "cover",
-  themeColor: "#171717",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return resolveThemeMetadataDefaults();
+}
 
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [{ manifest }, activeColorPalette, requestHeaders] = await Promise.all([
-    resolveActiveTheme(),
-    resolveActiveColorPalette(),
-    headers(),
-  ]);
+  const [doc, requestHeaders] = await Promise.all([resolveDocumentModel(), headers()]);
   // Nonce da CSP gerado por request em src/proxy.ts — o script inline do next-themes (evita o
   // flash de tema) precisa dele pra rodar quando a política estiver em "enforce".
   const nonce = requestHeaders.get("x-nonce") ?? undefined;
-  // `activeColorPalette` vem do catálogo em código de cada tema (src/themes/venore-slime/color-
-  // palettes.ts) OU, quando paletteId === "custom", de cor digitada pelo admin (platform/theme-
-  // engine/custom-color-palette.ts). dangerouslySetInnerHTML só continua seguro aqui porque esse
-  // segundo caminho valida cada valor contra /^#[0-9a-f]{6}$/i antes de persistir — nunca chega
-  // texto livre não sanitizado nesta interpolação.
-  const paletteOverrideCss = activeColorPalette ? buildColorPaletteOverrideCss(manifest.key, activeColorPalette) : null;
+  const { manifest } = doc.theme;
+  // CSS de runtime = override de paleta (catálogo do tema ou cor digitada pelo admin) + opções +
+  // fontes. dangerouslySetInnerHTML só é seguro porque cada builder valida o que interpola
+  // (cores contra hex/oklch estrito, nomes de token contra kebab-case) — nunca texto livre.
+  const runtimeCss = doc.runtimeCss;
 
   // Tema single-mode (manifest.colorModes com um só valor): força esse modo no next-themes —
   // não há "outro" pra alternar. `forcedTheme` desabilita a troca; o ColorModeToggle lê isso e
@@ -84,20 +46,20 @@ export default async function RootLayout({
 
   return (
     <html
-      lang="pt-BR"
-      data-theme={manifest.key}
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      lang={doc.locale}
+      dir={doc.dir}
+      data-theme={doc.theme.key}
+      {...doc.htmlAttributes}
+      className={`${doc.fonts.classNames} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
         {/* <style> em qualquer posição do body ainda aplica globalmente ao documento (não é
             escopado pela posição no DOM) — evita depender de suporte a <head> customizado em
             root layout do App Router (mesmo padrão de ChartStyle, src/components/ui/chart.tsx). */}
-        {paletteOverrideCss && (
-          <style id="color-palette-override" nonce={nonce} dangerouslySetInnerHTML={{ __html: paletteOverrideCss }} />
-        )}
+        {runtimeCss && <style id="theme-runtime" nonce={nonce} dangerouslySetInnerHTML={{ __html: runtimeCss }} />}
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem forcedTheme={forcedColorMode} nonce={nonce}>
-          <ThemeDomSync themeKey={manifest.key} />
+          <ThemeDomSync themeKey={doc.theme.key} attributes={doc.htmlAttributes} lang={doc.locale} dir={doc.dir} />
           {children}
           <Toaster />
           <ServiceWorkerRegistrar />

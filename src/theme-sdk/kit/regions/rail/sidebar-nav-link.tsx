@@ -5,8 +5,7 @@ import { ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { MainNavItem } from "@/contexts/themes/contracts/types";
-import { cn } from "@/lib/utils";
-import { NavIcon } from "@/platform/nav-icons/NavIcon";
+import { cn, NavIcon } from "@/theme-sdk/ui";
 import { SIDEBAR_COLLAPSE_TOOLTIP_COLLAPSED_CLASSES, SIDEBAR_COLLAPSE_TOOLTIP_LABEL_CLASSES } from "./sidebar-collapse-tooltip";
 
 // Único pedaço client do item de nav: aria-current depende da rota atual, que um server component

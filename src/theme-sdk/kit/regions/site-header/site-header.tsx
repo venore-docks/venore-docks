@@ -1,9 +1,11 @@
 import Link from "next/link";
 import type { HeaderSlotProps } from "@/contexts/themes/contracts/types";
-import { UserMenu } from "./UserMenu";
-import { MobileNavToggleButton } from "./MobileNavToggleButton";
-import { PlatformBrand } from "./PlatformBrand";
-import { HeaderScrollSentinel } from "./HeaderScrollSentinel";
+import type { ThemeStrings } from "@/contexts/themes/contracts/v8";
+import { t } from "../../i18n/t";
+import { UserMenu } from "../user-menu/user-menu";
+import { MobileNavToggleButton } from "./mobile-nav-toggle-button";
+import { PlatformBrand } from "../../platform-brand";
+import { HeaderScrollSentinel } from "./header-scroll-sentinel";
 
 // Header compacto que se ELEVA ao rolar em vez de inverter de cor (refator premium: a inversão
 // pra bg-primary/text-primary-foreground era chamativa demais). Continua server component; o
@@ -33,7 +35,8 @@ export function HeaderSlot({
   notificationAlert,
   userNavItems,
   showLoginLink,
-}: HeaderSlotProps) {
+  strings,
+}: HeaderSlotProps & { strings?: ThemeStrings }) {
   const navLinkClass =
     "rounded-lg px-3 py-1.5 text-xs font-medium uppercase tracking-caps text-muted-foreground ui-motion-base outline-none hover:bg-muted hover:text-foreground active:bg-muted focus-visible:ring-2 focus-visible:ring-ring";
 
@@ -42,6 +45,7 @@ export function HeaderSlot({
       {scrollShrinkEnabled && <HeaderScrollSentinel />}
       <header
         id="site-header"
+        data-region="header"
         data-scrolled="false"
         className={
           "group/header z-40 flex h-20 items-center justify-between gap-4 border-b border-header-border-subtle bg-card px-4 text-foreground ui-motion-emphasis sm:px-6 lg:h-24 " +
@@ -53,7 +57,7 @@ export function HeaderSlot({
         }
       >
         <div className="flex items-center gap-2">
-          <MobileNavToggleButton />
+          <MobileNavToggleButton strings={strings} />
           <Link
             href="/"
             aria-label={brand.name}
@@ -94,11 +98,11 @@ export function HeaderSlot({
                   <span className="hidden sm:inline">{notificationAlert.label}</span>
                 </Link>
               )}
-              <UserMenu user={user} canAccessAdmin={canAccessAdmin} onSignOut={onSignOut} userNavItems={userNavItems} />
+              <UserMenu user={user} canAccessAdmin={canAccessAdmin} onSignOut={onSignOut} userNavItems={userNavItems} strings={strings} />
             </div>
           ) : showLoginLink ? (
             <Link href="/login" className={navLinkClass}>
-              Entrar
+              {t(strings, "header.signIn")}
             </Link>
           ) : null
         ) : null}

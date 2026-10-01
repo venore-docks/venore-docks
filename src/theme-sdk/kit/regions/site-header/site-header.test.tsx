@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { HeaderSlot } from "./HeaderSlot";
+import { HeaderSlot } from "./site-header";
 import type { HeaderSlotProps } from "@/contexts/themes/contracts/types";
 
 // HeaderSlot é server component puro (sem I/O) — renderToStaticMarkup sem jsdom/testing-library

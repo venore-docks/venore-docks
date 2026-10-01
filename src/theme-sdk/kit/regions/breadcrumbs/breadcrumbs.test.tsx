@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { Breadcrumbs } from "./Breadcrumbs";
+import { Breadcrumbs } from "./breadcrumbs";
 import type { BreadcrumbItem } from "@/contexts/themes/contracts/types";
 
 const deepTrail: BreadcrumbItem[] = [

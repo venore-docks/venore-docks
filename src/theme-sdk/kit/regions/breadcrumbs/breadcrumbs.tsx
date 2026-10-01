@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import type { BreadcrumbItem } from "@/contexts/themes/contracts/types";
+import type { ThemeStrings } from "@/contexts/themes/contracts/v8";
 import { serializeJsonLd } from "@/theme-sdk/json-ld";
+import { t } from "../../i18n/t";
 
 // Puramente apresentacional — recebe a trilha e o JSON-LD já resolvidos no servidor
 // (platform/breadcrumbs/resolve-breadcrumbs.ts) e só renderiza; nunca busca rota/entidade sozinho
@@ -17,9 +19,11 @@ import { serializeJsonLd } from "@/theme-sdk/json-ld";
 export function Breadcrumbs({
   breadcrumbs,
   breadcrumbsJsonLd,
+  strings,
 }: {
   breadcrumbs: BreadcrumbItem[];
   breadcrumbsJsonLd: Record<string, unknown> | null;
+  strings?: ThemeStrings;
 }) {
   if (breadcrumbs.length === 0) return null;
 
@@ -27,7 +31,7 @@ export function Breadcrumbs({
 
   return (
     <>
-      <nav aria-label="Breadcrumb" className="mx-auto w-full max-w-6xl px-4 pt-5 sm:px-6 lg:px-8">
+      <nav aria-label={t(strings, "breadcrumbs.label")} data-region="breadcrumbs" className="mx-auto w-full max-w-6xl px-4 pt-5 sm:px-6 lg:px-8">
         <ol className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
           {breadcrumbs.map((item, index) => {
             const isFirst = index === 0;

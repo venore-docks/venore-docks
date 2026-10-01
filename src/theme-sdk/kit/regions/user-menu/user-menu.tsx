@@ -5,6 +5,8 @@ import Link from "next/link";
 import type { HeaderUserInfo, NavItem } from "@/contexts/themes/contracts/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ColorModeToggle } from "@/components/color-mode-toggle";
+import type { ThemeStrings } from "@/contexts/themes/contracts/v8";
+import { t } from "../../i18n/t";
 
 function initials(displayName: string) {
   const parts = displayName.trim().split(/\s+/).filter(Boolean);
@@ -21,6 +23,7 @@ type UserMenuProps = {
   // resolvido na composição (resolveThemeSlotProps), o tema só renderiza. `icon` é ignorado aqui:
   // os itens fixos do menu ("Minha conta", "Administração") também são só texto.
   userNavItems?: NavItem[];
+  strings?: ThemeStrings;
 };
 
 // Dropdown com <details>/<summary> (mesmo padrão de src/app/(auth)/login/page.tsx) — só
@@ -32,7 +35,7 @@ type UserMenuProps = {
 const menuItemClass =
   "cursor-pointer rounded-lg px-2.5 py-2 text-sm text-muted-foreground ui-motion-base outline-none hover:bg-muted hover:text-foreground active:bg-muted active:text-foreground focus-visible:ring-2 focus-visible:ring-ring";
 
-export function UserMenu({ user, canAccessAdmin, onSignOut, userNavItems = [] }: UserMenuProps) {
+export function UserMenu({ user, canAccessAdmin, onSignOut, userNavItems = [], strings }: UserMenuProps) {
   const firstName = user.displayName.split(/\s+/)[0];
   const detailsRef = useRef<HTMLDetailsElement>(null);
 
@@ -69,12 +72,12 @@ export function UserMenu({ user, canAccessAdmin, onSignOut, userNavItems = [] }:
 
           {canAccessAdmin ? (
             <Link href="/admin" className={menuItemClass}>
-              Administração
+              {t(strings, "userMenu.admin")}
             </Link>
           ) : null}
 
           <Link href="/account" className={menuItemClass}>
-            Minha conta
+            {t(strings, "userMenu.account")}
           </Link>
 
           {userNavItems.map((item) => (
@@ -86,7 +89,7 @@ export function UserMenu({ user, canAccessAdmin, onSignOut, userNavItems = [] }:
 
         <form action={onSignOut} className="border-t border-border pt-1.5">
           <button type="submit" className={menuItemClass + " w-full text-left font-medium"}>
-            Sair
+            {t(strings, "userMenu.signOut")}
           </button>
         </form>
       </div>

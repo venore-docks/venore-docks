@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { Sitemap } from "@/components/sitemap";
 import type { FooterSlotProps } from "@/contexts/themes/contracts/types";
-import { PlatformBrand } from "./PlatformBrand";
+import type { ThemeStrings } from "@/contexts/themes/contracts/v8";
+import { t } from "../../i18n/t";
+import { PlatformBrand } from "../../platform-brand";
 
 // Marca num painel accent-soft + grid de sitemap real (Sitemap, componente reutilizável fora do
 // tema), mesma composição do PlatformFooter de referência (protótipo venore-docks,
@@ -10,9 +12,9 @@ import { PlatformBrand } from "./PlatformBrand";
 // negócio injetada via prop, não um token semântico shadcn (mesma exceção documentada em
 // build-birthday-pdf-html.ts). Server component puro, sem I/O — quem busca dado (getBrandConfig +
 // getMenuByLocation("sitemap")) é platform/theme-rendering/resolve-theme-slot-props.ts.
-export function FooterSlot({ brand, sitemapItems, creditsEnabled, loginLinkHref }: FooterSlotProps) {
+export function FooterSlot({ brand, sitemapItems, creditsEnabled, loginLinkHref, strings }: FooterSlotProps & { strings?: ThemeStrings }) {
   return (
-    <footer className="mt-auto grid gap-8 border-t border-border px-4 py-12 text-muted-foreground sm:px-6 lg:grid-cols-[max-content_minmax(0,1fr)] lg:gap-12 lg:px-8">
+    <footer data-region="footer" className="mt-auto grid gap-8 border-t border-border px-4 py-12 text-muted-foreground sm:px-6 lg:grid-cols-[max-content_minmax(0,1fr)] lg:gap-12 lg:px-8">
       <div className="w-fit max-w-full justify-self-start space-y-5 rounded-panel border border-border bg-accent/14 px-6 py-6">
         <div>
           <div className="max-w-40 origin-left scale-125">
@@ -44,14 +46,14 @@ export function FooterSlot({ brand, sitemapItems, creditsEnabled, loginLinkHref 
             href={loginLinkHref}
             className="inline-flex rounded-sm text-xs font-medium uppercase tracking-caps text-muted-foreground/56 outline-none ui-motion-base hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
           >
-            Entrar
+            {t(strings, "footer.signIn")}
           </Link>
         )}
       </div>
 
       {creditsEnabled ? (
         <div data-credits className="col-span-full border-t border-border pt-4 text-xs text-muted-foreground">
-          Venore Docks
+          {t(strings, "footer.credits")}
         </div>
       ) : null}
     </footer>

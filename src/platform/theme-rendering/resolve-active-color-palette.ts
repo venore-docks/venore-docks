@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { getActiveColorPalette, type ColorPalette, type PaletteColorTokens } from "@/contexts/themes";
+import type { ResolvedThemeDefinition, ThemePaletteChoice } from "@/contexts/themes/contracts/v8";
 import { resolveActiveTheme } from "./resolve-active-theme";
 import { CUSTOM_COLOR_PALETTE_ID, getCustomColorPalette } from "@/platform/theme-engine/custom-color-palette";
 
@@ -45,4 +46,36 @@ export function buildColorPaletteOverrideCss(themeKey: string, palette: ColorPal
     blocks.push(`html[data-theme="${themeKey}"].dark { ${buildDeclarationBlock(palette.dark)} }`);
   }
   return blocks.join("\n");
+}
+
+// ── v8 (spec §6 passo 9) ─────────────────────────────────────────────────────────────────────
+// Escolha de paleta do documento de config → CSS de override. Dono: W1 (gerador por seed, tokens
+// de região, `scope` da galeria); a Fase F só embrulha buildColorPaletteOverrideCss acima, então
+// o CSS sai idêntico ao de antes para default/preset/custom.
+const SAFE_TOKEN_NAME = /^[a-z][a-z0-9-]{0,63}$/;
+const SAFE_COLOR_VALUE = /^(?:#[0-9a-f]{3}|#[0-9a-f]{6}|oklch\([0-9.%\s/]+\))$/i;
+
+function safeTokens(tokens: Record<string, string>): PaletteColorTokens {
+  return Object.fromEntries(
+    Object.entries(tokens).filter(([token, value]) => SAFE_TOKEN_NAME.test(token) && SAFE_COLOR_VALUE.test(value)),
+  ) as PaletteColorTokens;
+}
+
+export function paletteFromChoice(colorPalettes: readonly ColorPalette[], choice: ThemePaletteChoice | undefined): ColorPalette | null {
+  if (!choice || choice.mode === "default") return null;
+  if (choice.mode === "preset") return colorPalettes.find((palette) => palette.id === choice.presetId) ?? null;
+  const tokens = choice.mode === "seed" ? choice.generated : choice;
+  return { id: CUSTOM_COLOR_PALETTE_ID, name: "Personalizada", light: safeTokens(tokens.light), dark: safeTokens(tokens.dark) };
+}
+
+export function buildPaletteCss(
+  theme: Pick<ResolvedThemeDefinition, "key" | "colorPalettes">,
+  choice: ThemePaletteChoice | undefined,
+  context: { scope?: string } = {},
+): string {
+  const palette = paletteFromChoice(theme.colorPalettes, choice);
+  if (!palette) return "";
+  const css = buildColorPaletteOverrideCss(theme.key, palette);
+  if (!context.scope) return css;
+  return css.split(`html[data-theme="${theme.key}"]`).join(context.scope);
 }

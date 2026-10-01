@@ -1,10 +1,11 @@
 import type { ThemeShellProps } from "@/contexts/themes/contracts/types";
-import { HeaderSlot } from "./HeaderSlot";
-import { FooterSlot } from "./FooterSlot";
-import { ContentSlot } from "./ContentSlot";
-import { SidebarLeftSlot } from "./SidebarLeftSlot";
+import { HeaderSlot } from "../regions/site-header/site-header";
+import { FooterSlot } from "../regions/footer/footer";
+import { SidebarLeftSlot } from "../regions/rail/rail";
+import { ContentSlot } from "./content-frame";
 
-// Único export que o contrato de tema exige (docs/themes/shell-contract.md — Abordagem A): dono
+// Shell 7.x do kit (ex-Shell do venore-slime, movido na Fase F da v8 sem mudança de markup; o
+// venore-slime/components/Shell.tsx reexporta daqui). Único export que o contrato de tema 7.x exige (docs/themes/shell-contract.md — Abordagem A): dono
 // da árvore/arranjo entre as regiões estruturais. Header em cima; abaixo, SidebarLeft e uma
 // coluna de conteúdo lado a lado dentro de um `flex` — essa árvore morava em
 // `(platform)/layout.tsx` antes desta sessão; migrou pra cá porque quem decide arranjo agora é

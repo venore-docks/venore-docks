@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { SidebarLeftSlot } from "./SidebarLeftSlot";
+import { SidebarLeftSlot } from "./rail";
 import type { SidebarLeftSlotProps } from "@/contexts/themes/contracts/types";
 
 // Mock de usePathname pra testar aria-current e o estado inicial (expandido/fechado) do accordion

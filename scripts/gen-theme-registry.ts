@@ -1,84 +1,90 @@
-// Gera (gitignored) a partir das deps @venore/theme-* do package.json:
-//   src/themes/registry.generated.ts        — GENERATED_THEME_REGISTRY (merge no THEME_REGISTRY)
-//   src/themes/theme-imports.generated.css  — @import "@venore/theme-<key>/theme.css" por tema
+// Gera (gitignored) a partir das deps @venore/theme-* do package.json (spec v8 §5):
+//   src/themes/registry.generated.ts         — GENERATED_THEME_REGISTRY (entradas contract 7 | 8)
+//   src/themes/registry.client.generated.ts  — THEME_CLIENT_REGISTRY ("use client", lazy por tema)
+//   src/themes/theme-imports.generated.css   — @import "<pkg>/theme.css" + @source por tema
+//   src/themes/theme-lineage.generated.css   — CSS de herança (W9; vazio na Fase F)
+//   src/themes/theme-tokens.generated.ts     — tokens parseados por tema (W1; vazio na Fase F)
+//   src/themes/theme-report.generated.json   — erros/avisos/excluídos (registry.test falha com erro)
 // Roda nos hooks pre* junto com gen-plugin-registry.
 //
-// venore-slime NÃO entra aqui — fica hardcoded em registry.ts / globals.css (fallback obrigatório,
-// AGENTS.md §3). Ver docs/themes/temas-como-pacotes-plano.md.
+// `--strict` (prebuild): tema inválido derruba o build — o deploy anterior continua no ar.
+// Sem a flag (postinstall/predev): avisa, exclui o tema e registra no relatório.
 //
-// Convenção do pacote @venore/theme-<key>: exports "." (barrel com `Shell`), "./manifest"
-// (`<camelKey>Manifest`), "./color-palettes" (`<CAMEL_KEY>_COLOR_PALETTES`), "./theme.css".
+// venore-slime NÃO entra aqui — fica hardcoded em registry.ts / globals.css (fallback obrigatório,
+// AGENTS.md §3); um pacote que tente usar essa chave é erro.
+//
+// Pacote 7.x: exports "." (barrel com `Shell`), "./manifest" (`<camelKey>Manifest`),
+// "./color-palettes" (`<CAMEL_KEY>_COLOR_PALETTES`), "./theme.css".
+// Pacote 8.x: package.json `"venoreTheme": { "contract": "8.x", "key": "<key>", "extends"?: "<pai>" }`
+// e export "./theme" com `export default defineTheme({...})`; opcional "./theme-client".
 
 import { createRequire } from "node:module";
-import { writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { buildThemeRegistry, type ThemePackageInput } from "./lib/theme-registry-codegen";
 
 const require = createRequire(import.meta.url);
 const ROOT = process.cwd();
 const THEMES_DIR = path.join(ROOT, "src/themes");
-const HEADER = "// GERADO por scripts/gen-theme-registry.ts — NÃO editar à mão (gitignored).\n";
+const strict = process.argv.includes("--strict");
 
-const toCamel = (key: string) => key.replace(/-([a-z0-9])/g, (_, c: string) => c.toUpperCase());
-const toConst = (key: string) => `${key.replace(/-/g, "_").toUpperCase()}_COLOR_PALETTES`;
-
-function canResolve(spec: string): boolean {
+function resolveOrNull(spec: string): string | null {
   try {
-    require.resolve(spec);
-    return true;
+    return require.resolve(spec);
   } catch {
-    return false;
+    return null;
   }
 }
 
+// O package.json do pacote nem sempre está em "exports" — sobe a partir de um entry resolvido.
+function readPackageJson(entryFile: string): ThemePackageInput["packageJson"] & { name?: string } {
+  let dir = path.dirname(entryFile);
+  while (dir !== path.dirname(dir)) {
+    const candidate = path.join(dir, "package.json");
+    if (existsSync(candidate)) {
+      const parsed = JSON.parse(readFileSync(candidate, "utf-8")) as { name?: string };
+      if (parsed.name?.startsWith("@venore/theme-")) return parsed;
+    }
+    dir = path.dirname(dir);
+  }
+  return {};
+}
+
 const hostPkg = require(path.join(ROOT, "package.json")) as { dependencies?: Record<string, string> };
-const themePackages = Object.keys(hostPkg.dependencies ?? {})
+const inputs: ThemePackageInput[] = Object.keys(hostPkg.dependencies ?? {})
   .filter((dep) => dep.startsWith("@venore/theme-") && dep !== "@venore/theme-sdk")
-  .filter((dep) => canResolve(`${dep}/manifest`))
-  .sort();
+  .flatMap((dep) => {
+    const manifestFile = resolveOrNull(`${dep}/manifest`);
+    const themeFile = resolveOrNull(`${dep}/theme`);
+    const anchor = manifestFile ?? themeFile;
+    if (!anchor) return [];
+    return [
+      {
+        dep,
+        packageJson: readPackageJson(anchor),
+        resolvable: {
+          manifest: Boolean(manifestFile),
+          theme: Boolean(themeFile),
+          colorPalettes: Boolean(resolveOrNull(`${dep}/color-palettes`)),
+          themeClient: Boolean(resolveOrNull(`${dep}/theme-client`)),
+        },
+        // Caminho via require.resolve, relativo a src/themes (onde o CSS gerado mora) — sobrevive a hoisting.
+        sourceDir: path.relative(THEMES_DIR, path.dirname(anchor)).split(path.sep).join("/"),
+      },
+    ];
+  });
 
-const keys = themePackages.map((dep) => dep.slice("@venore/theme-".length));
-const pkgFor = (key: string) => `@venore/theme-${key}`;
-const paletteKeys = keys.filter((key) => canResolve(`${pkgFor(key)}/color-palettes`));
+const output = buildThemeRegistry(inputs, { strict });
 
-const registry =
-  HEADER +
-  `import type { ThemeRegistryEntry } from "./registry-types";\n` +
-  keys
-    .map(
-      (key) =>
-        `import { ${toCamel(key)}Manifest } from "${pkgFor(key)}/manifest";\n` +
-        `import { Shell as ${toCamel(key)}Shell } from "${pkgFor(key)}";` +
-        (paletteKeys.includes(key) ? `\nimport { ${toConst(key)} } from "${pkgFor(key)}/color-palettes";` : ""),
-    )
-    .join("\n") +
-  `\n\nexport const GENERATED_THEME_REGISTRY: Record<string, ThemeRegistryEntry> = {\n` +
-  keys
-    .map(
-      (key) =>
-        `  "${key}": {\n` +
-        `    manifest: ${toCamel(key)}Manifest,\n` +
-        `    Shell: ${toCamel(key)}Shell,\n` +
-        `    colorPalettes: ${paletteKeys.includes(key) ? toConst(key) : "[]"},\n` +
-        `  },`,
-    )
-    .join("\n") +
-  `\n};\n`;
+writeFileSync(path.join(THEMES_DIR, "registry.generated.ts"), output.registry);
+writeFileSync(path.join(THEMES_DIR, "registry.client.generated.ts"), output.clientRegistry);
+writeFileSync(path.join(THEMES_DIR, "theme-imports.generated.css"), output.cssImports);
+writeFileSync(path.join(THEMES_DIR, "theme-lineage.generated.css"), output.lineageCss);
+writeFileSync(path.join(THEMES_DIR, "theme-tokens.generated.ts"), output.tokensModule);
+writeFileSync(path.join(THEMES_DIR, "theme-report.generated.json"), JSON.stringify(output.report, null, 2) + "\n");
 
-// Além do @import dos tokens, um @source por tema: Tailwind v4 nunca escaneia node_modules, e
-// importar o theme.css de um pacote NÃO faz ele ler os componentes desse pacote — classe usada só
-// no tema (ex: `lg:border-r-2` do Aurora) simplesmente não era gerada. Mesmo mecanismo do
-// plugin-sources.generated.css (gen-plugin-registry.ts); caminho via require.resolve, relativo a
-// src/themes (onde este CSS mora), sobrevive a hoisting.
-const themeSource = (key: string) => {
-  const themeDir = path.dirname(require.resolve(`${pkgFor(key)}/manifest`));
-  return `@source "${path.relative(THEMES_DIR, themeDir).split(path.sep).join("/")}";`;
-};
-const cssImports =
-  "/* GERADO por scripts/gen-theme-registry.ts — NÃO editar à mão (gitignored). */\n" +
-  keys.map((key) => `@import "${pkgFor(key)}/theme.css";\n${themeSource(key)}`).join("\n") +
-  (keys.length ? "\n" : "");
-
-writeFileSync(path.join(THEMES_DIR, "registry.generated.ts"), registry);
-writeFileSync(path.join(THEMES_DIR, "theme-imports.generated.css"), cssImports);
-
-console.log(`gen-theme-registry: ${keys.length} tema(s) [${keys.join(", ") || "nenhum"}]`);
+for (const issue of output.report.issues) {
+  console.warn(`gen-theme-registry: ${issue.level} [${issue.themeKey}] ${issue.code}: ${issue.message}`);
+}
+const keys = output.report.themes.map((theme) => `${theme.key}@${theme.packageVersion}${theme.contract === 8 ? " (v8)" : ""}`);
+console.log(`gen-theme-registry${strict ? " --strict" : ""}: ${keys.length} tema(s) [${keys.join(", ") || "nenhum"}]`);

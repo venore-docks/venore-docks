@@ -80,10 +80,30 @@ const base: Omit<ThemeShellProps, "children"> = {
 
 const user = { displayName: "Ana Lima", email: "ana@example.com", imageUrl: null };
 
-export type ParityScenario = { name: string; props: Omit<ThemeShellProps, "children"> };
+// Mesmo menu nos dois caminhos: ResolvedMenuItem (Shell 7.x, via ContextualMenuNav) e dado
+// (ThemeRenderer, via resolve-contextual-bar).
+export const PARITY_CONTEXTUAL_MENU: Parameters<typeof ContextualMenuNav>[0]["items"] = [
+  { id: "m1", label: "Início da seção", href: "/rh", icon: null, isExternal: false, opensInNewTab: false, children: [] },
+  {
+    id: "m2",
+    label: "Grupo",
+    href: null,
+    icon: null,
+    isExternal: false,
+    opensInNewTab: false,
+    children: [{ id: "m3", label: "Externo", href: "https://example.com", icon: null, isExternal: true, opensInNewTab: true, children: [] }],
+  },
+];
+export const PARITY_PLUGIN_NODE = <div data-plugin-contextual="x">Conteúdo do plugin</div>;
+
+export type ParityScenario = {
+  name: string;
+  props: Omit<ThemeShellProps, "children">;
+  contextual: "none" | "menu" | "plugin";
+};
 
 export const SLIME_PARITY_SCENARIOS: ParityScenario[] = [
-  { name: "anon-public", props: base },
+  { name: "anon-public", props: base, contextual: "none" },
   {
     name: "logged-in",
     props: {
@@ -95,6 +115,7 @@ export const SLIME_PARITY_SCENARIOS: ParityScenario[] = [
         userNavItems: [{ key: "msgs", label: "Mensagens", href: "/mensagens" }],
       },
     },
+    contextual: "none",
   },
   {
     name: "admin",
@@ -114,33 +135,21 @@ export const SLIME_PARITY_SCENARIOS: ParityScenario[] = [
         { key: "rbac", label: "RBAC", href: null, current: true },
       ],
     },
+    contextual: "none",
   },
   {
     name: "contextual-menu",
     props: {
       ...base,
       sidebarContextualEnabled: true,
-      sidebarContextual: (
-        <ContextualMenuNav
-          items={[
-            { id: "m1", label: "Início da seção", href: "/rh", icon: null, isExternal: false, opensInNewTab: false, children: [] },
-            {
-              id: "m2",
-              label: "Grupo",
-              href: null,
-              icon: null,
-              isExternal: false,
-              opensInNewTab: false,
-              children: [{ id: "m3", label: "Externo", href: "https://example.com", icon: null, isExternal: true, opensInNewTab: true, children: [] }],
-            },
-          ]}
-        />
-      ),
+      sidebarContextual: <ContextualMenuNav items={PARITY_CONTEXTUAL_MENU} />,
     },
+    contextual: "menu",
   },
   {
     name: "contextual-plugin",
-    props: { ...base, sidebarContextualEnabled: true, sidebarContextual: <div data-plugin-contextual="x">Conteúdo do plugin</div> },
+    props: { ...base, sidebarContextualEnabled: true, sidebarContextual: PARITY_PLUGIN_NODE },
+    contextual: "plugin",
   },
   {
     name: "empty-nav",
@@ -150,6 +159,7 @@ export const SLIME_PARITY_SCENARIOS: ParityScenario[] = [
       footer: { ...baseFooter, sitemapItems: [], creditsEnabled: false, brand: { ...baseFooter.brand, description: "" } },
       sidebarLeft: { ...baseSidebar, enabled: false, navItems: [] },
     },
+    contextual: "none",
   },
   {
     name: "collapsed-static-header",
@@ -165,6 +175,7 @@ export const SLIME_PARITY_SCENARIOS: ParityScenario[] = [
       footer: { ...baseFooter, loginLinkHref: "/login" },
       sidebarLeft: { ...baseSidebar, collapsed: true },
     },
+    contextual: "none",
   },
   {
     name: "breadcrumbs-json-ld",
@@ -181,6 +192,7 @@ export const SLIME_PARITY_SCENARIOS: ParityScenario[] = [
         itemListElement: [{ "@type": "ListItem", position: 1, name: "Post </script>", item: "/blog/post" }],
       },
     },
+    contextual: "none",
   },
 ];
 

@@ -17,7 +17,9 @@ import { useEffect } from "react";
 // três: refaz a leitura sempre que a caixa do header muda de tamanho, seja por qual motivo for.
 export function HeaderOffsetSync() {
   useEffect(() => {
-    const header = document.querySelector("header");
+    // #site-header é o header do kit/slime; pacotes como academy e fearless não têm o id — cai no
+    // primeiro <header> (comportamento de antes da v8).
+    const header = document.querySelector<HTMLElement>("#site-header") ?? document.querySelector("header");
     if (!header) return;
 
     const sync = () => {

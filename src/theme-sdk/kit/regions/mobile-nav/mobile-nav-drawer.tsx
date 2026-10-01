@@ -4,7 +4,9 @@ import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { closeMobileNav, getMobileNavTrigger, useMobileNavOpen } from "./mobile-nav-store";
+import type { ThemeStrings } from "@/contexts/themes/contracts/v8";
+import { t } from "../../i18n/t";
+import { closeMobileNav, getMobileNavTrigger, useMobileNavOpen } from "../../stores/mobile-nav-store";
 
 const FOCUSABLE_SELECTOR = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
@@ -17,7 +19,15 @@ const OFF_CANVAS_MEDIA_QUERY = "(min-width: 1024px)";
 // só a casca que decide overlay/posição/Escape é client. Abaixo de lg vira off-canvas fechado
 // por padrão; a partir de lg os estilos de drawer são neutralizados e ela volta a ser a coluna
 // fixa (classes lg: do próprio SidebarLeftSlot cuidam disso).
-export function MobileNavDrawer({ children, asideClassName }: { children: ReactNode; asideClassName: string }) {
+export function MobileNavDrawer({
+  children,
+  asideClassName,
+  strings,
+}: {
+  children: ReactNode;
+  asideClassName: string;
+  strings?: ThemeStrings;
+}) {
   const isOpen = useMobileNavOpen();
   const panelRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
@@ -109,7 +119,7 @@ export function MobileNavDrawer({ children, asideClassName }: { children: ReactN
       {isOpen && (
         <button
           type="button"
-          aria-label="Fechar navegação"
+          aria-label={t(strings, "mobileNav.close")}
           onClick={closeMobileNav}
           className="fixed inset-0 z-40 bg-popover/80 lg:hidden"
         />
@@ -122,7 +132,7 @@ export function MobileNavDrawer({ children, asideClassName }: { children: ReactN
           isOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
-        <aside className={cn(asideClassName, "overscroll-contain")}>{children}</aside>
+        <aside data-region="rail" className={cn(asideClassName, "overscroll-contain")}>{children}</aside>
       </div>
     </>
   );
