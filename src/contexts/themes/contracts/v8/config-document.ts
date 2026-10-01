@@ -142,3 +142,22 @@ export function parseThemeConfigDocument(value: unknown): ThemeConfigDocument | 
 export function emptyThemeConfigEntry(): ThemeConfigByTheme {
   return { palette: { mode: "default" }, options: {}, fonts: {} };
 }
+
+// Revisão (rascunho/publicada/arquivada) como o admin vê (spec §4.2). Datas em ISO.
+export type ThemeConfigRevisionStatus = "draft" | "published" | "archived";
+export type ThemeConfigRevisionView = {
+  id: string;
+  status: ThemeConfigRevisionStatus;
+  config: ThemeConfigDocument;
+  basedOnRevisionId: string | null;
+  note: string | null;
+  createdBy: string | null;
+  createdAt: string;
+  publishedBy: string | null;
+  publishedAt: string | null;
+};
+
+// Documento padrão (slime, sem paleta/opções) — último degrau do fallback de leitura.
+export function defaultThemeConfigDocument(themeKey = "venore-slime"): ThemeConfigDocument {
+  return { schemaVersion: 1, themeKey, byTheme: { [themeKey]: emptyThemeConfigEntry() }, assets: {}, sections: [] };
+}

@@ -379,6 +379,13 @@
       "when": 1790811920079,
       "tag": "0053_media_asset_variants",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1790875004423,
+      "tag": "0054_theme_config_revisions",
+      "breakpoints": true
     }
   ]
 }
