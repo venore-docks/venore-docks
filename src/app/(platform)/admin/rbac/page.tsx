@@ -104,6 +104,7 @@ export default async function RbacAdminPage() {
           categories={scopeOptions.categories}
           scopablePermissionKeys={scopeOptions.scopablePermissionKeys}
           scopesByAssignment={scopesByAssignment}
+          canManageSuperadmin={gate.actor.isSuperadmin}
         />
       </section>
     </div>

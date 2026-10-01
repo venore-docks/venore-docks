@@ -23,3 +23,14 @@ export default function NextAuthStub() {
     },
   };
 }
+
+// Classes de erro que o app estende (contexts/auth/contracts/login-errors.ts) — o pacote real as
+// reexporta de @auth/core/errors; aqui basta a mesma forma (`code` + `type`).
+export class AuthError extends Error {
+  type = "AuthError";
+}
+
+export class CredentialsSignin extends AuthError {
+  code = "credentials";
+  type = "CredentialsSignin";
+}

@@ -89,4 +89,27 @@ describe("grantDefaultRoleOnRegistration", () => {
     });
     expect(insertUserRole).not.toHaveBeenCalled();
   });
+  it("grants the roleKey chosen in settings over the env fallback", async () => {
+    process.env.RBAC_DEFAULT_REGISTRATION_ROLE_KEY = "member";
+    findRoleIdByKey.mockResolvedValue("role-author");
+    insertUserRole.mockResolvedValue(undefined);
+
+    const { grantDefaultRoleOnRegistration } = await import("./service");
+    const result = await grantDefaultRoleOnRegistration({ userId: "user-1", roleKey: "author" });
+
+    expect(findRoleIdByKey).toHaveBeenCalledWith("author");
+    expect(result).toEqual({ success: true, data: undefined });
+  });
+
+  it("refuses superadmin as default role, from the setting or from the env var", async () => {
+    const { grantDefaultRoleOnRegistration } = await import("./service");
+
+    const fromSetting = await grantDefaultRoleOnRegistration({ userId: "user-1", roleKey: "superadmin" });
+    process.env.RBAC_DEFAULT_REGISTRATION_ROLE_KEY = "superadmin";
+    const fromEnv = await grantDefaultRoleOnRegistration({ userId: "user-1" });
+
+    expect(fromSetting).toMatchObject({ success: false, error: { code: "rbac.roles.default_role_forbidden" } });
+    expect(fromEnv).toMatchObject({ success: false, error: { code: "rbac.roles.default_role_forbidden" } });
+    expect(insertUserRole).not.toHaveBeenCalled();
+  });
 });

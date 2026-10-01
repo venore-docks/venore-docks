@@ -1,6 +1,8 @@
+import { waitUntil } from "@vercel/functions";
 import { eq, sql } from "drizzle-orm";
 import { db } from "@/infrastructure/database/client";
 import { entries } from "./database/schema";
+import { inProcessJobsEnabled } from "@/shared/in-process-jobs";
 
 // Contador de acesso por conteúdo (Fase 3/C9 — docs/implementation-roadmap.md). Mesmo raciocínio
 // do buffer de log em observability/buffer.ts+flush.ts (AGENTS.md §2 — "log síncrono por
@@ -13,6 +15,22 @@ let pendingViews = new Map<string, number>();
 // passou pelo gate de visibilidade (Fase 2/C7) — só visita que efetivamente renderizou conta.
 export function recordEntryView(entryId: string): void {
   pendingViews.set(entryId, (pendingViews.get(entryId) ?? 0) + 1);
+  scheduleViewFlushAfterResponse();
+}
+
+// Serverless: flush agendado pra depois da resposta (waitUntil) — o contador em memória se
+// perdia quando a função congelava antes do timer. Self-host segue no timer em processo.
+let viewFlushScheduled = false;
+function scheduleViewFlushAfterResponse(): void {
+  if (!process.env.VERCEL || viewFlushScheduled) return;
+  viewFlushScheduled = true;
+  const pending = new Promise<void>((resolve) => setTimeout(resolve, 0))
+    .then(() => flushEntryViews())
+    .then(() => undefined)
+    .finally(() => {
+      viewFlushScheduled = false;
+    });
+  waitUntil(pending);
 }
 
 export async function flushEntryViews(): Promise<number> {
@@ -58,6 +76,6 @@ export function stopEntryViewFlushScheduler(): void {
   }
 }
 
-if (process.env.NODE_ENV !== "test") {
+if (inProcessJobsEnabled()) {
   startEntryViewFlushScheduler();
 }

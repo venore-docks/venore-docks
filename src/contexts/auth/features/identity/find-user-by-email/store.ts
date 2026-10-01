@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { db } from "@/infrastructure/database/client";
 import { users } from "../../../database/schema";
 import type { UserRegistrationStatus } from "../../../contracts/types";
@@ -16,7 +16,9 @@ export async function findUserByEmail(email: string): Promise<FoundUser | null> 
       status: users.status,
     })
     .from(users)
-    .where(eq(users.email, email))
+    // lower() dos dois lados: bate com conta gravada pelo OAuth com maiúsculas e usa o índice
+    // único users_email_lower_idx.
+    .where(sql`lower(${users.email}) = lower(${email})`)
     .limit(1);
 
   if (!row) return null;

@@ -5,6 +5,11 @@ vi.mock("../../session/get-current-user/service", () => ({
   getCurrentUserService: (...args: unknown[]) => getCurrentUserService(...args),
 }));
 
+const renewCurrentSession = vi.fn(async () => undefined);
+vi.mock("../../session/revoke-sessions/renew-current-session", () => ({
+  renewCurrentSession: (...args: unknown[]) => renewCurrentSession(...(args as [])),
+}));
+
 const setOwnPassword = vi.fn();
 vi.mock("./service", () => ({
   setOwnPassword: (...args: unknown[]) => setOwnPassword(...args),
@@ -36,7 +41,8 @@ describe("setOwnPasswordHandler", () => {
     const { setOwnPasswordHandler } = await import("./handler");
     const result = await setOwnPasswordHandler({ newPassword: "supersecret" });
 
-    expect(setOwnPassword).toHaveBeenCalledWith({ actorId: "user-1", newPassword: "supersecret" });
+    expect(setOwnPassword).toHaveBeenCalledWith({ actorId: "user-1", newPassword: "supersecret", currentPassword: undefined });
     expect(result).toEqual({ success: true, data: { id: "user-1" } });
+    expect(renewCurrentSession).toHaveBeenCalledWith("user-1");
   });
 });

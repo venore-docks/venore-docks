@@ -1,9 +1,10 @@
-import { getCachedUserContext, setCachedUserContext } from "../../../user-context-cache";
+import { getCachedUserContext, setCachedUserContext, syncUserContextCacheVersion } from "../../../user-context-cache";
 import { findUserRoleRows, findUserScopeRows } from "./store";
 import { toUserRbacContext } from "./view";
 import type { GetUserContextQuery, GetUserContextResult } from "./types";
 
 export async function getUserContext(query: GetUserContextQuery): Promise<GetUserContextResult> {
+  await syncUserContextCacheVersion();
   const cached = getCachedUserContext(query.userId);
   if (cached) {
     return { success: true, data: cached };

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/observability", () => ({
   beginOperation: vi.fn(() => ({ operationId: "op-1", useCase: "test", actor: { id: "actor-1", type: "user" }, kind: "write", startedAt: new Date() })),
   endOperation: vi.fn(),
+  recordAuditEvent: vi.fn(),
 }));
 
 const deleteUserRole = vi.fn();
@@ -21,8 +22,22 @@ vi.mock("../../../user-context-cache", () => ({
   invalidateUserContext: (...args: unknown[]) => invalidateUserContext(...args),
 }));
 
+
+const assertActorCanManageUserRoles = vi.fn();
+const assertActorHoldsPermissions = vi.fn();
+const assertActorIsSuperadmin = vi.fn();
+vi.mock("../../../shared/privilege-guard", () => ({
+  SUPERADMIN_ROLE_KEY: "superadmin",
+  assertActorCanManageUserRoles: (...args: unknown[]) => assertActorCanManageUserRoles(...args),
+  assertActorHoldsPermissions: (...args: unknown[]) => assertActorHoldsPermissions(...args),
+  assertActorIsSuperadmin: (...args: unknown[]) => assertActorIsSuperadmin(...args),
+}));
+
 describe("removeRoleFromUser", () => {
   beforeEach(() => {
+    assertActorCanManageUserRoles.mockReset().mockResolvedValue({ success: true, data: undefined });
+    assertActorHoldsPermissions.mockReset().mockResolvedValue({ success: true, data: undefined });
+    assertActorIsSuperadmin.mockReset().mockResolvedValue({ success: true, data: undefined });
     deleteUserRole.mockReset();
     deleteUserRole.mockResolvedValue(undefined);
     findRoleById.mockReset();

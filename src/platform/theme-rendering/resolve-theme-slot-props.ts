@@ -10,7 +10,7 @@ import { collectUserNavItems } from "@/platform/user-nav/registry";
 import { resolveBrandAesthetics } from "./resolve-brand-aesthetics";
 import { toSitemapItems } from "./to-sitemap-items";
 import { FALLBACK_MAIN_NAV_ITEMS, FALLBACK_SITEMAP_ITEMS, THEME_SLOT_DEFAULTS } from "./slot-defaults";
-import type { HeaderSlotProps, HeaderUserInfo, FooterSlotProps, SidebarLeftSlotProps, NavMode, MainNavItem, NavGroup } from "@/contexts/themes";
+import type { HeaderSlotProps, HeaderUserInfo, FooterSlotProps, SidebarLeftSlotProps, NavMode, MainNavItem, NavGroup, NavItem } from "@/contexts/themes";
 
 // item "label" (href null, contexts/cms/contracts/types.ts — MenuItemTarget) é o agregador: só
 // vira MainNavItem (e some da árvore) se sobrar ao menos um filho depois da permissão/visibilidade
@@ -28,8 +28,30 @@ function toMainNavItems(items: ResolvedMenuItem[]): MainNavItem[] {
   });
 }
 
-// TODO: substituir header-nav por composição real de contexts/rbac quando esse escopo existir.
-// Até lá, este é o ÚNICO lugar do sistema onde dado mockado vira prop de slot — nunca dentro do
+// header-nav própria do Header: menu de location "header" do CMS (mesmo modelo de "main" e
+// "sitemap"). NavItem é plano (sem aninhamento): item com link entra direto; item-rótulo (href
+// null) é agregador, então os filhos com link sobem um nível no lugar dele.
+function toHeaderNavItems(items: ResolvedMenuItem[]): NavItem[] {
+  return items.flatMap((item): NavItem[] => {
+    if (item.href === null) {
+      return item.children.flatMap((child) =>
+        child.href === null ? [] : [{ key: child.id, label: child.label, href: child.href, icon: child.icon ?? undefined }],
+      );
+    }
+    return [{ key: item.id, label: item.label, href: item.href, icon: item.icon ?? undefined }];
+  });
+}
+
+// Remove o link "Entrar" dos menus de EXEMPLO (FALLBACK_*, instalação sem menu no CMS) quando o
+// admin escondeu o login da navegação (nav.hideLoginLink) — senão ele seguia aparecendo na
+// sidebar e no rodapé. Menu configurado no CMS é decisão do admin e não é filtrado.
+function withoutFallbackLogin<T extends { key: string; children?: T[] }>(items: T[]): T[] {
+  return items
+    .filter((item) => item.key !== "login")
+    .map((item) => (item.children ? { ...item, children: withoutFallbackLogin(item.children) } : item));
+}
+
+// Este é o ÚNICO lugar do sistema onde valor de plataforma vira prop de slot — nunca dentro do
 // próprio tema. navMode/navItems/canToggleAdminNav já são resolvidos de verdade (platform/nav-mode
 // + platform/admin-shell), passados pelo layout e mesclados no SidebarLeft (main-nav/admin-nav não
 // vivem no Header). O dado de usuário do Header (user/canAccessAdmin/onSignOut) segue o mesmo
@@ -80,8 +102,8 @@ export async function resolveThemeSlotProps(sidebarNav: {
   // location "main" (não "main-nav") desde a reescrita do subsistema de navegação — modelo de
   // menu/localização documentado em contexts/cms/contracts/types.ts. Árvore inteira é usada agora
   // (MainNavItem suporta aninhamento — toMainNavItems acima): item "label" (href null) vira
-  // agregador/accordion na sidebar em vez de ser descartado. header-nav continua fora desta sessão
-  // (Known Gap, AGENTS.md §7) — o Menu Contextual (location "contextual") foi ligado nesta sessão,
+  // agregador/accordion na sidebar em vez de ser descartado. header-nav vem do menu "header"
+  // (toHeaderNavItems acima) — o Menu Contextual (location "contextual") foi ligado nesta sessão,
   // mas fora deste função: app/(platform)/layout.tsx é quem chama getContextualMenu e monta
   // ContentSlotProps.sidebarContextual, não resolveThemeSlotProps (essa função só resolve
   // header/footer/sidebarLeft).
@@ -94,9 +116,10 @@ export async function resolveThemeSlotProps(sidebarNav: {
   // notificationAlert só é consultado pra quem está logado — visitante anônimo nunca tem thread
   // nenhuma (collectNotificationAlert já devolveria null de qualquer forma, mas evita a query à
   // toa).
-  const [mainMenu, sitemapMenu, brandConfig, headerBehavior, navVisibility, notificationAlert, userNavItems] = await Promise.all([
+  const [mainMenu, sitemapMenu, headerMenu, brandConfig, headerBehavior, navVisibility, notificationAlert, userNavItems] = await Promise.all([
     getMenuByLocation({ location: "main" }),
     getMenuByLocation({ location: "sitemap" }),
+    getMenuByLocation({ location: "header" }),
     getBrandConfig(aesthetics.mode),
     getHeaderBehavior(),
     getNavVisibility(),
@@ -106,10 +129,15 @@ export async function resolveThemeSlotProps(sidebarNav: {
   // Fallback quando o menu está VAZIO (instalação nova, sem menu no CMS) — não só quando a
   // leitura falha. Sem isso a sidebar renderiza "—" e o rodapé fica sem navegação nenhuma.
   const resolvedMainNav = mainMenu.success ? toMainNavItems(mainMenu.data) : [];
-  const mainNavItems: MainNavItem[] = resolvedMainNav.length > 0 ? resolvedMainNav : FALLBACK_MAIN_NAV_ITEMS;
+  const fallbackMainNav = navVisibility.hideLoginLink ? withoutFallbackLogin(FALLBACK_MAIN_NAV_ITEMS) : FALLBACK_MAIN_NAV_ITEMS;
+  const mainNavItems: MainNavItem[] = resolvedMainNav.length > 0 ? resolvedMainNav : fallbackMainNav;
 
   const resolvedSitemap = sitemapMenu.success ? toSitemapItems(sitemapMenu.data) : [];
-  const sitemapItems = resolvedSitemap.length > 0 ? resolvedSitemap : FALLBACK_SITEMAP_ITEMS;
+  const fallbackSitemap = navVisibility.hideLoginLink ? withoutFallbackLogin(FALLBACK_SITEMAP_ITEMS) : FALLBACK_SITEMAP_ITEMS;
+  const sitemapItems = resolvedSitemap.length > 0 ? resolvedSitemap : fallbackSitemap;
+
+  // Sem menu "header" no CMS (ou leitura falhando): nenhum link — header-nav não tem exemplo.
+  const headerNavItems = headerMenu.success ? toHeaderNavItems(headerMenu.data) : [];
 
   return {
     header: {
@@ -122,10 +150,14 @@ export async function resolveThemeSlotProps(sidebarNav: {
         logoUrl: brandConfig.logoUrl,
         scrolledLogoUrl: brandConfig.scrolledLogoUrl,
       },
-      userbarEnabled: THEME_SLOT_DEFAULTS.userbarEnabled,
+      // nav.hideLoginLink também desliga a userbar pro visitante deslogado: `showLoginLink` é
+      // extensão aditiva do contrato que só o venore-slime lê — os temas @venore/theme-* ignoram e
+      // seguiam mostrando "Entrar". Sem usuário, a userbar de todo tema só tem esse link, então
+      // `userbarEnabled=false` esconde exatamente ele; logado, a userbar (UserMenu) fica intacta.
+      userbarEnabled: THEME_SLOT_DEFAULTS.userbarEnabled && !(navVisibility.hideLoginLink && !user),
       stickyEnabled: headerBehavior.sticky,
       scrollShrinkEnabled: headerBehavior.scrollShrink,
-      headerNavItems: [...THEME_SLOT_DEFAULTS.headerNavItems],
+      headerNavItems,
       user,
       canAccessAdmin: sidebarNav.canAccessAdmin,
       onSignOut: sidebarNav.onSignOut,

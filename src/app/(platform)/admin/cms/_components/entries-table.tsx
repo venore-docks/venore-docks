@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useMemo, useState, useTransition } from "react";
 import { ExternalLink, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -36,44 +37,64 @@ function publicHref(entry: EntryRecord, categorySlugById: Map<string, string>): 
   return categorySlug ? `/${categorySlug}/${entry.slug}` : `/${entry.slug}`;
 }
 
+type EntriesFilters = { search: string; status: EntryStatus | "all"; tag: string };
+
+// Filtros vivem na URL e a busca roda no servidor (page.tsx) — a tabela recebe só a página atual.
 export function EntriesTable({
   entries,
   contentTypes,
   categories,
+  filters,
 }: {
   entries: EntryRecord[];
   contentTypes: { id: string; name: string }[];
   categories: { id: string; name: string; slug: string }[];
+  filters: EntriesFilters;
 }) {
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<EntryStatus | "all">("all");
-  const [tagFilter, setTagFilter] = useState<string>("all");
+  const router = useRouter();
+  const pathname = usePathname();
+  const [isPending, startTransition] = useTransition();
+  const [search, setSearch] = useState(filters.search);
+  const statusFilter = filters.status;
+  const tagFilter = filters.tag;
+
+  // Qualquer mudança de filtro volta pra página 1.
+  function applyFilters(next: Partial<EntriesFilters>) {
+    const merged = { ...filters, search, ...next };
+    const params = new URLSearchParams();
+    if (merged.search.trim()) params.set("q", merged.search.trim());
+    if (merged.status !== "all") params.set("status", merged.status);
+    if (merged.tag !== "all") params.set("tag", merged.tag);
+    const query = params.toString();
+    startTransition(() => router.replace(query ? `${pathname}?${query}` : pathname));
+  }
 
   const contentTypeNameById = useMemo(() => new Map(contentTypes.map((ct) => [ct.id, ct.name])), [contentTypes]);
   const categorySlugById = useMemo(() => new Map(categories.map((category) => [category.id, category.slug])), [categories]);
   const categoryNameById = useMemo(() => new Map(categories.map((category) => [category.id, category.name])), [categories]);
 
-  const filtered = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    return entries.filter((entry) => {
-      if (term && !entry.title.toLowerCase().includes(term)) return false;
-      if (statusFilter !== "all" && entry.status !== statusFilter) return false;
-      if (tagFilter !== "all" && !entry.contentTypeIds.includes(tagFilter)) return false;
-      return true;
-    });
-  }, [entries, search, statusFilter, tagFilter]);
+  const filtered = entries;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" aria-busy={isPending}>
       <div className="flex flex-wrap gap-2">
-        <Input
-          type="search"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Buscar por título..."
-          className="h-9 max-w-sm"
-        />
-        <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as EntryStatus | "all")}>
+        <form
+          className="w-full max-w-sm"
+          onSubmit={(event) => {
+            event.preventDefault();
+            applyFilters({ search });
+          }}
+        >
+          <Input
+            type="search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Buscar por título e Enter..."
+            aria-label="Buscar por título"
+            className="h-9"
+          />
+        </form>
+        <Select value={statusFilter} onValueChange={(value) => applyFilters({ status: value as EntryStatus | "all" })}>
           <SelectTrigger className="h-9 w-40">
             <SelectValue />
           </SelectTrigger>
@@ -87,7 +108,7 @@ export function EntriesTable({
           </SelectContent>
         </Select>
         {contentTypes.length > 0 && (
-          <Select value={tagFilter} onValueChange={setTagFilter}>
+          <Select value={tagFilter} onValueChange={(value) => applyFilters({ tag: value })}>
             <SelectTrigger className="h-9 w-40">
               <SelectValue />
             </SelectTrigger>

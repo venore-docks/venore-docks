@@ -1,7 +1,18 @@
+import { createReadStream } from "node:fs";
 import { mkdir, readFile, readdir, stat, unlink, writeFile } from "node:fs/promises";
+import { Readable } from "node:stream";
 import path from "node:path";
 import { resolveWithinRoot } from "./filesystem-path";
-import type { RemoteObjectSummary, StoragePort, StoragePutInput, StoredObject, UploadTicket } from "./storage-port";
+import type {
+  ByteRange,
+  RemoteObjectSummary,
+  StoragePort,
+  StoragePutInput,
+  StoredObject,
+  StoredObjectBody,
+  StoredObjectInfo,
+  UploadTicket,
+} from "./storage-port";
 
 // Sidecar com o contentType/size/uploadedAt de cada objeto — o disco não guarda o MIME e derivar
 // só da extensão erra em alguns casos (a extensão pode mentir). Um arquivo pequeno ao lado de
@@ -77,6 +88,39 @@ export class FilesystemStorageAdapter implements StoragePort {
       .map((segment) => encodeURIComponent(segment))
       .join("/");
     return `${this.publicBase}/${encoded}`;
+  }
+
+  async stat(key: string): Promise<StoredObjectInfo | null> {
+    const target = resolveWithinRoot(this.root, key);
+    if (!target) return null;
+    try {
+      const info = await stat(target);
+      if (!info.isFile()) return null;
+      const contentType = (await readFilesystemObjectContentType(key)) ?? "application/octet-stream";
+      return { size: info.size, contentType };
+    } catch {
+      return null;
+    }
+  }
+
+  // Streaming de verdade (com range) — antes a rota lia o arquivo inteiro pra memória a cada
+  // requisição, inclusive pra servir 1 KB de um vídeo de 200 MB.
+  async read(key: string, range?: ByteRange | null): Promise<StoredObjectBody | null> {
+    const info = await this.stat(key);
+    const target = resolveWithinRoot(this.root, key);
+    if (!info || !target) return null;
+    const effective = range && range.start <= range.end && range.end < info.size ? range : null;
+    const nodeStream = createReadStream(target, effective ? { start: effective.start, end: effective.end } : undefined);
+    return {
+      body: Readable.toWeb(nodeStream) as ReadableStream<Uint8Array>,
+      size: info.size,
+      contentType: info.contentType,
+      range: effective,
+    };
+  }
+
+  servesPublicly(): boolean {
+    return true;
   }
 
   async createUploadTicket(): Promise<UploadTicket> {

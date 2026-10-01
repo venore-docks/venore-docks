@@ -370,3 +370,58 @@ describe("resolveScopeForActor (Fase C)", () => {
     expect(await resolveScopeForActor("actor-7", "cms.entries.manage", "cms.category")).toEqual({ kind: "none" });
   });
 });
+
+describe("authorizeActorOverUser", () => {
+  function ctx(userId: string, permissions: string[], isSuperadmin = false) {
+    return { success: true, data: { userId, roles: [], permissions, isSuperadmin, scopedPermissions: {} } };
+  }
+
+  beforeEach(() => {
+    getCurrentUser.mockReset();
+    getUserContext.mockReset();
+    getCurrentUser.mockResolvedValue({ success: true, data: { id: "admin-1", email: null, name: null, image: null } });
+    getUserContext.mockImplementation(async ({ userId }: { userId: string }) =>
+      userId === "root" ? ctx("root", [], true) : ctx(userId, ["rbac.users.manage"]),
+    );
+  });
+
+  it("authorizes an admin acting on a regular user", async () => {
+    const { authorizeActorOverUser } = await import("./authorize-actor");
+    expect(await authorizeActorOverUser("rbac.users.manage", "member-1")).toEqual({ authorized: true, actorId: "admin-1" });
+  });
+
+  it("refuses a non-superadmin acting on a superadmin", async () => {
+    const { authorizeActorOverUser } = await import("./authorize-actor");
+    const result = await authorizeActorOverUser("rbac.users.manage", "root");
+    expect(result).toEqual({
+      authorized: false,
+      error: { code: "rbac.authorization.target_outranks_actor", message: expect.any(String) },
+    });
+  });
+
+  it("refuses acting on oneself unless allowSelf is set", async () => {
+    const { authorizeActorOverUser } = await import("./authorize-actor");
+    expect(await authorizeActorOverUser("rbac.users.manage", "admin-1")).toEqual({
+      authorized: false,
+      error: { code: "rbac.authorization.self_target", message: expect.any(String) },
+    });
+    expect(await authorizeActorOverUser("rbac.users.manage", "admin-1", { allowSelf: true })).toEqual({
+      authorized: true,
+      actorId: "admin-1",
+    });
+  });
+
+  it("lets a superadmin act on another superadmin", async () => {
+    getCurrentUser.mockResolvedValue({ success: true, data: { id: "root", email: null, name: null, image: null } });
+    getUserContext.mockImplementation(async ({ userId }: { userId: string }) => ctx(userId, [], true));
+    const { authorizeActorOverUser } = await import("./authorize-actor");
+    expect(await authorizeActorOverUser("rbac.users.manage", "root-2")).toEqual({ authorized: true, actorId: "root" });
+  });
+
+  it("stops at the permission check when the actor lacks the permission", async () => {
+    getUserContext.mockResolvedValue(ctx("admin-1", []));
+    const { authorizeActorOverUser } = await import("./authorize-actor");
+    const result = await authorizeActorOverUser("rbac.users.manage", "member-1");
+    expect(result).toEqual({ authorized: false, error: { code: "rbac.authorization.forbidden", message: expect.any(String) } });
+  });
+});

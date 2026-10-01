@@ -103,4 +103,18 @@ describe("Breadcrumbs — dados estruturados", () => {
     const html = renderToStaticMarkup(<Breadcrumbs breadcrumbs={deepTrail} breadcrumbsJsonLd={null} />);
     expect(html).not.toContain("<script");
   });
+
+  it("não deixa um rótulo com </script> fechar a tag do JSON-LD (XSS armazenado)", () => {
+    const evil = "</script><script>alert(document.domain)</script>";
+    const jsonLd = {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [{ "@type": "ListItem", position: 1, name: evil, item: "https://app.test/" }],
+    };
+    const html = renderToStaticMarkup(<Breadcrumbs breadcrumbs={deepTrail} breadcrumbsJsonLd={jsonLd} />);
+
+    expect(html).not.toContain("<script>alert");
+    expect(html).toContain("\\u003c/script");
+  });
 });
+

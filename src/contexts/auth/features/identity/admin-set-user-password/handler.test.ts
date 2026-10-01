@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const authorizeActor = vi.fn();
 vi.mock("@/contexts/rbac", () => ({
-  authorizeActor: (...args: unknown[]) => authorizeActor(...args),
+  authorizeActorOverUser: (...args: unknown[]) => authorizeActor(...args),
 }));
 
 const adminSetUserPassword = vi.fn();
@@ -38,7 +38,7 @@ describe("adminSetUserPasswordHandler", () => {
     const { adminSetUserPasswordHandler } = await import("./handler");
     const result = await adminSetUserPasswordHandler({ targetUserId: "target-1", newPassword: "supersecret" });
 
-    expect(authorizeActor).toHaveBeenCalledWith("rbac.roles.manage");
+    expect(authorizeActor).toHaveBeenCalledWith("rbac.roles.manage", expect.any(String), { allowSelf: true });
     expect(result).toEqual({
       success: false,
       error: { code: "rbac.authorization.forbidden", message: "sem permission" },

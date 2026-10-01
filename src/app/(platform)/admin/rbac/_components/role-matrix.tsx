@@ -37,12 +37,16 @@ export function RoleMatrix({
   categories,
   scopablePermissionKeys,
   scopesByAssignment,
+  canManageSuperadmin,
 }: {
   roles: RoleMatrixRole[];
   groups: PermissionGroupView[];
   categories: CmsCategoryOption[];
   scopablePermissionKeys: string[];
   scopesByAssignment: ScopesByAssignment;
+  // Só superadmin concede/remove o papel superadmin (o servidor recusa de qualquer forma — ver
+  // contexts/rbac/shared/privilege-guard.ts); aqui só evita mostrar um botão que sempre falharia.
+  canManageSuperadmin: boolean;
 }) {
   const [view, setView] = useState<"single" | "matrix">("single");
 
@@ -97,6 +101,7 @@ export function RoleMatrix({
                     categories={categories}
                     scopablePermissionKeys={scopablePermissionKeys}
                     scopesByAssignment={scopesByAssignment}
+                    canManageSuperadmin={canManageSuperadmin}
                   />
                 </AccordionContent>
               </AccordionItem>
@@ -114,13 +119,16 @@ function RolePanel({
   categories,
   scopablePermissionKeys,
   scopesByAssignment,
+  canManageSuperadmin,
 }: {
   role: RoleMatrixRole;
   groups: PermissionGroupView[];
   categories: CmsCategoryOption[];
   scopablePermissionKeys: string[];
   scopesByAssignment: ScopesByAssignment;
+  canManageSuperadmin: boolean;
 }) {
+  const canEditAssignments = !role.isSuperadmin || canManageSuperadmin;
   const hasNoPermissions = !role.isSuperadmin && role.permissionKeys.length === 0;
   const searchInputId = `permission-search-${role.id}`;
   // O papel abre o recorte por categoria se conceder alguma permission recortável por
@@ -136,7 +144,11 @@ function RolePanel({
           Como o papel aparece nas telas — o identificador interno (<code className="text-foreground">{role.key}</code>) não muda.
         </p>
         <div className="mt-2">
-          <RenameRoleForm roleId={role.id} name={role.name} />
+          {canEditAssignments ? (
+            <RenameRoleForm roleId={role.id} name={role.name} />
+          ) : (
+            <p className="text-sm text-foreground">{role.name}</p>
+          )}
         </div>
       </div>
 
@@ -197,7 +209,7 @@ function RolePanel({
                   <span>
                     {user.name ?? "(sem nome)"} — {user.email}
                   </span>
-                  <RemoveRoleButton roleId={role.id} userId={user.id} />
+                  {canEditAssignments && <RemoveRoleButton roleId={role.id} userId={user.id} />}
                 </div>
                 {isScopable && (
                   <RoleAssignmentScopeEditor
@@ -211,7 +223,10 @@ function RolePanel({
             ))}
           </ul>
         )}
-        {role.assignableUsers.length > 0 && (
+        {!canEditAssignments && (
+          <p className="mt-2 text-xs text-muted-foreground">Só um superadmin pode conceder ou remover este papel.</p>
+        )}
+        {canEditAssignments && role.assignableUsers.length > 0 && (
           <AssignRoleForm
             roleId={role.id}
             assignableUsers={role.assignableUsers}

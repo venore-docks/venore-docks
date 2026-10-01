@@ -18,9 +18,34 @@ vi.mock("./store", () => ({
 }));
 
 describe("registerDefaultSetting", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     invalidateCache.mockReset();
     insertSettingIfMissing.mockReset();
+    const { forgetConfirmedDefaultSettings } = await import("./service");
+    forgetConfirmedDefaultSettings("");
+  });
+
+  it("only hits the database once per key per process", async () => {
+    insertSettingIfMissing.mockResolvedValue(false);
+
+    const { registerDefaultSetting } = await import("./service");
+    await registerDefaultSetting({ key: "header.sticky", value: true });
+    await registerDefaultSetting({ key: "header.sticky", value: true });
+
+    expect(insertSettingIfMissing).toHaveBeenCalledTimes(1);
+  });
+
+  it("hits the database again after forgetConfirmedDefaultSettings for that prefix", async () => {
+    insertSettingIfMissing.mockResolvedValue(false);
+
+    const { registerDefaultSetting, forgetConfirmedDefaultSettings } = await import("./service");
+    await registerDefaultSetting({ key: "birthdays.reminder_days", value: 7 });
+    await registerDefaultSetting({ key: "header.sticky", value: true });
+    forgetConfirmedDefaultSettings("birthdays.");
+    await registerDefaultSetting({ key: "birthdays.reminder_days", value: 7 });
+    await registerDefaultSetting({ key: "header.sticky", value: true });
+
+    expect(insertSettingIfMissing).toHaveBeenCalledTimes(3);
   });
 
   it("inserts the default and invalidates the cache when the key is missing", async () => {

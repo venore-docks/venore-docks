@@ -10,7 +10,7 @@ export async function findAssetById(id: string): Promise<MediaAsset | null> {
   return (row as MediaAsset) ?? null;
 }
 
-export async function updateAssetVisibility(id: string, visibility: MediaVisibility): Promise<MediaAsset> {
-  const [row] = await db.update(assets).set({ visibility, updatedAt: new Date() }).where(eq(assets.id, id)).returning();
+export async function updateAssetVisibility(id: string, visibility: MediaVisibility, url: string): Promise<MediaAsset> {
+  const [row] = await db.update(assets).set({ visibility, url, updatedAt: new Date() }).where(eq(assets.id, id)).returning();
   return row as MediaAsset;
 }

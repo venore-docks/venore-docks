@@ -9,5 +9,11 @@ export type ListEntriesForAdminQuery = {
   // escopado). Ausente = sem recorte (admin global / superadmin). Array vazio = nenhuma entry.
   // Injetado pelo handler a partir de resolveScopeForActor — não vem do form.
   allowedCategoryIds?: string[];
+  // Paginação da tela de admin: com `limit`, mais recentes primeiro (updatedAt). Sem `limit`,
+  // tudo (export do site usa assim).
+  limit?: number;
+  offset?: number;
+  // Busca por título (contém, sem diferenciar maiúsculas).
+  search?: string;
 };
 export type ListEntriesForAdminResult = OperationResult<EntryRecord[]>;

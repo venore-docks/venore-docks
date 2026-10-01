@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+const findVariantsByAssetIds = vi.fn<(...args: unknown[]) => Promise<unknown[]>>(async () => []);
+vi.mock("../../../shared/asset-variants-store", () => ({
+  findVariantsByAssetIds: (...args: unknown[]) => findVariantsByAssetIds(...args),
+}));
+
 vi.mock("@/observability", () => ({
   beginOperation: vi.fn(() => ({ operationId: "op-1", useCase: "test", actor: { id: "actor-1", type: "user" }, kind: "write", startedAt: new Date() })),
   endOperation: vi.fn(),
@@ -59,5 +64,16 @@ describe("purgeMediaAsset", () => {
     expect(removeFn).toHaveBeenCalledWith("uuid-photo.png");
     expect(hardDeleteAssetById).toHaveBeenCalledWith("asset-1");
     expect(invalidateCacheByPrefix).toHaveBeenCalledWith("media:assets:");
+  });
+
+  it("removes the image variants from storage before deleting the row", async () => {
+    findSoftDeletedAssetById.mockResolvedValue({ id: "asset-1", pathname: "Imagens/u-foto.jpg", deletedAt: new Date("2026-01-01") });
+    findVariantsByAssetIds.mockResolvedValueOnce([{ pathname: "Imagens/u-foto.w160.webp" }, { pathname: "Imagens/u-foto.w480.webp" }]);
+
+    const { purgeMediaAsset } = await import("./service");
+    await purgeMediaAsset({ id: "asset-1", actorId: "actor-1" });
+
+    expect(removeFn.mock.calls.map(([key]) => key)).toEqual(["Imagens/u-foto.w160.webp", "Imagens/u-foto.w480.webp", "Imagens/u-foto.jpg"]);
+    expect(hardDeleteAssetById).toHaveBeenCalledWith("asset-1");
   });
 });

@@ -53,6 +53,10 @@ export const assets = mediaSchema.table(
     // com assets vinculados falha no banco, não só na aplicação.
     categoryId: text("category_id").references(() => categories.id, { onDelete: "restrict" }),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    // Quando a geração de variantes (asset_variants) rodou com sucesso pra este asset — inclusive
+    // quando concluiu que não havia o que gerar (não é imagem, PNG pequeno que ficaria maior em
+    // WebP). Null = nunca processado ou falhou: é o que o backfill do /admin/media pega.
+    variantsProcessedAt: timestamp("variants_processed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -62,5 +66,34 @@ export const assets = mediaSchema.table(
     index("media_assets_uploaded_by_idx").on(table.uploadedBy),
     index("media_assets_deleted_at_idx").on(table.deletedAt),
     check("media_assets_visibility_valid", sql`${table.visibility} IN ('public', 'restricted', 'private')`),
+  ],
+);
+
+// Cópias redimensionadas (WebP) de um asset de imagem, geradas no upload
+// (features/assets/generate-asset-variants). O original em `assets` nunca é tocado — download,
+// capa/story e qualquer uso que precise da resolução cheia continuam lendo ele; página que só
+// EXIBE a imagem pega a menor variante que cobre o tamanho na tela (variant-selection.ts). A URL
+// não é gravada: sai de `pathname` + visibilidade do asset na leitura, então trocar a visibilidade
+// do asset vale pras variantes também. Cascade: hard delete do asset leva as linhas junto (os
+// objetos no storage saem no purge, explicitamente).
+export const assetVariants = mediaSchema.table(
+  "asset_variants",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    assetId: text("asset_id")
+      .notNull()
+      .references(() => assets.id, { onDelete: "cascade" }),
+    width: integer("width").notNull(),
+    height: integer("height").notNull(),
+    pathname: text("pathname").notNull(),
+    contentType: text("content_type").notNull(),
+    size: integer("size").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("media_asset_variants_pathname_idx").on(table.pathname),
+    uniqueIndex("media_asset_variants_asset_width_idx").on(table.assetId, table.width),
   ],
 );

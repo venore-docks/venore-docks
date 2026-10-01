@@ -18,10 +18,12 @@ vi.mock("@/contexts/cms", () => ({
 
 const listMediaCategories = vi.fn();
 const listMediaAssets = vi.fn();
+const readMediaAsset = vi.fn();
 
 vi.mock("@/contexts/media", () => ({
   listCategories: (...args: unknown[]) => listMediaCategories(...args),
   listMediaAssets: (...args: unknown[]) => listMediaAssets(...args),
+  readMediaAsset: (...args: unknown[]) => readMediaAsset(...args),
 }));
 
 const listUsers = vi.fn();
@@ -41,10 +43,10 @@ describe("exportSiteBundle", () => {
     listMediaCategories.mockReset();
     listMediaAssets.mockReset();
     listUsers.mockReset();
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () => ({ ok: true, arrayBuffer: async () => new TextEncoder().encode("fake-bytes").buffer }) as unknown as Response),
-    );
+    readMediaAsset.mockReset().mockImplementation(async () => ({
+      success: true,
+      data: { body: new Blob(["fake-bytes"]).stream(), size: 10, contentType: "image/png", range: null, visibility: "public" },
+    }));
   });
 
   it("builds a manifest that references entries/categories/media by key/checksum, never by database id", async () => {
@@ -152,6 +154,50 @@ describe("exportSiteBundle", () => {
     );
     expect(manifest.mediaAssets[0]).toEqual(expect.objectContaining({ ref: "abc123", categoryName: "Photos", file: "assets/abc123-pic.png" }));
     expect(files).toEqual([{ path: "assets/abc123-pic.png", data: expect.any(Buffer) }]);
+  });
+
+  it("reads media through the media barrel and skips an unreadable file without failing the export", async () => {
+    listContentTypes.mockResolvedValue({ success: true, data: [] });
+    listCmsCategories.mockResolvedValue({ success: true, data: [] });
+    listEntriesForAdmin.mockResolvedValue({ success: true, data: [] });
+    listMenus.mockResolvedValue({ success: true, data: [] });
+    listMediaCategories.mockResolvedValue({ success: true, data: [] });
+    listUsers.mockResolvedValue({ success: true, data: [] });
+    const asset = (id: string, checksum: string) => ({
+      id,
+      filename: `${id}.pdf`,
+      pathname: `${id}.pdf`,
+      url: `/api/media/asset/${id}`,
+      contentType: "application/pdf",
+      size: 10,
+      width: null,
+      height: null,
+      alt: null,
+      checksum,
+      uploadedBy: null,
+      visibility: "private",
+      categoryId: null,
+      deletedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    listMediaAssets.mockResolvedValue({ success: true, data: [asset("ok", "c-ok"), asset("gone", "c-gone")] });
+    readMediaAsset.mockImplementation(async ({ id }: { id: string }) =>
+      id === "gone"
+        ? { success: false, error: { code: "media.not_found", message: "Arquivo não encontrado." } }
+        : { success: true, data: { body: new Blob(["pdf"]).stream(), size: 3, contentType: "application/pdf", range: null, visibility: "private" } },
+    );
+
+    const { exportSiteBundle } = await import("./service");
+    const result = await exportSiteBundle();
+
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(readMediaAsset).toHaveBeenCalledWith({ id: "ok" });
+    expect(result.data.manifest.mediaAssets.map((item) => item.ref)).toEqual(["c-ok", "c-gone"]);
+    expect(result.data.files.map((file) => file.path)).toEqual(["assets/c-ok-ok.pdf"]);
+    expect(result.data.files[0].data.toString()).toBe("pdf");
+    expect(result.data.manifest.skippedAssets).toEqual([{ ref: "c-gone", filename: "gone.pdf", reason: "Arquivo não encontrado." }]);
   });
 
   it("propagates a failure from any of the underlying reads instead of building a partial manifest", async () => {

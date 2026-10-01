@@ -50,9 +50,10 @@ direto pra ele.
 - **Vídeos do Broadcast não passam por aqui.** Eles ficam em `public/broadcast/videos/` e são
   servidos pela rota do próprio plugin (`/api/broadcast/stream/:itemId`, com Range). Este driver é
   só pra biblioteca de mídia (`contexts/media`) — no Broadcast, as imagens.
-- **Sem auth por asset.** A key tem um UUID não-adivinhável; a rota serve por key sem checar
-  sessão — paridade com o driver `vercel-blob`, onde todo asset é servível por URL pública
-  não-adivinhável. Um modelo de visibilidade por asset seria mudança nos dois drivers.
+- **Auth por asset (desde a 0.6.0).** A rota `/api/media/file/[...key]` só serve keys que são
+  assets registrados e aplica a mesma autorização por asset de `/api/media/asset/[id]` (dono,
+  `media.manage` ou URL assinada) via `platform/media-serving/serve-media.ts`, com streaming e
+  `Range`. Antes, qualquer key sob a raiz era servida sem sessão.
 - **`resolveUrl` é resolvido no upload e gravado.** Se você mudar `MEDIA_FILESYSTEM_PUBLIC_URL`
   depois, os registros antigos mantêm a URL antiga (só os novos usam a nova base).
 - **Backup é sua responsabilidade.** `MEDIA_FILESYSTEM_ROOT` não é versionado. Faça backup dele

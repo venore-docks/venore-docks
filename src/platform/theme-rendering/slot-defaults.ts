@@ -8,8 +8,6 @@ export const THEME_SLOT_DEFAULTS = {
   // O Header sempre monta a user-bar (login / menu do usuário) — não há tema hoje que a dispense
   // e não é decisão editável. Se algum dia for, vira manifest.capabilities.
   userbarEnabled: true,
-  // header-nav própria do Header: sem fonte real ainda (Known Gap, AGENTS.md §7) — lista vazia.
-  headerNavItems: [] as const,
   // Créditos no rodapé ("feito com…"): desligado por padrão, sem toggle de admin hoje.
   footerCreditsEnabled: false,
   // SidebarLeft sempre existe (é navegação, não área de widget) — nenhum tema a dispensa hoje.
