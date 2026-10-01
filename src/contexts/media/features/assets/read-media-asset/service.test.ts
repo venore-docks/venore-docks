@@ -29,15 +29,15 @@ describe("readMediaAsset", () => {
     findServableAsset.mockResolvedValue(PRIVATE);
     const { readMediaAsset } = await import("./service");
     expect((await readMediaAsset({ id: "a1" }, null)).success).toBe(false);
-    expect((await readMediaAsset({ id: "a1" }, { actorId: "someone", isMediaAdmin: false })).success).toBe(false);
+    expect((await readMediaAsset({ id: "a1" }, { actorId: "someone", isMediaAdmin: false, isSuperadmin: false, permissions: [] })).success).toBe(false);
     expect(read).not.toHaveBeenCalled();
   });
 
   it("serves a private asset to its owner, to media admins and with a valid signature", async () => {
     findServableAsset.mockResolvedValue(PRIVATE);
     const { readMediaAsset } = await import("./service");
-    expect((await readMediaAsset({ id: "a1" }, { actorId: "owner", isMediaAdmin: false })).success).toBe(true);
-    expect((await readMediaAsset({ id: "a1" }, { actorId: "admin", isMediaAdmin: true })).success).toBe(true);
+    expect((await readMediaAsset({ id: "a1" }, { actorId: "owner", isMediaAdmin: false, isSuperadmin: false, permissions: [] })).success).toBe(true);
+    expect((await readMediaAsset({ id: "a1" }, { actorId: "admin", isMediaAdmin: true, isSuperadmin: false, permissions: [] })).success).toBe(true);
     verifyMediaSignature.mockReturnValue(true);
     expect((await readMediaAsset({ id: "a1", exp: "1", sig: "s" }, null)).success).toBe(true);
   });

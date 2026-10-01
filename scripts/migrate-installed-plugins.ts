@@ -1,4 +1,5 @@
 import { listExtensionStates } from "@/contexts/extensions";
+import { applyRestrictedUploadCategories } from "@/platform/media-lifecycle/apply-restricted-upload-categories";
 import { runPluginMigrations } from "@/platform/plugin-engine/run-plugin-migrations";
 import { PLUGIN_REGISTRY } from "@/plugins/registry";
 
@@ -19,6 +20,17 @@ async function main() {
   if (!process.env.DATABASE_URL) {
     console.error("[plugins] ✖ DATABASE_URL não está definida — não dá pra aplicar migrations de plugin.");
     process.exit(1);
+  }
+
+  // Arquivos sensíveis de plugin (manifest.restrictedUploadCategories, ex: currículos): aplica a
+  // restrição também ao que já foi enviado. Antes das migrations de plugin porque só depende do
+  // schema de mídia do core (já migrado). Falha aqui não derruba o build — loga e segue.
+  try {
+    for (const { key, restricted } of await applyRestrictedUploadCategories()) {
+      console.log(`[plugins] ✔ mídia restrita em "${key}": ${restricted} arquivo(s) ajustado(s).`);
+    }
+  } catch (error) {
+    console.warn(`[plugins] ! não deu pra aplicar a mídia restrita: ${error instanceof Error ? error.message : String(error)}`);
   }
 
   const withSchema = PLUGIN_REGISTRY.filter((entry) => entry.migrationsPath);

@@ -11,7 +11,8 @@ const MEDIA_LIST_CACHE_TTL_SECONDS = 300;
 // mesmo raciocínio de cms:content-types cachear entryCount (Fase 3/C8): uma chave por combinação,
 // nunca uma só compartilhada.
 function cacheKeyFor(scope: MediaActorScope, query: ListMediaAssetsQuery): string {
-  const scopePart = scope.isMediaAdmin ? "admin" : `actor:${scope.actorId}`;
+  // superadmin vê "restricted" e media.manage não — caches separados.
+  const scopePart = scope.isSuperadmin ? "superadmin" : scope.isMediaAdmin ? "admin" : `actor:${scope.actorId}`;
   const categoryPart = query.categoryId ?? "all";
   const pagePart = query.limit === undefined ? "all" : `${query.limit}@${query.offset ?? 0}`;
   return `media:assets:${scopePart}:category:${categoryPart}:page:${pagePart}`;

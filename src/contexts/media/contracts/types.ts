@@ -1,7 +1,7 @@
-// "public": qualquer ator autenticado vê e usa. "restricted": só o contexto de origem — hoje é
-// só um rótulo administrativo, o enforcement de "só consumível onde foi enviado" ainda não existe
-// (Known Gap, docs/implementation-roadmap.md Fase 4/M3). "private": só dono + media.manage;
-// avatar nasce sempre assim.
+// "public": qualquer um vê. "private": só dono + media.manage; avatar nasce sempre assim.
+// "restricted": arquivo de um plugin com dado sensível (ex: currículo) — só superadmin, o dono e
+// quem tem a `accessPermission` do asset; media.manage sozinho não vê, não lista e não muda a
+// visibilidade (ver shared/can-read-asset.ts).
 export type MediaVisibility = "public" | "restricted" | "private";
 
 // Categoria de organização de um asset — classificação escolhida pelo admin (ex: "Marketing",
@@ -31,6 +31,8 @@ export type MediaAsset = {
   // Nullable — envio anônimo (ex: uploadReservedCategoryAssetPublic) não tem ator autenticado.
   uploadedBy: string | null;
   visibility: MediaVisibility;
+  // Só em "restricted" — permission que dá leitura (ver schema).
+  accessPermission: string | null;
   categoryId: string | null;
   deletedAt: Date | null;
   variantsProcessedAt: Date | null;

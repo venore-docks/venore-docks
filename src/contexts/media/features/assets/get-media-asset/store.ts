@@ -1,16 +1,16 @@
-import { and, eq, isNull, or } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/infrastructure/database/client";
 import { assets } from "../../../database/schema";
 import type { MediaAsset } from "../../../contracts/types";
 import type { MediaActorScope } from "../../../resolve-media-actor-scope";
+import { canReadAsset } from "../../../shared/can-read-asset";
 
+// Lê por id e aplica canReadAsset (a mesma regra da rota que serve o arquivo) — "restricted"
+// depende de permission do ator, que não cabe num filtro SQL simples.
 export async function findAssetByIdForScope(id: string, scope: MediaActorScope): Promise<MediaAsset | null> {
-  const filter = scope.isMediaAdmin
-    ? and(eq(assets.id, id), isNull(assets.deletedAt))
-    : and(eq(assets.id, id), isNull(assets.deletedAt), or(eq(assets.visibility, "public"), eq(assets.uploadedBy, scope.actorId)));
-
-  const [row] = await db.select().from(assets).where(filter).limit(1);
-  return (row as MediaAsset) ?? null;
+  const [row] = await db.select().from(assets).where(and(eq(assets.id, id), isNull(assets.deletedAt))).limit(1);
+  const asset = (row as MediaAsset | undefined) ?? null;
+  return asset && canReadAsset(asset, scope) ? asset : null;
 }
 
 // Sem filtro de visibilidade/dono — só chamar de dentro de um service que JÁ verificou sozinho

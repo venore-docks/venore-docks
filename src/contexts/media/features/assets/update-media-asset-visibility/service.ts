@@ -1,4 +1,5 @@
 import { invalidateCacheByPrefix } from "@/infrastructure/cache/memory-cache";
+import { canManageAsset } from "../../../shared/can-read-asset";
 import { resolveAssetUrl } from "../../../asset-url";
 import { findAssetById, updateAssetVisibility } from "./store";
 import type { UpdateMediaAssetVisibilityCommand, UpdateMediaAssetVisibilityResult } from "./types";
@@ -9,7 +10,11 @@ const MEDIA_LIST_CACHE_PREFIX = "media:assets:";
 // nem media.manage) — nunca confirma pra quem pergunta que um asset privado de outro ator existe.
 export async function updateMediaAssetVisibility(command: UpdateMediaAssetVisibilityCommand): Promise<UpdateMediaAssetVisibilityResult> {
   const media = await findAssetById(command.id);
-  const canEdit = media !== null && (command.isMediaAdmin || media.uploadedBy === command.actorId);
+  // Asset "restricted" (currículo etc.) só muda pelo superadmin — media.manage não pode torná-lo
+  // público nem tirá-lo da categoria do plugin (shared/can-read-asset.ts).
+  const canEdit =
+    media !== null &&
+    canManageAsset(media, { actorId: command.actorId, isMediaAdmin: command.isMediaAdmin, isSuperadmin: command.isSuperadmin ?? false });
 
   if (!canEdit) {
     return {

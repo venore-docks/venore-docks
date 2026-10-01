@@ -26,7 +26,9 @@ import type { OperationResult } from "@/shared/types";
 export type MediaActionState = { error: string | null };
 
 function parseVisibility(value: FormDataEntryValue | null): MediaVisibility {
-  return value === "public" || value === "restricted" ? value : "private";
+  // "restricted" não vem do upload manual: só de plugin (manifest.restrictedUploadCategories), com
+  // a permission que dá acesso — escolhido aqui, o arquivo ficaria sem ninguém além do superadmin.
+  return value === "public" ? value : "private";
 }
 
 // Mesmo padrão de removeRoleAction (/admin/rbac/actions.ts): erro do handler é devolvido de

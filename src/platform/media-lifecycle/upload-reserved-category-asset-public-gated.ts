@@ -1,6 +1,7 @@
 import { uploadReservedCategoryAssetPublicUngated } from "@/contexts/media";
 import type { UploadReservedCategoryAssetInput, UploadReservedCategoryAssetResult } from "@/contexts/media";
 import { isAnonymousUploadCategoryAllowed } from "@/platform/plugin-engine/is-anonymous-upload-category-allowed";
+import { findRestrictedUploadCategory } from "./apply-restricted-upload-categories";
 
 // Único caminho de upload SEM SESSÃO exposto a plugins (via @venore/plugin-sdk/media) — composto
 // aqui, fora de contexts/media, porque a checagem depende do PLUGIN_REGISTRY (regra 12: contexts
@@ -21,5 +22,8 @@ export async function uploadReservedCategoryAssetPublicGated(
     };
   }
 
-  return uploadReservedCategoryAssetPublicUngated(input);
+  // Categoria declarada em manifest.restrictedUploadCategories: o arquivo nasce "restricted" com a
+  // permission do manifesto (ex: currículo só pra quem tem vagas.applications.review).
+  const restricted = findRestrictedUploadCategory(input.categoryKey);
+  return uploadReservedCategoryAssetPublicUngated(input, restricted ? { accessPermission: restricted.accessPermission } : undefined);
 }

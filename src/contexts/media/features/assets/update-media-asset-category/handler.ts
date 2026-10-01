@@ -11,5 +11,5 @@ export async function updateMediaAssetCategoryHandler(input: UpdateMediaAssetCat
     };
   }
 
-  return updateMediaAssetCategory({ ...input, actorId: scope.actorId, isMediaAdmin: scope.isMediaAdmin });
+  return updateMediaAssetCategory({ ...input, actorId: scope.actorId, isMediaAdmin: scope.isMediaAdmin, isSuperadmin: scope.isSuperadmin });
 }

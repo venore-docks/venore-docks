@@ -27,7 +27,7 @@ type UploadStatus = { step: "idle" } | { step: "uploading" } | { step: "error"; 
 
 export function UploadMediaForm() {
   const router = useRouter();
-  const [visibility, setVisibility] = useState<"private" | "restricted" | "public">("private");
+  const [visibility, setVisibility] = useState<"private" | "public">("private");
   const [status, setStatus] = useState<UploadStatus>({ step: "idle" });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -106,7 +106,6 @@ export function UploadMediaForm() {
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="private">Privado</SelectItem>
-          <SelectItem value="restricted">Restrito</SelectItem>
           <SelectItem value="public">Público</SelectItem>
         </SelectContent>
       </Select>
