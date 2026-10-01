@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { BlockDefinition } from "@/contexts/cms";
 import type { NavItem } from "@/contexts/themes";
+import type { OutletRenderContext, ThemeOutletName } from "@/contexts/themes/contracts/v8";
 import type { OperationResult } from "@/shared/types";
 import type { BreadcrumbSegmentDefinition } from "@/platform/breadcrumbs/types";
 import type { MediaUsageProvider } from "@/platform/media-usage/types";
@@ -53,4 +54,18 @@ export type PluginContributions = {
   adminDashboardPanel?: () => Promise<ReactNode>;
   publicHomeShowcase?: () => Promise<ReactNode>;
   scheduledJobs?: PluginScheduledJob[];
+  // Outlets do tema (spec v8 §2.8/§7.4): JSX que o plugin injeta num ponto nomeado das regiões.
+  // Consumido por platform/theme-rendering/resolve-theme-outlets.ts (W7) — ativos, por área
+  // (padrão só "public"), por `match` (patterns da route-table), ordem (order ?? 100, plugin, key)
+  // e com timeout/boundary. Na Fase F nenhum consumidor ainda.
+  outlets?: PluginOutletContribution[];
+};
+
+export type PluginOutletContribution = {
+  key: string;
+  outlet: ThemeOutletName;
+  order?: number; // 100
+  areas?: readonly ("public" | "admin")[]; // ["public"]
+  match?: readonly string[]; // patterns ":param" da route-table
+  render: (ctx: OutletRenderContext) => Promise<ReactNode | null>;
 };
