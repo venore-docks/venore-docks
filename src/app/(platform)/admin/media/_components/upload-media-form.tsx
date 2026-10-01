@@ -1,6 +1,6 @@
 "use client";
 
-import { upload } from "@vercel/blob/client";
+import { uploadFileDirect } from "@/lib/upload-file-direct";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -59,12 +59,7 @@ export function UploadMediaForm() {
         }
 
         const checksum = await computeFileChecksum(file);
-        const blob = await upload(ticket.data.pathname, file, {
-          access: "public",
-          handleUploadUrl: "/api/media/upload",
-          contentType: ticket.data.contentType,
-          clientPayload: JSON.stringify({ filename: file.name, contentType: ticket.data.contentType, size: file.size }),
-        });
+        const blob = await uploadFileDirect(ticket.data, file);
 
         const registered = await confirmMediaUploadAction({
           filename: file.name,
