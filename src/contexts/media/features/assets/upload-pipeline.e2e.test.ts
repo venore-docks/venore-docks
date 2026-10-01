@@ -1,4 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("../../shared/attach-asset-variants", () => ({
+  attachAssetVariants: async (assets: unknown[]) => assets,
+  attachAssetVariantsToOne: async (asset: unknown) => asset,
+}));
+const generateAssetVariants = vi.fn<(...args: unknown[]) => Promise<unknown>>(async () => ({ success: true, data: { generated: 0, skipped: true } }));
+vi.mock("./generate-asset-variants/service", () => ({
+  generateAssetVariants: (...args: unknown[]) => generateAssetVariants(...args),
+}));
 import { storagePort } from "@/infrastructure/storage";
 import type { InMemoryStorageAdapter } from "@/infrastructure/storage/in-memory-storage-adapter";
 import { computeSha256Hex } from "@/infrastructure/storage/checksum";

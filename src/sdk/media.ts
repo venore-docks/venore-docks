@@ -37,12 +37,15 @@ export {
   mediaAdminNavigationItems,
   mediaBreadcrumbSegments,
   getCachedMedia,
+  pickMediaVariantUrl,
+  buildMediaSrcSet,
   MEDIA_ALLOWED_TYPES,
   AVATAR_MAX_SIZE_BYTES,
 } from "@/contexts/media";
 export type {
   MediaAsset,
   MediaAssetCategory,
+  MediaAssetVariant,
   MediaAllowedTypeRule,
   MediaCategory,
   MediaVisibility,

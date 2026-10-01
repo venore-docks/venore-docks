@@ -8,6 +8,9 @@ export type StoragePutInput = {
   key: string;
   data: Buffer;
   contentType: string;
+  // Regravar uma key que já existe (padrão: erro no Vercel Blob). Só pra objeto derivado e
+  // determinístico — ex: variante de imagem regerada pelo backfill depois de uma falha no meio.
+  allowOverwrite?: boolean;
 };
 
 export type UploadTicketInput = {

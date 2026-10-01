@@ -25,7 +25,10 @@ vi.mock("../../role-assignment/assign-default-role/store", () => ({
 }));
 
 vi.mock("../../role-assignment/assign-default-role/service", () => ({
-  defaultRegistrationRoleKey: () => "member",
+  resolveDefaultRegistrationRoleKey: (requested: string | undefined) =>
+    requested === "superadmin"
+      ? { success: false, error: { code: "rbac.roles.default_role_forbidden", message: "proibido" } }
+      : { success: true, data: requested ?? "member" },
 }));
 
 describe("approveRegistration", () => {
@@ -38,6 +41,7 @@ describe("approveRegistration", () => {
   it("fails without assigning a role when the user was not pending", async () => {
     const error = { code: "auth.registrations.not_pending", message: "não pendente" };
     approveUserRegistration.mockResolvedValue({ success: false, error });
+    findRoleIdByKey.mockResolvedValue("role-member");
 
     const { approveRegistration } = await import("./service");
     const result = await approveRegistration({ userId: "user-1", actor: { id: "admin-1" } });
@@ -71,7 +75,28 @@ describe("approveRegistration", () => {
     expect(result).toEqual({ success: true, data: undefined });
   });
 
-  it("fails when the default role cannot be resolved", async () => {
+  it("uses the roleKey chosen in settings when roleId is not provided", async () => {
+    approveUserRegistration.mockResolvedValue({ success: true, data: undefined });
+    findRoleIdByKey.mockResolvedValue("role-author");
+    assignRoleToUser.mockResolvedValue({ success: true, data: undefined });
+
+    const { approveRegistration } = await import("./service");
+    await approveRegistration({ userId: "user-1", roleKey: "author", actor: { id: "admin-1" } });
+
+    expect(findRoleIdByKey).toHaveBeenCalledWith("author");
+    expect(assignRoleToUser).toHaveBeenCalledWith({ userId: "user-1", roleId: "role-author", actor: { id: "admin-1" } });
+  });
+
+  it("refuses superadmin as default role without approving the account", async () => {
+    const { approveRegistration } = await import("./service");
+    const result = await approveRegistration({ userId: "user-1", roleKey: "superadmin", actor: { id: "admin-1" } });
+
+    expect(result).toMatchObject({ success: false, error: { code: "rbac.roles.default_role_forbidden" } });
+    expect(approveUserRegistration).not.toHaveBeenCalled();
+    expect(assignRoleToUser).not.toHaveBeenCalled();
+  });
+
+  it("fails when the default role cannot be resolved, without approving the account", async () => {
     approveUserRegistration.mockResolvedValue({ success: true, data: undefined });
     findRoleIdByKey.mockResolvedValue(null);
 
@@ -82,6 +107,7 @@ describe("approveRegistration", () => {
       success: false,
       error: { code: "rbac.roles.not_found", message: expect.any(String) },
     });
+    expect(approveUserRegistration).not.toHaveBeenCalled();
     expect(assignRoleToUser).not.toHaveBeenCalled();
   });
 });

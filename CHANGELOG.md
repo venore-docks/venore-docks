@@ -14,6 +14,76 @@ atualização" em `VENORE-DOCKS.md`).
 
 ## [Unreleased]
 
+**Ao atualizar uma instância:** nada obrigatório. Opcional: escolher o papel padrão de novas
+contas em `/admin/settings` (sem escolha, continua valendo `RBAC_DEFAULT_REGISTRATION_ROLE_KEY` ou
+`member`) e criar um menu de location "Cabeçalho (header)" em `/admin/cms/menus`. Depois do
+deploy, clicar em **"Otimizar imagens antigas"** em `/admin/media` pra gerar as cópias
+redimensionadas das imagens já enviadas (migration `0053` roda sozinha no build).
+
+### Added
+
+- **Variantes de imagem no MMS** (`media.asset_variants`, `contexts/media/image-variants.ts`):
+  todo upload de JPEG/PNG/WebP gera cópias WebP em 160/480/960/1920 px (nunca ampliando) e grava
+  as dimensões reais do original. O original não muda. `getMediaAsset`/`listMediaAssets` trazem
+  `variants`; `pickMediaVariantUrl(asset, larguraNaTela)`, `buildMediaSrcSet(asset)` e
+  `getMediaAssetUrls({ ids, displayWidth })` escolhem a cópia (também no
+  `@venore/plugin-sdk/media`). Asset não público serve a variante por
+  `/api/media/asset/<id>?w=<largura>`. Purge apaga as variantes e a reconciliação de órfãos não
+  as trata como órfãs. Motivo: fotos de 2–8 MB eram servidas cruas em avatar/card, e a cota de
+  transferência do Blob no Hobby estourava.
+
+- **Cron pelo GitHub Actions** (`.github/workflows/cron.yml`): chama `/api/cron/tick` de cada
+  instância a cada 5 min — o plano Hobby da Vercel só permite cron diário. Configure o secret
+  `CRON_TARGETS` no repositório e a env `CRON_SECRET` em cada projeto da Vercel.
+- **Bloco Markdown** (`core.content.markdown`, GFM: tabelas, listas de tarefa, tachado). HTML cru
+  vira texto e links `javascript:` são neutralizados.
+- **Papel padrão de novas contas em `/admin/settings`** (setting `auth.registration_default_role`).
+  Só aparece para quem gerencia papéis, e só oferece papéis que a pessoa poderia conceder.
+- **Navegação do cabeçalho** vem do menu de location `header` do CMS (antes era sempre vazia).
+- **Permission por namespace para settings de plugin (G5):** uma setting `<plugin>.*` também pode
+  ser gravada com `<plugin>.settings.manage`, se o plugin declarar essa permission.
+
+### Fixed
+
+- **Cor de borda dos utilitários Tailwind era ignorada no app inteiro.** O reset
+  `* { border-color }` de `globals.css` ficava fora de `@layer` e vencia `border-transparent`,
+  `border-destructive`, `border-ring` etc. — botões shadcn ganhavam borda visível e campo inválido
+  não ficava vermelho, em todos os temas. Movido para `@layer base`, com `var(--border)`.
+  **Visual muda em todos os temas** onde havia cor de borda declarada.
+- **Contrato de tokens agora cobre os temas em pacote** (`@venore/theme-*`), não só `src/themes/`.
+- **Classes Tailwind usadas só dentro de um pacote de tema não eram geradas.** O `@import` do
+  `theme.css` não faz o Tailwind ler os componentes do pacote; `gen-theme-registry.ts` agora emite
+  um `@source` por tema (como já fazia para plugin). Ex: a borda do modo admin no Aurora.
+- **Preset de paleta escrito à mão perdia os próprios tokens ao ser aplicado.** O gerador só
+  completa o que o preset não declara — o "Oceano" do Aurora mantém o accent no mesmo matiz.
+- **"Esconder o link de Entrar" funcionava só no Venore Slime.** O core também desliga a userbar
+  do visitante deslogado (todos os temas respeitam), tira "Entrar" dos menus de exemplo (sidebar e
+  rodapé sem menu configurado) e os 13 temas `@venore/theme-*` ganharam suporte a
+  `showLoginLink`/`loginLinkHref` — `package.json` atualizado (academy 1.1.4, aurora 0.1.9,
+  druids 2.0.2, fearless 1.1.3, halo 0.1.5, knights 2.0.2, nebula 0.1.5, nimbus 0.1.2, nite 2.0.2,
+  paladins 2.0.2, sorcerers 2.0.2, vega 0.1.5, volt 0.1.2). Cada repositório de tema agora cria a
+  tag `vX.Y.Z` sozinho quando a versão do `package.json` muda no `master`
+  (`.github/workflows/tag-release.yml`).
+- **Setting salva em `/admin` demorava até 5 min para valer nas outras instâncias** (cache por
+  processo). Agora a invalidação é propagada via `platform.cache_versions` em até 5 s.
+- **Um INSERT por setting em toda página:** `registerDefaultSetting` vai ao banco uma vez por chave
+  por processo.
+- **Desinstalar plugin com limpeza de banco deixava as settings apagadas no cache.**
+- **Aprovar cadastro com papel padrão inexistente deixava a conta aprovada sem papel** — o papel é
+  resolvido antes da aprovação. `superadmin` nunca é aceito como papel padrão.
+
+### Security
+
+- `dompurify` 3.4.16, `undici` 6.29.0/7.30.0 (alerta alto, via `@vercel/blob`), `ip-address`
+  10.7.2 e `vitest` 4.1.11. Resta o `esbuild` antigo do `@esbuild-kit` (via `drizzle-kit`), que só
+  afeta o dev server do esbuild — não usado.
+
+### Docs
+
+- `AGENTS.md`, `docs/venore-docks.md`, `docs/issues.md`, roadmap, `docs/media/*` e o plano de temas
+  alinhados ao código (plugins fora do core, migrations de plugin no build, SVG e auth por asset na
+  mídia). Situação por bloco em `docs/page-builder-blocos-planejados.md`.
+
 ## [0.6.0] - 2026-09-27
 
 Avaliação do core (`docs/melhorias-e-recursos.md`): correções de segurança P0–P3 e os recursos que

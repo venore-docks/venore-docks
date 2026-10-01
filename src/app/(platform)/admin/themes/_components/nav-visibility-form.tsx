@@ -9,9 +9,10 @@ import { updateNavVisibilityAction, type ThemesActionState } from "../actions";
 const initialState: ThemesActionState = { error: null };
 
 // Sem gate de manifest.capabilities (ao contrário de HeaderBehaviorForm ao lado): esconder
-// "Entrar" é uma decisão de instância, não de tema — qualquer tema que renderize
-// HeaderSlotProps.showLoginLink/FooterSlotProps.loginLinkHref respeita, os demais ignoram
-// (extensão aditiva do contrato de slot).
+// "Entrar" é uma decisão de instância, não de tema. No header vale pra todo tema: além de
+// HeaderSlotProps.showLoginLink (só o venore-slime lê), o core desliga `userbarEnabled` pro
+// visitante deslogado (resolve-theme-slot-props.ts). O link do rodapé
+// (FooterSlotProps.loginLinkHref) é extensão aditiva — só aparece em tema que a renderiza.
 export function NavVisibilityForm({ visibility }: { visibility: NavVisibility }) {
   const [state, formAction, pending] = useActionState(updateNavVisibilityAction, initialState);
   useActionToast({ pending, error: state.error, successMessage: "Visibilidade da navegação salva." });
@@ -47,7 +48,9 @@ export function NavVisibilityForm({ visibility }: { visibility: NavVisibility })
         />
         <span>
           Manter um link de acesso no rodapé
-          <span className="block text-xs text-muted-foreground">Só tem efeito com a opção acima marcada.</span>
+          <span className="block text-xs text-muted-foreground">
+            Só tem efeito com a opção acima marcada, e só em temas que exibem esse link (ex: Venore Slime).
+          </span>
         </span>
       </label>
 

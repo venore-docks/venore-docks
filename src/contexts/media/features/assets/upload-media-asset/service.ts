@@ -9,6 +9,8 @@ import { CONTENT_MISMATCH_ERROR, contentMatchesDeclaredType } from "../../../con
 import { insertAsset } from "./store";
 import type { UploadMediaAssetCommand, UploadMediaAssetResult } from "./types";
 import { resolveAssetUrl } from "../../../asset-url";
+import { generateAssetVariants } from "../generate-asset-variants/service";
+import { attachAssetVariantsToOne } from "../../../shared/attach-asset-variants";
 
 const MEDIA_LIST_CACHE_PREFIX = "media:assets:";
 
@@ -74,7 +76,11 @@ export async function uploadMediaAsset(command: UploadMediaAssetCommand): Promis
     uploadedBy: command.actorId,
   });
 
+  // Cópias redimensionadas pra exibição (image-variants.ts) — os bytes já estão em memória. Falha
+  // aqui não derruba o upload: o asset serve o original e o backfill do /admin/media tenta de novo.
+  await generateAssetVariants({ assetId: asset.id, data: dataToStore });
+
   invalidateCacheByPrefix(MEDIA_LIST_CACHE_PREFIX);
   endOperation(handle, { success: true });
-  return { success: true, data: asset };
+  return { success: true, data: (await attachAssetVariantsToOne(asset)) ?? asset };
 }

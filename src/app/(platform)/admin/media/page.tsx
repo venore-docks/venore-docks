@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ImageOff, Trash2 } from "lucide-react";
-import { listCategories, listMediaAssets } from "@/contexts/media";
+import { listCategories, listMediaAssets, pickMediaVariantUrl } from "@/contexts/media";
 import { getMediaPageData } from "@/platform/admin-shell/get-media-page-data";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
@@ -9,6 +9,7 @@ import { MediaItem } from "./_components/media-item";
 import { UploadMediaForm } from "./_components/upload-media-form";
 import { CategoryFilter } from "./_components/category-filter";
 import { ManageCategories } from "./_components/manage-categories";
+import { OptimizeImagesButton } from "./_components/optimize-images-button";
 
 // Import só pelo efeito colateral: dispara o auto-start do sweep de autopurge (blob-spec seção 7)
 // na primeira vez que alguém visita a seção de mídia do admin — mesmo mecanismo de
@@ -61,14 +62,17 @@ export default async function MediaAdminPage({
           <h1 className="text-xl font-semibold text-foreground">Mídia</h1>
           <p className="mt-1 text-sm text-muted-foreground">Envie e gerencie as imagens e arquivos usados no conteúdo do site.</p>
         </div>
-        {hasPurgeAccess && (
-          <Button asChild variant="outline" size="sm" className="shrink-0">
-            <Link href="/admin/media/trash">
-              <Trash2 className="size-4" strokeWidth={2} />
-              Lixeira
-            </Link>
-          </Button>
-        )}
+        <div className="flex shrink-0 flex-wrap items-start justify-end gap-2">
+          <OptimizeImagesButton />
+          {hasPurgeAccess && (
+            <Button asChild variant="outline" size="sm" className="shrink-0">
+              <Link href="/admin/media/trash">
+                <Trash2 className="size-4" strokeWidth={2} />
+                Lixeira
+              </Link>
+            </Button>
+          )}
+        </div>
       </div>
 
       <section className="rounded-panel border border-border bg-card ui-panel-padding-roomy">
@@ -97,7 +101,8 @@ export default async function MediaAdminPage({
               key={asset.id}
               id={asset.id}
               filename={asset.filename}
-              url={asset.url}
+              // Miniatura de ~250px: a variante, não o original de vários MB.
+              url={pickMediaVariantUrl(asset, 240)}
               contentType={asset.contentType}
               size={asset.size}
               createdAt={asset.createdAt.toISOString()}

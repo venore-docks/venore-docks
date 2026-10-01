@@ -10,6 +10,7 @@ import {
 import { assignRoleOnBehalfOf, authorizeActor, checkActorCanGrantRole, grantDefaultRoleOnRegistration, listRoles } from "@/contexts/rbac";
 import { emailPort } from "@/infrastructure/email";
 import { getBrandConfig } from "@/platform/brand/get-brand-config";
+import { getDefaultRegistrationRoleKey } from "./registration-settings";
 import type { OperationResult } from "@/shared/types";
 
 // Convites: quem tem rbac.users.manage convida alguém (e-mail + papel). O link cria a conta já
@@ -57,7 +58,7 @@ export async function acceptInvitation(input: { token: string; name: string; pas
 
   const assigned = await assignRoleOnBehalfOf({ userId: accepted.data.userId, roleId: accepted.data.roleId, actor: { id: accepted.data.invitedBy } });
   if (!assigned.success) {
-    await grantDefaultRoleOnRegistration({ userId: accepted.data.userId });
+    await grantDefaultRoleOnRegistration({ userId: accepted.data.userId, roleKey: await getDefaultRegistrationRoleKey() });
   }
   return { success: true, data: { userId: accepted.data.userId } };
 }

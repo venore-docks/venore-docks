@@ -13,6 +13,7 @@ import {
 import { approveRegistration, grantDefaultRoleOnRegistration, rejectRegistration } from "@/contexts/rbac";
 import { purgeUserSafely } from "@/platform/identity-lifecycle/purge-user-safely";
 import { cancelInvitation, inviteUser } from "@/platform/registration/invitations";
+import { getDefaultRegistrationRoleKey } from "@/platform/registration/registration-settings";
 import { getSiteOrigin } from "@/platform/seo/site-origin";
 
 export type CommunityActionState = { error: string | null };
@@ -26,7 +27,7 @@ function revalidateCommunity(userId?: string) {
 
 export async function approveUserAction(_prevState: CommunityActionState, formData: FormData): Promise<CommunityActionState> {
   const userId = String(formData.get("userId") ?? "");
-  const result = await approveRegistration({ userId });
+  const result = await approveRegistration({ userId, roleKey: await getDefaultRegistrationRoleKey() });
   if (!result.success) return { error: result.error.message };
 
   revalidateCommunity(userId);
@@ -114,7 +115,7 @@ export async function resetUserPasswordAction(_prevState: CommunityActionState, 
 // Composição auth + rbac na camada de app (mesmo espírito de admin/rbac/page.tsx já compor
 // listUsers de auth com listRoles/listUsersByRole de rbac): auth não pode importar rbac pra
 // atribuir papel, então quem faz os dois passos é o Server Action, não uma feature de um dos dois
-// contexts. Conta criada pelo admin recebe o papel padrão de registro ("member"), igual ao
+// contexts. Conta criada pelo admin recebe o papel padrão de registro (/admin/settings), igual ao
 // autorregistro sem aprovação manual (platform/registration/handle-user-registered.ts).
 export async function addUserAction(_prevState: CommunityActionState, formData: FormData): Promise<CommunityActionState> {
   const email = String(formData.get("email") ?? "");
@@ -124,7 +125,7 @@ export async function addUserAction(_prevState: CommunityActionState, formData: 
   const created = await adminCreateUser({ email, name, password });
   if (!created.success) return { error: created.error.message };
 
-  const roleGrant = await grantDefaultRoleOnRegistration({ userId: created.data.id });
+  const roleGrant = await grantDefaultRoleOnRegistration({ userId: created.data.id, roleKey: await getDefaultRegistrationRoleKey() });
   if (!roleGrant.success) return { error: roleGrant.error.message };
 
   revalidateCommunity();

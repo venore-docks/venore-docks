@@ -36,7 +36,7 @@ As que costumam importar em produção:
 | --- | --- |
 | `SETUP_TOKEN` | Libera o `/setup` (criar o primeiro superadmin pela web). 16+ caracteres; remova depois. |
 | `MEDIA_STORAGE_DRIVER` + `BLOB_READ_WRITE_TOKEN` | Onde a mídia fica (`vercel-blob` ou `filesystem`). Sem isso, upload em produção falha. |
-| `CRON_SECRET` | Protege `/api/cron/tick` (publicação agendada, flush de logs, limpezas). Configure um cron chamando essa rota a cada poucos minutos. |
+| `CRON_SECRET` | Protege `/api/cron/tick` (publicação agendada, flush de logs, limpezas). Sem ela a rota responde 503 e nada agendado roda. Quem chama a rota: o workflow `.github/workflows/cron.yml` (a cada 5 min, via secret `CRON_TARGETS` do repositório — funciona no plano Hobby da Vercel) ou outro cron seu. |
 | `CSP_MODE` / `FRAME_ANCESTORS` | Content Security Policy (`report-only` por padrão) e quem pode exibir o site em iframe. |
 | `GOOGLE_*` / `GITHUB_*` / `MICROSOFT_*` | Login OAuth. Sem nenhum, o login por email + senha é o único caminho. |
 | `MIGRATE_ON_PREVIEW` | Aplicar migrations em deploy de preview (só se o preview tem banco próprio). |

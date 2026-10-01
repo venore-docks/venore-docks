@@ -11,6 +11,12 @@ vi.mock("../../../../infrastructure/cache/memory-cache", () => ({
   invalidateCache: (...args: unknown[]) => invalidateCache(...args),
 }));
 
+const publishSettingsChange = vi.fn();
+
+vi.mock("../../settings-cache-version", () => ({
+  publishSettingsChange: (...args: unknown[]) => publishSettingsChange(...args),
+}));
+
 const upsertSetting = vi.fn();
 
 vi.mock("./store", () => ({
@@ -20,7 +26,17 @@ vi.mock("./store", () => ({
 describe("setSetting", () => {
   beforeEach(() => {
     invalidateCache.mockReset();
+    publishSettingsChange.mockReset();
     upsertSetting.mockReset();
+  });
+
+  it("publishes the change so other instances drop their settings cache", async () => {
+    upsertSetting.mockResolvedValue({ key: "nav.hideLoginLink", value: true, updatedAt: new Date("2026-01-01") });
+
+    const { setSetting } = await import("./service");
+    await setSetting({ key: "nav.hideLoginLink", value: true, actorId: "user-1" });
+
+    expect(publishSettingsChange).toHaveBeenCalledTimes(1);
   });
 
   it("persists the value and invalidates the cache for that key", async () => {

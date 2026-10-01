@@ -17,6 +17,8 @@ describe("reconcileOrphanUploads", () => {
   beforeEach(() => {
     selectMock.mockClear();
     selectFrom.mockReset();
+    // 2ª query (pathnames de asset_variants) — vazia por padrão.
+    selectFrom.mockResolvedValue([]);
     listObjects.mockReset();
     remove.mockReset();
   });
@@ -65,6 +67,20 @@ describe("reconcileOrphanUploads", () => {
     // ainda conta como "conhecido".
     selectFrom.mockResolvedValueOnce([{ pathname: "soft-deleted.png" }]);
     listObjects.mockResolvedValueOnce([{ key: "soft-deleted.png", size: 10, uploadedAt: new Date("2020-01-01") }]);
+
+    const { reconcileOrphanUploads } = await import("./reconciliation");
+    const result = await reconcileOrphanUploads(new Date("2026-01-05"));
+
+    expect(result).toEqual({ removed: 0 });
+    expect(remove).not.toHaveBeenCalled();
+  });
+
+  it("treats image variants as known objects, not orphans", async () => {
+    selectFrom.mockResolvedValueOnce([{ pathname: "Imagens/u-foto.jpg" }]).mockResolvedValueOnce([{ pathname: "Imagens/u-foto.w480.webp" }]);
+    listObjects.mockResolvedValueOnce([
+      { key: "Imagens/u-foto.jpg", size: 10, uploadedAt: new Date("2026-01-01") },
+      { key: "Imagens/u-foto.w480.webp", size: 10, uploadedAt: new Date("2026-01-01") },
+    ]);
 
     const { reconcileOrphanUploads } = await import("./reconciliation");
     const result = await reconcileOrphanUploads(new Date("2026-01-05"));

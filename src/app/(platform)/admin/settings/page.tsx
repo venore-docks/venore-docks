@@ -1,9 +1,12 @@
+import { listRoles } from "@/contexts/rbac";
 import { getSetting } from "@/contexts/settings";
 import {
+  getDefaultRegistrationRoleKey,
   isSelfRegistrationEnabled,
   REGISTRATION_APPROVAL_REQUIRED_SETTING_KEY,
 } from "@/platform/registration/registration-settings";
 import { getSettingsPageData } from "@/platform/admin-shell/get-settings-page-data";
+import { DefaultRoleForm } from "./_components/default-role-form";
 import { RegistrationApprovalToggleForm } from "./_components/registration-approval-toggle-form";
 
 export default async function SettingsAdminPage() {
@@ -26,7 +29,15 @@ export default async function SettingsAdminPage() {
   // Mesmo fallback de handle-user-registered.ts: setting ausente ou com valor inesperado = aprovação exigida.
   const record = settingResult.data;
   const approvalRequired = !record || typeof record.value !== "boolean" ? true : record.value;
-  const selfRegistration = await isSelfRegistrationEnabled();
+  const [selfRegistration, defaultRoleKey, rolesResult] = await Promise.all([
+    isSelfRegistrationEnabled(),
+    getDefaultRegistrationRoleKey(),
+    // listRoles exige rbac.roles.manage — sem ela, o seletor de papel padrão não aparece.
+    listRoles(),
+  ]);
+  const roleOptions = rolesResult.success
+    ? rolesResult.data.filter((role) => role.key !== "superadmin").map(({ id, key, name }) => ({ id, key, name }))
+    : null;
 
   return (
     <div className="space-y-8">
@@ -43,6 +54,21 @@ export default async function SettingsAdminPage() {
         </p>
         <div className="mt-3">
           <RegistrationApprovalToggleForm enabled={approvalRequired} selfRegistration={selfRegistration} />
+        </div>
+      </section>
+
+      <section className="rounded-panel border border-border bg-card ui-panel-padding-roomy">
+        <h2 className="text-sm font-semibold text-foreground">Papel padrão de novas contas</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Papel que uma conta nova recebe: cadastro sem aprovação, aprovação sem papel escolhido, conta criada por um admin
+          e convite cujo papel não pôde ser concedido. Você só pode escolher um papel que também poderia conceder.
+        </p>
+        <div className="mt-3">
+          {roleOptions ? (
+            <DefaultRoleForm roles={roleOptions} currentKey={defaultRoleKey} />
+          ) : (
+            <p className="text-sm text-muted-foreground">Você precisa da permissão de gerenciar papéis para alterar isto.</p>
+          )}
         </div>
       </section>
     </div>

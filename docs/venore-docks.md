@@ -320,7 +320,7 @@ type PluginManifest = {
   seeds?: { key: string; label: string; description?: string }[];
 
   // Migrations próprias do plugin (ver "Schema e migrations"). Ausente == plugin sem schema
-  // próprio (settings-only). Presente == aplicadas no install, nunca no build.
+  // próprio (settings-only). Presente == a 1ª aplicada no install; as seguintes no build.
   migrationsPath?: string;    // relativo à pasta do plugin, ex: "./migrations"
   migrationsSchema?: string;  // default: key com "-"→"_" + "_migrations"
   migrationsTable?: string;   // default: "__drizzle_migrations"
@@ -338,7 +338,7 @@ Regras de dependência:
 - Configuração do Drizzle aponta para os schemas de core, contexts e plugins por glob (ex: `src/contexts/*/database/schema/index.ts`, `src/plugins/*/database/schema/index.ts`).
 - Cada plugin numera suas próprias migrations dentro da própria pasta — migrations de plugins diferentes não competem entre si porque vivem em pastas separadas; só migration de core vs. site (já coberto em "Modelo de atualização") compete por número.
 - Cada plugin com schema próprio usa uma tabela de tracking dedicada (`migrationsSchema` no manifesto / no `drizzle.config.ts`), nunca `"drizzle"."__drizzle_migrations"` — o algoritmo de `migrate()` do drizzle-orm compara só o `created_at` mais recente da tabela, então compartilhar a tabela com o core faz uma migration de plugin mais antiga que a última do core ser pulada em silêncio.
-- **Migration de plugin roda no install, não no build.** `vercel-build` roda só o `db:migrate` de core. Instalar um plugin pelo site (`platform/plugin-engine/install-plugin.ts`) chama `runPluginMigrations(key)`, que aplica a árvore de `migrationsPath` daquele plugin com o `migrationsSchema`/`migrationsTable` do manifesto. Enquanto um plugin está "available" (presente no código, sem estado de instalação em `extensions.extension_state`), ele não contribui nada e seu schema não é criado.
+- **A primeira migration de plugin roda no install; as seguintes, no build.** Instalar um plugin pelo site (`platform/plugin-engine/install-plugin.ts`) chama `runPluginMigrations(key)`, que aplica a árvore de `migrationsPath` daquele plugin com o `migrationsSchema`/`migrationsTable` do manifesto. Depois disso, o `prebuild` (`scripts/migrate-on-build.mjs` → `scripts/migrate-installed-plugins.ts`) aplica as migrations pendentes de todo plugin **já instalado** logo após as do core — bump de versão de plugin com migration nova se aplica sozinho no deploy (desde a 0.5.0); plugin nunca instalado é pulado. Enquanto um plugin está "available" (presente no código, sem estado de instalação em `extensions.extension_state`), ele não contribui nada e seu schema não é criado.
 
 ## Autenticação
 

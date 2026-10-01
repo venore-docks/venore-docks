@@ -1,3 +1,4 @@
+import { attachAssetVariantsToOne } from "../../../shared/attach-asset-variants";
 import { createSignedMediaUrl } from "../../../asset-url";
 import { findAssetByIdForScope, findAssetByIdUnscoped } from "./store";
 import type { MediaActorScope } from "../../../resolve-media-actor-scope";
@@ -5,7 +6,7 @@ import type { GetMediaAssetQuery, GetMediaAssetResult } from "./types";
 
 export async function getMediaAsset(query: GetMediaAssetQuery, scope: MediaActorScope): Promise<GetMediaAssetResult> {
   const media = await findAssetByIdForScope(query.id, scope);
-  return { success: true, data: media };
+  return { success: true, data: await attachAssetVariantsToOne(media) };
 }
 
 // BYPASS DELIBERADO da visibilidade (public/private/restricted) — existe só pra um caso: o

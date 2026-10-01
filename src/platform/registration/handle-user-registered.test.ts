@@ -18,6 +18,7 @@ vi.mock("./registration-settings", () => ({
   REGISTRATION_APPROVAL_REQUIRED_SETTING_KEY: "auth.registration_approval_required",
   isApprovalRequired: () => isApprovalRequired(),
   ensureRegistrationSettingsRegistered: () => ensureRegistrationSettingsRegistered(),
+  getDefaultRegistrationRoleKey: async () => "author",
 }));
 
 const registerPlugins = vi.fn();
@@ -55,7 +56,8 @@ describe("handleUserRegistered", () => {
 
     expect(await handleUserRegistered(user)).toEqual({ success: true, data: undefined });
     expect(activateUser).toHaveBeenCalledWith({ userId: "user-1", reason: "registration-auto-approval" });
-    expect(grantDefaultRoleOnRegistration).toHaveBeenCalledWith({ userId: "user-1" });
+    // roleKey vem da setting auth.registration_default_role (/admin/settings).
+    expect(grantDefaultRoleOnRegistration).toHaveBeenCalledWith({ userId: "user-1", roleKey: "author" });
   });
 
   it("does not grant a role when activation fails (the account stays pending)", async () => {

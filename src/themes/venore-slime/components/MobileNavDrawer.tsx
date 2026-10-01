@@ -38,7 +38,7 @@ export function MobileNavDrawer({ children, asideClassName }: { children: ReactN
       return;
     }
     closeMobileNav();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- só reage a pathname; closeMobileNav é estável (módulo, não recriada)
+    // Só reage a pathname; closeMobileNav é estável (função de módulo, não recriada).
   }, [pathname]);
 
   useEffect(() => {

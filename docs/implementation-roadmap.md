@@ -5,6 +5,12 @@ Este documento organiza em ordem de implementação os itens registrados em `doc
 código levantado para cada um. Números entre parênteses (`R1`, `C5`, etc.) referenciam os mesmos
 IDs usados na conversa que originou este documento.
 
+> **Nota (2026-09-30):** desde 2026-09-02 os plugins (academy, birthdays, broadcast, company-metrics,
+> donations, helpdesk…) não moram mais em `src/plugins/` — cada um tem repositório próprio
+> (`venore-plugin-*`) e entra numa instância como pacote `@venore/plugin-*`. Caminhos
+> `src/plugins/<nome>/...` citados abaixo referem-se a esses repositórios. Divergências conhecidas
+> entre este documento e o código: `AGENTS.md` §7 (Known Gaps).
+
 ## Decisões já tomadas (não reabrir)
 
 1. **R1 é prioridade imediata** — bug de segurança, tratado antes do resto.

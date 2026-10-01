@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("../../../shared/attach-asset-variants", () => ({
+  attachAssetVariants: async (assets: unknown[]) => assets,
+  attachAssetVariantsToOne: async (asset: unknown) => asset,
+}));
+
 const resolveMediaActorScope = vi.fn();
 vi.mock("../../../resolve-media-actor-scope", () => ({
   resolveMediaActorScope: (...args: unknown[]) => resolveMediaActorScope(...args),

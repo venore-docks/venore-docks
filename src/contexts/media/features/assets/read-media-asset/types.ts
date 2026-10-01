@@ -10,6 +10,9 @@ export type ReadMediaAssetQuery = {
   exp?: string | null;
   sig?: string | null;
   range?: ByteRange | null;
+  // Largura de uma variante (?w= da rota por id — asset-url.ts resolveAssetVariantUrl). Largura
+  // sem variante correspondente = o original.
+  width?: number | null;
 };
 
 export type ReadMediaAssetView = {
