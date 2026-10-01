@@ -1,0 +1,5 @@
+/* Tokens de região/seção — tier 3 (spec v8 §3). Dono: W1.
+   Mapeamento `--region-<região>-<papel>` / `--section-<estilo>-<papel>` → o token tier-2
+   correspondente, e o remapeamento do vocabulário shadcn dentro de cada `[data-region]` /
+   `[data-section-style]`. Só var() (coberto por globals.no-design-values.test.ts).
+   Fase F: mapeamento vazio — nenhuma região remapeia nada, o slime renderiza idêntico. */

@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
@@ -7,7 +7,13 @@ import { describe, expect, it } from "vitest";
 // CONSOME variáveis definidas por um tema (src/themes/<tema>/theme.css). Qualquer literal de
 // design que reapareça aqui é um bug de arquitetura, não um detalhe de estilo.
 
-const CSS_PATH = fileURLToPath(new URL("./globals.css", import.meta.url));
+// globals.css + os arquivos de token da v8 (src/app/styles/*.css — spec §3), mesmo contrato.
+const CSS_PATHS = [
+  fileURLToPath(new URL("./globals.css", import.meta.url)),
+  ...readdirSync(fileURLToPath(new URL("./styles/", import.meta.url)))
+    .filter((name) => name.endsWith(".css"))
+    .map((name) => fileURLToPath(new URL(`./styles/${name}`, import.meta.url))),
+];
 
 function stripDesignAgnosticSections(css: string): string {
   return (
@@ -22,11 +28,13 @@ function stripDesignAgnosticSections(css: string): string {
       // conter valor de design cru. var(...) aqui nunca aninha outro var(...) com vírgula de
       // fallback neste arquivo, então uma passada não-gulosa é suficiente.
       .replace(/var\([^()]*\)/g, "")
+      // segunda passada: var(--a, var(--b)) — a primeira só tira o var() interno.
+      .replace(/var\([^()]*\)/g, "")
   );
 }
 
-describe("globals.css não declara valor de design", () => {
-  const raw = readFileSync(CSS_PATH, "utf8");
+describe.each(CSS_PATHS.map((path) => [path.split("/src/app/")[1], path]))("%s não declara valor de design", (_name, cssPath) => {
+  const raw = readFileSync(cssPath, "utf8");
   const scrubbed = stripDesignAgnosticSections(raw);
 
   it("não contém cor hex", () => {
