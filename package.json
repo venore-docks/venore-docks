@@ -96,6 +96,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4",
     "@types/jsdom": "^21.1.7",
@@ -106,9 +107,12 @@
     "@types/react-dom": "^19",
     "@types/semver": "^7.7.1",
     "@types/web-push": "^3.6.4",
+    "axe-core": "^4.13.0",
+    "esbuild": "^0.28.2",
     "eslint": "^9",
     "eslint-config-next": "^16.3.6",
     "eslint-plugin-boundaries": "^7.1.0",
+    "postcss-selector-parser": "^7.1.6",
     "tailwindcss": "^4",
     "tsx": "^4.19.2",
     "typescript": "^5",

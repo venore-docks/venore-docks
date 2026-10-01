@@ -1,0 +1,12 @@
+{
+  "platform-brand.tsx": 1,
+  "regions/contextual-bar/contextual-bar.tsx": 3,
+  "regions/footer/footer.tsx": 1,
+  "regions/mobile-nav/mobile-nav-drawer.tsx": 1,
+  "regions/rail/rail.tsx": 4,
+  "regions/rail/sidebar-collapse-tooltip.ts": 2,
+  "regions/rail/sidebar-nav-link.tsx": 3,
+  "regions/site-header/header-scroll-sentinel.tsx": 2,
+  "regions/site-header/site-header.tsx": 1,
+  "regions/user-menu/user-menu.tsx": 4
+}

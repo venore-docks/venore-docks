@@ -185,3 +185,33 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+  themes:
+    # Gate de temas da v8 (spec §10) — sem banco e sem `next build`. Esqueleto da Fase F: roda a
+    # suíte vitest.themes.config.ts (SSR dos temas do registro). Dono do corpo: W10 (CSS
+    # compilado, Playwright em 390/1280 claro/escuro, axe contra baseline, screenshots e relatório
+    # como artefatos).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Codegen estrito dos temas
+        run: npx tsx scripts/gen-theme-registry.ts --strict
+
+      - name: Suíte de temas
+        run: npx vitest run --config vitest.themes.config.ts
+
+      - name: Relatório do codegen de temas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: theme-report
+          path: src/themes/theme-report.generated.json
+          retention-days: 14
