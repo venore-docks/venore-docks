@@ -8,13 +8,14 @@ import {
   listEntriesForAdmin,
   listMenus,
 } from "@/contexts/cms";
-import { listMediaAssets, listCategories as listMediaCategories, type MediaAsset } from "@/contexts/media";
+import { listMediaAssets, listCategories as listMediaCategories, readMediaAsset, type MediaAsset } from "@/contexts/media";
 import { listUsers } from "@/contexts/auth";
 import { remapCompositionMediaIds } from "../../../composition-media-refs";
 import { entryRef } from "../../../ref-format";
 import {
   IMPORT_EXPORT_FORMAT,
   IMPORT_EXPORT_FORMAT_VERSION,
+  type ExportSkippedAsset,
   type ExportedCategory,
   type ExportedContentType,
   type ExportedEntry,
@@ -31,12 +32,33 @@ function toIso(value: Date | null): string | null {
   return value ? value.toISOString() : null;
 }
 
-async function downloadAssetBytes(url: string): Promise<Buffer> {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Falha ao baixar mídia de "${url}" (HTTP ${response.status}).`);
+// Lê os bytes pelo barrel de media (mesmo gate por asset da rota que serve mídia — o ator do
+// export tem media.manage), nunca por fetch da `url`: url de asset não público e do driver
+// filesystem é relativa (/api/media/...), que fetch no servidor não resolve, e buscar pela rede
+// o próprio arquivo é uma volta desnecessária.
+async function readAssetBytes(assetId: string): Promise<Buffer> {
+  const result = await readMediaAsset({ id: assetId });
+  if (!result.success) {
+    throw new Error(result.error.message);
   }
-  return Buffer.from(await response.arrayBuffer());
+  return Buffer.from(await new Response(result.data.body).arrayBuffer());
+}
+
+const ASSET_READ_CONCURRENCY = 4;
+
+// Promise.all sem limite abria uma leitura por asset de uma vez — com milhares de arquivos isso
+// esgota conexões/memória. Mantém no máximo `limit` leituras em voo, preservando a ordem.
+async function mapWithConcurrency<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let next = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (next < items.length) {
+      const index = next++;
+      results[index] = await fn(items[index]);
+    }
+  });
+  await Promise.all(workers);
+  return results;
 }
 
 // Aplaina a árvore de AdminResolvedMenuItem (já vem aninhada em .children) pra uma lista com
@@ -161,27 +183,35 @@ export async function exportSiteBundle(): Promise<ExportSiteBundleResult> {
   });
 
   const files: ExportSiteBundleAssetFile[] = [];
-  const mediaAssets = await Promise.all(
-    mediaAssetsResult.data.map(async (asset: MediaAsset) => {
-      const filePath = `assets/${asset.checksum}-${sanitizeFilename(asset.filename)}`;
-      const data = await downloadAssetBytes(asset.url);
-      files.push({ path: filePath, data });
-
-      return {
+  const skippedAssets: ExportSkippedAsset[] = [];
+  const mediaAssets = await mapWithConcurrency(mediaAssetsResult.data, ASSET_READ_CONCURRENCY, async (asset: MediaAsset) => {
+    const filePath = `assets/${asset.checksum}-${sanitizeFilename(asset.filename)}`;
+    // Falha de um arquivo não derruba o export inteiro: o asset fica no manifest sem o arquivo
+    // (o import reporta a falha item a item) e o motivo vai em skippedAssets.
+    try {
+      files.push({ path: filePath, data: await readAssetBytes(asset.id) });
+    } catch (error) {
+      skippedAssets.push({
         ref: asset.checksum,
         filename: asset.filename,
-        contentType: asset.contentType,
-        size: asset.size,
-        width: asset.width,
-        height: asset.height,
-        alt: asset.alt,
-        checksum: asset.checksum,
-        visibility: asset.visibility,
-        categoryName: asset.categoryId ? (mediaCategoryNameById.get(asset.categoryId) ?? null) : null,
-        file: filePath,
-      };
-    }),
-  );
+        reason: error instanceof Error ? error.message : "Falha ao ler o arquivo.",
+      });
+    }
+
+    return {
+      ref: asset.checksum,
+      filename: asset.filename,
+      contentType: asset.contentType,
+      size: asset.size,
+      width: asset.width,
+      height: asset.height,
+      alt: asset.alt,
+      checksum: asset.checksum,
+      visibility: asset.visibility,
+      categoryName: asset.categoryId ? (mediaCategoryNameById.get(asset.categoryId) ?? null) : null,
+      file: filePath,
+    };
+  });
 
   return {
     success: true,
@@ -196,6 +226,7 @@ export async function exportSiteBundle(): Promise<ExportSiteBundleResult> {
         categories,
         entries,
         menus,
+        ...(skippedAssets.length > 0 ? { skippedAssets } : {}),
       },
       files,
     },

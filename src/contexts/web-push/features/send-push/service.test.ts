@@ -12,7 +12,7 @@ vi.mock("../../shared/store", () => ({
 }));
 
 function sub(id: string) {
-  return { id, endpoint: `https://push.example/${id}`, p256dh: "p", auth: "a" };
+  return { id, endpoint: `https://fcm.googleapis.com/fcm/send/${id}`, p256dh: "p", auth: "a" };
 }
 
 describe("sendPushToActor", () => {
@@ -34,6 +34,16 @@ describe("sendPushToActor", () => {
     expect(sendNotification).toHaveBeenCalledTimes(2);
     expect(result).toEqual({ success: true, data: { sent: 2, pruned: 0 } });
     expect(deleteById).toHaveBeenCalledWith([]);
+  });
+
+  it("nunca chama endpoint fora da allowlist e o poda", async () => {
+    listByActor.mockResolvedValue([sub("ok"), { id: "ssrf", endpoint: "http://169.254.169.254/latest/meta-data", p256dh: "p", auth: "a" }]);
+    const { sendPushToActor } = await import("./service");
+    const result = await sendPushToActor("actor-1", { title: "t", body: "b" });
+
+    expect(sendNotification).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({ success: true, data: { sent: 1, pruned: 1 } });
+    expect(deleteById).toHaveBeenCalledWith(["ssrf"]);
   });
 
   it("poda inscrições mortas (404/410) e mantém as vivas", async () => {

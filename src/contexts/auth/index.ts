@@ -1,4 +1,10 @@
 export { handlers, signIn, signOut } from "./auth.config";
+// Encerrar sessões: a própria (/account) e a de outro usuário (admin, mesma hierarquia de congelar).
+export {
+  revokeOwnSessionsHandler as revokeOwnSessions,
+  revokeUserSessionsHandler as revokeUserSessions,
+} from "./features/session/revoke-sessions/handler";
+export type { RevokeSessionsResult, RevokeUserSessionsInput } from "./features/session/revoke-sessions/types";
 export { getCurrentUserHandler as getCurrentUser } from "./features/session/get-current-user/handler";
 export { getCurrentUserRegistrationStatusHandler as getCurrentUserRegistrationStatus } from "./features/session/get-current-user-registration-status/handler";
 export { listAvailableAuthProviders } from "./providers";
@@ -10,6 +16,15 @@ export type { GetCurrentUserRegistrationStatusResult } from "./features/session/
 // registro (src/platform/registration/handle-user-registered.ts, docs/venore-docks.md — regra 12).
 export { provisionUserHandler as provisionUser } from "./features/identity/provision-user/handler";
 export type { ProvisionUserCommand, ProvisionUserResult } from "./features/identity/provision-user/types";
+// Libera (status -> "approved") uma conta por decisão do SISTEMA — cadastro com aprovação
+// desligada e bootstrap do primeiro superadmin. Sem authorizeActor: só pontos de composição em
+// platform/registration e scripts/ chamam. Nunca expor em Server Action nem no SDK de plugin.
+export { activateUserHandler as activateUser } from "./features/identity/activate-user/handler";
+export type { ActivateUserCommand, ActivateUserResult } from "./features/identity/activate-user/types";
+// Identidade da sessão independente do status (inclusive "pending") — só pro setup inicial;
+// nunca usar pra autorizar.
+export { getSessionIdentityHandler as getSessionIdentity } from "./features/session/get-session-identity/handler";
+export type { SessionIdentity, GetSessionIdentityResult } from "./features/session/get-session-identity/types";
 
 // Self-service: atualiza o avatarMediaId do próprio usuário logado — actorId resolvido da sessão
 // dentro do handler, sem RBAC (não há "permission" pra editar o próprio perfil).
@@ -53,8 +68,8 @@ export type { RemoveUserInput, RemoveUserResult } from "./features/identity/remo
 export { purgeUserHandler as purgeUser } from "./features/identity/purge-user/handler";
 export type { PurgeUserInput, PurgeUserResult } from "./features/identity/purge-user/types";
 
-// Criação de conta pelo admin — nasce "approved" (default do schema), diferente do autorregistro
-// que rebaixa pra "pending" via provisionUser. Gated por rbac.users.manage.
+// Criação de conta pelo admin — nasce "approved" (explícito no insert; o default do schema é
+// "pending"). Gated por rbac.users.manage.
 export { adminCreateUserHandler as adminCreateUser } from "./features/identity/admin-create-user/handler";
 export type { AdminCreateUserInput, AdminCreateUserResult, CreatedUser } from "./features/identity/admin-create-user/types";
 
@@ -95,3 +110,44 @@ export { rejectUserRegistrationHandler as rejectUserRegistration } from "./featu
 export type { PendingUserRef, ListPendingUsersResult } from "./features/registration/list-pending-users/types";
 export type { ApproveUserRegistrationInput, ApproveUserRegistrationResult } from "./features/registration/approve-user-registration/types";
 export type { RejectUserRegistrationInput, RejectUserRegistrationResult } from "./features/registration/reject-user-registration/types";
+
+// Recuperação de senha por e-mail (só com EMAIL_DRIVER configurado). Público: quem chama (Server
+// Action) limita tentativas por IP e por e-mail.
+export { requestPasswordResetHandler as requestPasswordReset } from "./features/identity/request-password-reset/handler";
+export { resetPasswordWithTokenHandler as resetPasswordWithToken } from "./features/identity/reset-password-with-token/handler";
+export type { RequestPasswordResetInput, RequestPasswordResetResult } from "./features/identity/request-password-reset/types";
+export type { ResetPasswordWithTokenInput, ResetPasswordWithTokenResult } from "./features/identity/reset-password-with-token/types";
+export { isPasswordResetAvailable } from "./password-reset-availability";
+// Varredura de tokens vencidos/usados — sistema, só o agendador chama.
+export { deleteStaleResetTokens as deleteStalePasswordResetTokens } from "./features/identity/reset-password-with-token/store";
+// Sistema, SEM gate — e-mail de contas ativas por id, pra avisos (platform/registration). Fora do
+// @venore/plugin-sdk (lista explícita lá).
+export { findApprovedUserContacts as listApprovedUserContacts } from "./features/identity/list-user-contacts/store";
+export type { UserContact } from "./features/identity/list-user-contacts/store";
+
+// Verificação em duas etapas (TOTP) do login por senha: autoatendimento (/account) e reset pelo
+// admin (mesma hierarquia de congelar conta).
+export {
+  getOwnMfaStatusHandler as getOwnMfaStatus,
+  startMfaEnrollmentHandler as startMfaEnrollment,
+  confirmMfaEnrollmentHandler as confirmMfaEnrollment,
+  disableOwnMfaHandler as disableOwnMfa,
+} from "./features/mfa/manage-own-mfa/handler";
+export { adminResetMfaHandler as adminResetMfa } from "./features/mfa/admin-reset-mfa/handler";
+export type { MfaStatus, MfaEnrollment } from "./features/mfa/manage-own-mfa/types";
+// LGPD: excluir a própria conta (anonimiza, igual à remoção pelo admin) e ler os próprios dados.
+export { deleteOwnAccountHandler as deleteOwnAccount } from "./features/identity/delete-own-account/handler";
+export type { DeleteOwnAccountInput, DeleteOwnAccountResult } from "./features/identity/delete-own-account/types";
+export { getOwnAccountDataHandler as getOwnAccountData } from "./features/identity/get-own-account-data/handler";
+export type { OwnAccountData, GetOwnAccountDataResult } from "./features/identity/get-own-account-data/types";
+// Convites — operações de dado, SEM gate: só platform/registration/invitations.ts chama (lá ficam
+// a autorização de quem convida e a atribuição do papel). Fora do @venore/plugin-sdk.
+export {
+  createInvitation,
+  getInvitation,
+  acceptInvitation,
+  listPendingInvitations,
+  revokeInvitation,
+  INVITATION_TTL_MS,
+} from "./features/invitations/service";
+export type { InvitationRow } from "./features/invitations/service";

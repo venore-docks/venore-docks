@@ -36,7 +36,7 @@ export function MediaItem({
       <Link href={`/admin/media/${id}`} className="flex h-32 items-center justify-center overflow-hidden rounded-md bg-muted">
         {isImage ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={url} alt={filename} className="h-full w-full object-cover" />
+          <img src={url} alt={filename} loading="lazy" className="h-full w-full object-cover" />
         ) : (
           <span className="text-xs text-muted-foreground/56">arquivo</span>
         )}

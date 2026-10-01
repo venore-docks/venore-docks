@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { THEME_REGISTRY } from "./registry";
@@ -11,7 +12,18 @@ import {
 } from "./theme-token-contract";
 
 const THEMES_DIR = join(process.cwd(), "src", "themes");
-const readThemeCss = (key: string) => readFileSync(join(THEMES_DIR, key, "theme.css"), "utf8");
+const require = createRequire(import.meta.url);
+// Tema em src/themes/<key>/ ou pacote @venore/theme-<key> instalado (theme.css em node_modules).
+const themeCssPath = (key: string): string | null => {
+  const local = join(THEMES_DIR, key, "theme.css");
+  if (existsSync(local)) return local;
+  try {
+    return require.resolve(`@venore/theme-${key}/theme.css`);
+  } catch {
+    return null;
+  }
+};
+const readThemeCss = (key: string) => readFileSync(themeCssPath(key)!, "utf8");
 
 // O contrato É o que o venore-slime declara (menos a identidade exclusiva dele).
 const slimeCss = readThemeCss("venore-slime");
@@ -37,11 +49,11 @@ describe("contrato de tokens de tema", () => {
     expect(darkContract.length).toBeGreaterThan(20);
   });
 
-  // Só os temas que vivem em src/themes/<key>/ — os instalados como pacote @venore/theme-*
-  // (theme.css em node_modules) são cobertos pelo CI do próprio repo do tema.
-  const inRepoKeys = Object.keys(THEME_REGISTRY).filter((key) => existsSync(join(THEMES_DIR, key, "theme.css")));
+  // Todo tema do registro: os de src/themes/ e os pacotes @venore/theme-* instalados (os repos de
+  // tema não têm CI próprio que rode este contrato).
+  const themeKeys = Object.keys(THEME_REGISTRY).filter((key) => themeCssPath(key) !== null);
 
-  for (const key of inRepoKeys) {
+  for (const key of themeKeys) {
     describe(key, () => {
       const css = readThemeCss(key);
       const base = extractRuleBody(css, `[data-theme="${key}"]`);

@@ -10,6 +10,7 @@ import { roles } from "@/contexts/rbac/database/schema";
 import { ensureBaseRbacDataSeeded } from "@/contexts/rbac";
 import { assignRoleToUser } from "@/contexts/rbac/features/role-assignment/assign-role-to-user/service";
 import { assignScopeToRoleAssignment } from "@/contexts/rbac/features/role-assignment/assign-scope-to-role-assignment/service";
+import { grantSuperadmin } from "@/contexts/rbac/features/role-assignment/grant-superadmin/service";
 
 const CMS_CATEGORY_SCOPE_TYPE = "cms.category";
 
@@ -19,6 +20,7 @@ export async function seedRbacUser(overrides: Partial<{ email: string; name: str
     .values({
       email: overrides.email ?? `${randomUUID()}@integration.test`,
       name: overrides.name ?? "RBAC Integration User",
+      status: "approved",
     })
     .returning({ id: users.id });
   return row;
@@ -32,6 +34,18 @@ export async function findSystemRoleId(key: string): Promise<string> {
   return row.id;
 }
 
+// Ator das atribuições semeadas: um superadmin de teste. Antes o próprio usuário se atribuía o
+// papel — exatamente a auto-concessão que a trava anti-escalonamento (rbac/shared/
+// privilege-guard.ts) agora recusa.
+async function seedSuperadminActor(): Promise<string> {
+  const actor = await seedRbacUser({ name: "RBAC Seed Superadmin" });
+  const granted = await grantSuperadmin({ userId: actor.id });
+  if (!granted.success) {
+    throw new Error(`seedSuperadminActor: ${granted.error.code} — ${granted.error.message}`);
+  }
+  return actor.id;
+}
+
 // Cria um usuário, dá o papel de sistema `roleKey` e (opcional) escopa a atribuição às
 // `categoryIds` via os services reais (que invalidam o cache do contexto do usuário).
 export async function seedUserWithSystemRole(
@@ -43,7 +57,8 @@ export async function seedUserWithSystemRole(
   const user = await seedRbacUser();
   const roleId = await findSystemRoleId(roleKey);
 
-  const assigned = await assignRoleToUser({ userId: user.id, roleId, actor: { id: user.id } });
+  const actorId = await seedSuperadminActor();
+  const assigned = await assignRoleToUser({ userId: user.id, roleId, actor: { id: actorId } });
   if (!assigned.success) {
     throw new Error(`seedUserWithSystemRole: ${assigned.error.code} — ${assigned.error.message}`);
   }
@@ -54,7 +69,7 @@ export async function seedUserWithSystemRole(
       roleId,
       scopeType: CMS_CATEGORY_SCOPE_TYPE,
       resourceId,
-      actor: { id: user.id },
+      actor: { id: actorId },
     });
     if (!scoped.success) {
       throw new Error(`seedUserWithSystemRole (scope): ${scoped.error.code} — ${scoped.error.message}`);

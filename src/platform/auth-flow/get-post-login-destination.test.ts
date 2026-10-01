@@ -90,4 +90,23 @@ describe("getPostLoginDestination", () => {
     const { getPostLoginDestination } = await import("./get-post-login-destination");
     expect(await getPostLoginDestination()).toBe("/");
   });
+
+  it("sends a pending OAuth user to /pending-approval even though getCurrentUser does not recognise them", async () => {
+    getCurrentUserRegistrationStatus.mockResolvedValue({ success: true, data: "pending" });
+    getCurrentUser.mockResolvedValue({ success: true, data: null });
+
+    const { getPostLoginDestination } = await import("./get-post-login-destination");
+    expect(await getPostLoginDestination()).toBe("/pending-approval");
+  });
+
+  it("honours a safe callbackUrl and ignores an unsafe one", async () => {
+    getCurrentUser.mockResolvedValue({ success: true, data: { id: "user-1" } });
+    superadminExists.mockResolvedValue({ success: true, data: true });
+    getUserContext.mockResolvedValue({ success: true, data: { isSuperadmin: false, permissions: [] } });
+
+    const { getPostLoginDestination } = await import("./get-post-login-destination");
+    expect(await getPostLoginDestination("/academy/curso")).toBe("/academy/curso");
+    expect(await getPostLoginDestination("//evil.com")).toBe("/");
+  });
 });
+

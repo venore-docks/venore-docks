@@ -2,7 +2,7 @@ import { beginOperation, endOperation, recordAuditEvent } from "@/observability"
 import { approveUserRegistration } from "@/contexts/auth";
 import { assignRoleToUser } from "../../role-assignment/assign-role-to-user/service";
 import { findRoleIdByKey } from "../../role-assignment/assign-default-role/store";
-import { defaultRegistrationRoleKey } from "../../role-assignment/assign-default-role/service";
+import { resolveDefaultRegistrationRoleKey } from "../../role-assignment/assign-default-role/service";
 import type { ApproveRegistrationCommand, ApproveRegistrationResult } from "./types";
 
 export async function approveRegistration(command: ApproveRegistrationCommand): Promise<ApproveRegistrationResult> {
@@ -12,15 +12,16 @@ export async function approveRegistration(command: ApproveRegistrationCommand): 
     kind: "write",
   });
 
-  const approval = await approveUserRegistration({ userId: command.userId });
-  if (!approval.success) {
-    endOperation(handle, { success: false, error: approval.error });
-    return approval;
-  }
-
+  // Papel resolvido ANTES de aprovar: papel padrão inexistente/proibido não pode deixar a conta
+  // aprovada sem papel nenhum.
   let roleId = command.roleId;
   if (!roleId) {
-    const roleKey = defaultRegistrationRoleKey();
+    const resolvedKey = resolveDefaultRegistrationRoleKey(command.roleKey);
+    if (!resolvedKey.success) {
+      endOperation(handle, { success: false, error: resolvedKey.error });
+      return resolvedKey;
+    }
+    const roleKey = resolvedKey.data;
     const defaultRoleId = await findRoleIdByKey(roleKey);
     if (!defaultRoleId) {
       const error = { code: "rbac.roles.not_found", message: `Papel padrão "${roleKey}" não encontrado.` };
@@ -28,6 +29,12 @@ export async function approveRegistration(command: ApproveRegistrationCommand): 
       return { success: false, error };
     }
     roleId = defaultRoleId;
+  }
+
+  const approval = await approveUserRegistration({ userId: command.userId });
+  if (!approval.success) {
+    endOperation(handle, { success: false, error: approval.error });
+    return approval;
   }
 
   const assignment = await assignRoleToUser({ userId: command.userId, roleId, actor: command.actor });

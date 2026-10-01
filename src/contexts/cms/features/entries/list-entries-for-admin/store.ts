@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, isNull } from "drizzle-orm";
 import { db } from "@/infrastructure/database/client";
 import { entries, entryContentTypes } from "../../../database/schema";
 import { toEntryRecords } from "../../../database/entry-content-types";
@@ -9,6 +9,9 @@ export async function findAllEntries(filters: {
   categoryId?: string;
   status?: EntryStatus;
   allowedCategoryIds?: string[];
+  limit?: number;
+  offset?: number;
+  search?: string;
 }): Promise<EntryRecord[]> {
   // Sempre exclui entries de outro context/plugin (internalOwner não-null, ex: seções de aula do
   // Academy via page builder — pedido desta sessão) — nunca opcional, /admin/cms/entries não deve
@@ -35,11 +38,20 @@ export async function findAllEntries(filters: {
   if (filters.status) {
     conditions.push(eq(entries.status, filters.status));
   }
+  const term = filters.search?.trim();
+  if (term) {
+    // % e _ digitados pelo usuário são literais, não curinga.
+    conditions.push(ilike(entries.title, `%${term.replace(/[\\%_]/g, (char) => `\\${char}`)}%`));
+  }
 
-  const rows = await db
+  const query = db
     .select()
     .from(entries)
     .where(conditions.length > 0 ? and(...conditions) : undefined);
+  const rows =
+    filters.limit === undefined
+      ? await query
+      : await query.orderBy(desc(entries.updatedAt), entries.id).limit(filters.limit).offset(filters.offset ?? 0);
 
   return toEntryRecords(rows);
 }

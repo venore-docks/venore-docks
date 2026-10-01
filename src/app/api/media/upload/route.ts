@@ -1,9 +1,13 @@
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { NextResponse } from "next/server";
-import { assertTypeAllowedForDirectUpload, validateMediaUploadCandidate } from "@/contexts/media";
-import { registerUploadedMediaHandler } from "@/contexts/media/features/assets/register-uploaded-media/handler";
+import {
+  assertTypeAllowedForDirectUpload,
+  registerUploadedMediaForTrustedActor,
+  validateMediaUploadCandidate,
+} from "@/contexts/media";
 import { authorizeActor } from "@/contexts/rbac";
-import { checkRateLimit } from "@/infrastructure/rate-limit";
+import { checkRateLimit, getClientIp } from "@/infrastructure/rate-limit";
+import { storagePort } from "@/infrastructure/storage";
 import { computeSha256Hex } from "@/infrastructure/storage/checksum";
 import { beginOperation, endOperation } from "@/observability";
 
@@ -29,11 +33,6 @@ function parseClientPayload(raw: string | null): ClientUploadPayload | null {
   }
 }
 
-function getClientIp(request: Request): string {
-  const forwardedFor = request.headers.get("x-forwarded-for");
-  return forwardedFor?.split(",")[0]?.trim() ?? "unknown";
-}
-
 // Log de falha com código e contexto (blob-spec/escopo item 6) — cada rejeição em
 // onBeforeGenerateToken ou no handler passa por aqui antes de virar um throw, então toda
 // negativa fica registrada mesmo que a resposta ao client seja genérica.
@@ -53,8 +52,8 @@ class LoggedUploadError extends Error {
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
-  const rateLimitKey = `media.upload:${getClientIp(request)}`;
-  const rateLimit = checkRateLimit(rateLimitKey, RATE_LIMIT_CONFIG);
+  const rateLimitKey = `media.upload:${getClientIp(request.headers)}`;
+  const rateLimit = await checkRateLimit(rateLimitKey, RATE_LIMIT_CONFIG);
   if (!rateLimit.allowed) {
     return NextResponse.json({ error: "Muitas requisições de upload. Tente novamente em instantes." }, { status: 429 });
   }
@@ -106,11 +105,13 @@ export async function POST(request: Request): Promise<NextResponse> {
         const { actorId, filename } = JSON.parse(tokenPayload) as { actorId?: string; filename?: string };
         if (!actorId || !filename) return;
 
-        const response = await fetch(blob.url);
-        const bytes = Buffer.from(await response.arrayBuffer());
+        // Lê pelo storagePort (funciona com Blob Store público ou privado) em vez de fetch da URL.
+        const object = await storagePort.read(blob.pathname);
+        if (!object) return;
+        const bytes = Buffer.from(await new Response(object.body).arrayBuffer());
         const checksum = computeSha256Hex(bytes);
 
-        await registerUploadedMediaHandler({
+        await registerUploadedMediaForTrustedActor({
           filename,
           pathname: blob.pathname,
           url: blob.url,
@@ -118,6 +119,8 @@ export async function POST(request: Request): Promise<NextResponse> {
           size: bytes.byteLength,
           checksum,
           actorId,
+          // Checksum calculado aqui, a partir dos bytes baixados do próprio storage.
+          checksumVerified: true,
         });
       },
     });

@@ -1,10 +1,21 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { extractEntryComposition, getCachedEntry, getEntryBody, listCategoriesForAdmin, listContentTypes } from "@/contexts/cms";
+import {
+  extractEntryComposition,
+  getCachedEntry,
+  getEntryBody,
+  listCategoriesForAdmin,
+  listContentTypes,
+  listEntryRevisions,
+} from "@/contexts/cms";
 import { getMediaAsset } from "@/contexts/media";
 import { getCmsPageData } from "@/platform/admin-shell/get-cms-page-data";
 import { EditEntryForm } from "./_components/edit-entry-form";
 import { PublishButton } from "./_components/publish-button";
+import { RevisionHistory, type RevisionHistoryItem } from "./_components/revision-history";
+import { PreviewLink } from "./_components/preview-link";
+
+const DATE_FORMAT = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" });
 
 export default async function EditEntryPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -53,6 +64,20 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
   const mediaResult = entry.mediaId ? await getMediaAsset({ id: entry.mediaId }) : null;
   const media = mediaResult?.success && mediaResult.data ? mediaResult.data : null;
 
+  const revisionsResult = await listEntryRevisions({ entryId: entry.id });
+  const revisions = revisionsResult.success ? revisionsResult.data.revisions : [];
+  const canPublish = revisionsResult.success && revisionsResult.data.canPublish;
+  const pendingProposals = revisions.filter((revision) => revision.kind === "proposal" && revision.status === "pending").length;
+  const historyItems: RevisionHistoryItem[] = revisions.map((revision) => ({
+    id: revision.id,
+    kind: revision.kind,
+    status: revision.status,
+    title: revision.title,
+    createdAt: DATE_FORMAT.format(revision.createdAt),
+    authorLabel: revision.createdBy === gate.actor.id ? "você" : "outra pessoa da equipe",
+    isOwnProposal: revision.createdBy === gate.actor.id,
+  }));
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -84,6 +109,13 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
         />
       </div>
 
+      {pendingProposals > 0 && (
+        <p className="rounded-control border border-border bg-accent/14 px-3 py-2 text-sm text-foreground">
+          {pendingProposals === 1 ? "Há 1 proposta de alteração" : `Há ${pendingProposals} propostas de alteração`} aguardando revisão
+          {canPublish ? " — veja o histórico abaixo." : "."}
+        </p>
+      )}
+
       {entry.status === "draft" && (
         <div className="rounded-panel border border-border bg-card ui-panel-padding-roomy">
           <p className="mb-3 text-sm text-muted-foreground">
@@ -92,6 +124,17 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
           <PublishButton entryId={entry.id} />
         </div>
       )}
+
+      <section className="rounded-panel border border-border bg-card ui-panel-padding-roomy">
+        <h2 className="mb-1 text-sm font-semibold text-foreground">Link de pré-visualização</h2>
+        <p className="mb-3 text-sm text-muted-foreground">Compartilhe a versão atual com quem não tem acesso ao admin, antes de publicar.</p>
+        <PreviewLink entryId={entry.id} />
+      </section>
+
+      <section className="rounded-panel border border-border bg-card ui-panel-padding-roomy">
+        <h2 className="mb-2 text-sm font-semibold text-foreground">Histórico e propostas</h2>
+        <RevisionHistory entryId={entry.id} items={historyItems} canPublish={canPublish} />
+      </section>
     </div>
   );
 }

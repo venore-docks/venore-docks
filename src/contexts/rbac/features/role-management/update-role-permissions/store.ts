@@ -12,6 +12,14 @@ export async function findUserIdsWithRole(roleId: string): Promise<string[]> {
   return rows.map((row) => row.userId);
 }
 
+export async function findRolePermissionKeys(roleId: string): Promise<string[]> {
+  const rows = await db
+    .select({ permissionKey: rolePermissions.permissionKey })
+    .from(rolePermissions)
+    .where(eq(rolePermissions.roleId, roleId));
+  return rows.map((row) => row.permissionKey);
+}
+
 export async function replaceRolePermissions(roleId: string, permissionKeys: string[]) {
   return db.transaction(async (tx) => {
     await tx.delete(rolePermissions).where(eq(rolePermissions.roleId, roleId));

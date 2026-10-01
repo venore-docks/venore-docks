@@ -5,6 +5,24 @@ export const ASSETS_DIR = "assets/";
 
 export type ZipFileEntry = { path: string; data: Buffer };
 
+// Limites de leitura de um .zip não confiável. O fflate aloca a saída de cada arquivo pelo
+// tamanho descomprimido DECLARADO no diretório central (e nunca escreve além dele), então somar
+// esse tamanho antes de extrair limita a memória de verdade — um zip-bomba estoura o teto
+// declarado e é recusado sem descomprimir nada.
+export type ZipReadLimits = {
+  maxEntries: number;
+  maxTotalUncompressedBytes: number;
+  maxManifestBytes: number;
+};
+
+export const DEFAULT_ZIP_READ_LIMITS: ZipReadLimits = {
+  maxEntries: 20_000,
+  maxTotalUncompressedBytes: 1024 * 1024 * 1024,
+  maxManifestBytes: 32 * 1024 * 1024,
+};
+
+export class ZipLimitError extends Error {}
+
 // Único lugar que sabe empacotar/desempacotar o .zip do pacote de import/export — o resto do
 // context só lida com manifest + Buffer de arquivo, nunca com fflate direto (mesmo raciocínio de
 // storagePort isolar @vercel/blob do resto do domínio de media). Genérico sobre o tipo de
@@ -24,8 +42,30 @@ export function buildExportZip<TManifest>(manifest: TManifest, files: ZipFileEnt
 
 export type ParsedExportZip = { manifest: unknown; files: Map<string, Buffer> };
 
-export function parseExportZip(zipBuffer: Buffer): ParsedExportZip {
-  const entries = unzipSync(new Uint8Array(zipBuffer));
+export function parseExportZip(zipBuffer: Buffer, limits: Partial<ZipReadLimits> = {}): ParsedExportZip {
+  const { maxEntries, maxTotalUncompressedBytes, maxManifestBytes } = { ...DEFAULT_ZIP_READ_LIMITS, ...limits };
+  let entryCount = 0;
+  let totalBytes = 0;
+
+  const entries = unzipSync(new Uint8Array(zipBuffer), {
+    filter: (file) => {
+      // Só o manifest e a pasta de assets interessam — o resto nem é descomprimido.
+      const wanted = file.name === MANIFEST_ENTRY_NAME || (file.name.startsWith(ASSETS_DIR) && !file.name.endsWith("/"));
+      if (!wanted) return false;
+      entryCount += 1;
+      totalBytes += file.originalSize;
+      if (entryCount > maxEntries) {
+        throw new ZipLimitError(`O pacote tem mais de ${maxEntries} arquivos.`);
+      }
+      if (file.name === MANIFEST_ENTRY_NAME && file.originalSize > maxManifestBytes) {
+        throw new ZipLimitError(`"${MANIFEST_ENTRY_NAME}" passa do limite de ${formatMegabytes(maxManifestBytes)}.`);
+      }
+      if (totalBytes > maxTotalUncompressedBytes) {
+        throw new ZipLimitError(`O conteúdo descomprimido do pacote passa do limite de ${formatMegabytes(maxTotalUncompressedBytes)}.`);
+      }
+      return true;
+    },
+  });
 
   const manifestBytes = entries[MANIFEST_ENTRY_NAME];
   if (!manifestBytes) {
@@ -42,4 +82,8 @@ export function parseExportZip(zipBuffer: Buffer): ParsedExportZip {
   }
 
   return { manifest, files };
+}
+
+function formatMegabytes(bytes: number): string {
+  return `${Math.round(bytes / (1024 * 1024))} MB`;
 }

@@ -1,4 +1,5 @@
 import { authorizeActor } from "@/contexts/rbac";
+import { permissionsToWriteSetting } from "../../contracts/types";
 import { setSetting } from "./service";
 import type { SetSettingInput, SetSettingResult } from "./types";
 
@@ -7,7 +8,9 @@ export async function setSettingHandler(input: SetSettingInput): Promise<SetSett
     return { success: false, error: { code: "settings.set.invalid_key", message: "key não pode ser vazio." } };
   }
 
-  const authz = await authorizeActor("settings.manage");
+  // G5 (docs/issues.md): setting de plugin também pode ser gravada com
+  // `<plugin>.settings.manage` — ver permissionsToWriteSetting.
+  const authz = await authorizeActor(permissionsToWriteSetting(input.key.trim()));
   if (!authz.authorized) {
     return { success: false, error: authz.error };
   }

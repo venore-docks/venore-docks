@@ -25,6 +25,7 @@ export async function findActiveAssetByChecksum(checksum: string): Promise<Media
 // o insert é ignorado silenciosamente e nada novo é criado — registrar duas vezes o mesmo blob
 // nunca cria dois registros.
 export async function insertAssetIfAbsent(input: {
+  id: string;
   filename: string;
   pathname: string;
   url: string;

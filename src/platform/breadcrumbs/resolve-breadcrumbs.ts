@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { BREADCRUMB_PATHNAME_HEADER } from "./pathname-header";
 import { collectBreadcrumbSegments } from "./registry";
 import { matchSegments } from "./match-segments";
+import { toJsonLdSafeText } from "@/shared/json-ld";
 import { BREADCRUMB_SEGMENT_NOT_OWNED } from "./types";
 import type { ResolvedBreadcrumbs } from "./types";
 
@@ -83,12 +84,14 @@ export const resolveBreadcrumbs = cache(async (): Promise<ResolvedBreadcrumbs> =
         itemListElement: resolvedItems.map((item, index) => ({
           "@type": "ListItem",
           position: index + 1,
-          name: item.label,
+          // Rótulo é texto de usuário (título de entry, nome de arquivo). Temas externos ainda
+          // serializam com JSON.stringify cru — neutraliza `<`/`>` aqui na origem.
+          name: toJsonLdSafeText(item.label),
           // schema.org BreadcrumbList espera URL absoluta em todo item, inclusive o atual — por
           // isso usa `item.href` original (antes do href:null aplicado só pra UI acima); quando o
           // próprio registro declarou href null (nível sem página própria, ex: "entries/new"), cai
           // na URL da página atual — imprecisão aceitável pra um nó que não é navegável mesmo.
-          item: `${origin}${item.href ?? pathname}`,
+          item: toJsonLdSafeText(`${origin}${item.href ?? pathname}`),
         })),
       }
     : null;

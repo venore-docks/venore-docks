@@ -1,5 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("../../../shared/attach-asset-variants", () => ({
+  attachAssetVariants: async (assets: unknown[]) => assets,
+  attachAssetVariantsToOne: async (asset: unknown) => asset,
+}));
+const generateAssetVariants = vi.fn<(...args: unknown[]) => Promise<unknown>>(async () => ({ success: true, data: { generated: 0, skipped: true } }));
+vi.mock("../generate-asset-variants/service", () => ({
+  generateAssetVariants: (...args: unknown[]) => generateAssetVariants(...args),
+}));
+
 vi.mock("@/observability", () => ({
   beginOperation: vi.fn(() => ({ operationId: "op-1", useCase: "test", actor: { id: "actor-1", type: "user" }, kind: "write", startedAt: new Date() })),
   endOperation: vi.fn(),
@@ -12,7 +21,11 @@ vi.mock("@/infrastructure/cache/memory-cache", () => ({
 
 const storeFn = vi.fn();
 vi.mock("@/infrastructure/storage", () => ({
-  storagePort: { store: (...args: unknown[]) => storeFn(...args) },
+  storagePort: {
+    store: (...args: unknown[]) => storeFn(...args),
+    servesPublicly: () => true,
+    resolveUrl: (key: string) => `https://blob.test/${key}`,
+  },
 }));
 
 const insertAsset = vi.fn();
@@ -130,7 +143,7 @@ describe("uploadMediaAsset", () => {
     insertAsset.mockResolvedValue({ id: "asset-1", filename: "photo.png" });
 
     const { uploadMediaAsset } = await import("./service");
-    const data = Buffer.from("conteúdo");
+    const data = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.from("conteúdo")]);
     const result = await uploadMediaAsset({
       filename: "photo.png",
       contentType: "image/png",
@@ -153,5 +166,7 @@ describe("uploadMediaAsset", () => {
       }),
     );
     expect(invalidateCacheByPrefix).toHaveBeenCalledWith("media:assets:");
+    // Variantes geradas com os bytes que já estão em memória (sem reler do storage).
+    expect(generateAssetVariants).toHaveBeenCalledWith({ assetId: "asset-1", data });
   });
 });

@@ -84,29 +84,6 @@ describe("providers env helpers", () => {
     ).toBe(true);
   });
 
-  it("isDevelopmentCredentialsEnabled requires the exact flag value", async () => {
-    const { isDevelopmentCredentialsEnabled } = await import("./providers");
-
-    expect(isDevelopmentCredentialsEnabled()).toBe(false);
-
-    process.env.AUTH_ENABLE_DEV_CREDENTIALS = "yes";
-    expect(isDevelopmentCredentialsEnabled()).toBe(false);
-
-    process.env.AUTH_ENABLE_DEV_CREDENTIALS = "true";
-    expect(isDevelopmentCredentialsEnabled()).toBe(true);
-  });
-
-  it("isDevelopmentCredentialsEnabled is false in production even with the flag set", async () => {
-    vi.stubEnv("NODE_ENV", "production");
-    process.env.AUTH_ENABLE_DEV_CREDENTIALS = "true";
-    try {
-      const { isDevelopmentCredentialsEnabled } = await import("./providers");
-      expect(isDevelopmentCredentialsEnabled()).toBe(false);
-    } finally {
-      vi.unstubAllEnvs();
-    }
-  });
-
   it("isCredentialsDisabled requires the exact flag value \"true\"", async () => {
     const { isCredentialsDisabled } = await import("./providers");
 

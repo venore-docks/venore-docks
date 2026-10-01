@@ -1,6 +1,7 @@
 import { getMediaAsset } from "@/contexts/media";
 import { beginOperation, endOperation } from "@/observability";
 import { invalidateCache, invalidateCacheByPrefix } from "../../../../../infrastructure/cache/memory-cache";
+import { canPublishInCategory, isLive, recordProposal, recordSnapshot } from "../../../shared/entry-revisions";
 import { assertCmsCategoryScope } from "../../../shared/scoped-authorization";
 import { findEntryById, findOtherEntryByCategoryAndSlug, updateEntryFields } from "./store";
 import type { UpdateEntryCommand, UpdateEntryResult } from "./types";
@@ -68,6 +69,44 @@ export async function updateEntry(command: UpdateEntryCommand): Promise<UpdateEn
   const existingData = existing.data && typeof existing.data === "object" ? (existing.data as Record<string, unknown>) : {};
   const mergedData = command.data !== undefined ? { ...existingData, ...(command.data as Record<string, unknown>) } : undefined;
 
+  // Entry no ar + ator sem permissão de publicar (na categoria atual E na de destino) = a
+  // alteração vira proposta pendente; o site não muda até alguém com cms.entries.publish aplicar.
+  if (isLive(existing)) {
+    const canPublishHere = await canPublishInCategory(command.actorId, existing.categoryId);
+    const canPublishTarget =
+      effectiveCategoryId === existing.categoryId ? canPublishHere : await canPublishInCategory(command.actorId, effectiveCategoryId);
+    if (!canPublishHere || !canPublishTarget) {
+      if (command.scheduledArchiveAt !== undefined) {
+        const error = {
+          code: "cms.entries.publish_required",
+          message: "Agendar o arquivamento de um conteúdo publicado exige permissão de publicar.",
+        };
+        endOperation(handle, { success: false, error });
+        return { success: false, error };
+      }
+      const proposal = await recordProposal(
+        existing.id,
+        {
+          title: command.title ?? existing.title,
+          slug: effectiveSlug,
+          categoryId: effectiveCategoryId,
+          visibility: command.visibility ?? existing.visibility,
+          mediaId: command.mediaId !== undefined ? command.mediaId : existing.mediaId,
+          contentTypeIds: command.contentTypeIds ?? existing.contentTypeIds,
+          data: mergedData ?? existing.data ?? {},
+        },
+        command.actorId,
+      );
+      endOperation(handle, {
+        success: true,
+        summary: `user:${command.actorId} propôs uma alteração na entry publicada "${existing.title}" (aguardando revisão).`,
+      });
+      return { success: true, data: { ...existing, proposalId: proposal.id } };
+    }
+  }
+
+  await recordSnapshot(existing, command.actorId);
+
   const entry = await updateEntryFields(command.id, {
     title: command.title,
     slug: command.slug,
@@ -95,5 +134,5 @@ export async function updateEntry(command: UpdateEntryCommand): Promise<UpdateEn
   }
 
   endOperation(handle, { success: true });
-  return { success: true, data: entry };
+  return { success: true, data: { ...entry, proposalId: null } };
 }

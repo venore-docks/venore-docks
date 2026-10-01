@@ -5,7 +5,7 @@ import { db } from "@/infrastructure/database/client";
 // exceção conhecida à regra de store.ts; mesmo acesso cru que src/test-support usa). Todo o resto
 // do script passa por barrel público de context.
 import { users } from "@/contexts/auth/database/schema";
-import { adminSetUserPassword, findUserByEmail } from "@/contexts/auth";
+import { activateUser, adminSetUserPassword, findUserByEmail } from "@/contexts/auth";
 import { ensureBaseRbacDataSeeded, grantSuperadmin, superadminExists } from "@/contexts/rbac";
 import { registerPlugins } from "@/platform/plugin-engine/register-plugins";
 
@@ -86,7 +86,7 @@ async function main() {
     userId = found.data.id;
     console.log(`      usuário "${email}" já existia (id ${userId}) — a senha será redefinida.`);
   } else {
-    const [row] = await db.insert(users).values({ email }).returning({ id: users.id });
+    const [row] = await db.insert(users).values({ email, status: "approved" }).returning({ id: users.id });
     userId = row.id;
     console.log(`      usuário "${email}" criado (id ${userId}).`);
   }
@@ -100,6 +100,10 @@ async function main() {
 
   const grant = await grantSuperadmin({ userId, bypassExistsCheck: true });
   if (!grant.success) fail(`Falha ao conceder superadmin: ${grant.error.message}`);
+
+  // Conta reaproveitada pode estar "pending" (default do schema é fail-closed).
+  const activated = await activateUser({ userId, reason: "bootstrap" });
+  if (!activated.success) fail(`Falha ao liberar a conta: ${activated.error.message}`);
 
   console.log(`\n✔ Instalação concluída. Faça login em /login com "${email}" e a senha definida.`);
   process.exit(0);

@@ -7,6 +7,9 @@ export async function listEntriesForAdmin(query: ListEntriesForAdminQuery): Prom
     categoryId: query.categoryId,
     status: query.status,
     allowedCategoryIds: query.allowedCategoryIds,
+    limit: query.limit,
+    offset: query.offset,
+    search: query.search,
   });
   return { success: true, data: entries };
 }

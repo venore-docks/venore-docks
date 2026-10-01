@@ -87,6 +87,60 @@ export async function authorizeActor(
   };
 }
 
+export type AuthorizeActorOverUserOptions = {
+  // false (default) = o ator não pode aplicar a ação em si mesmo (congelar/remover/apagar a
+  // própria conta trancaria o sistema se ele for o último superadmin).
+  allowSelf?: boolean;
+};
+
+// Autoriza uma ação administrativa de um ator SOBRE outro usuário (congelar, remover, apagar,
+// redefinir senha). Além da permission, aplica a hierarquia: só um superadmin age sobre um
+// superadmin — sem isso, qualquer papel com rbac.users.manage/rbac.roles.manage tomaria a conta
+// do dono da instância (redefinindo a senha dele ou congelando-o).
+export async function authorizeActorOverUser(
+  requiredPermission: string | string[],
+  targetUserId: string,
+  options: AuthorizeActorOverUserOptions = {},
+): Promise<AuthorizeActorResult> {
+  const authz = await authorizeActor(requiredPermission);
+  if (!authz.authorized) {
+    return authz;
+  }
+
+  if (!options.allowSelf && authz.actorId === targetUserId) {
+    return {
+      authorized: false,
+      error: {
+        code: "rbac.authorization.self_target",
+        message: "Esta ação não pode ser aplicada à sua própria conta.",
+      },
+    };
+  }
+
+  const [actorContext, targetContext] = await Promise.all([
+    getUserContext({ userId: authz.actorId }),
+    getUserContext({ userId: targetUserId }),
+  ]);
+  if (!actorContext.success) {
+    return { authorized: false, error: actorContext.error };
+  }
+  if (!targetContext.success) {
+    return { authorized: false, error: targetContext.error };
+  }
+
+  if (targetContext.data.isSuperadmin && !actorContext.data.isSuperadmin) {
+    return {
+      authorized: false,
+      error: {
+        code: "rbac.authorization.target_outranks_actor",
+        message: "Só um superadmin pode executar esta ação sobre outro superadmin.",
+      },
+    };
+  }
+
+  return authz;
+}
+
 // Resolve o alcance efetivo de UMA permission key num scopeType, para um ator DADO pelo id —
 // para listagens filtrarem por id em vez de fazer um sim/não por recurso (D3), e para os
 // service.ts de escrita do CMS (Fase C) que já recebem `actorId` e não podem depender de
