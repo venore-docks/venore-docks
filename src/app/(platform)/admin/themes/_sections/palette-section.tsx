@@ -3,15 +3,23 @@ import { listColorPaletteStates } from "@/platform/theme-engine/list-color-palet
 import { CUSTOM_COLOR_PALETTE_ID } from "@/platform/theme-engine/custom-color-palette";
 import type { PaletteColorTokens } from "@/contexts/themes";
 import { isValidHexColor, oklchToHex, parseOklchNumeric } from "@/platform/theme-engine/oklch-color";
-import { buildFullPaletteFromSeed } from "@/platform/theme-engine/full-palette-generator";
+import { generateThemePalette } from "@/platform/theme-engine/palette/generate-theme-palette";
+import { checkActivePaletteContrast } from "@/platform/theme-engine/palette/palette-admin";
+import { getThemeTokenValues } from "@/platform/theme-engine/token-values";
+import { resolveActiveColorPalette } from "@/platform/theme-rendering/resolve-active-color-palette";
+import { resolveActiveTheme } from "@/platform/theme-rendering/resolve-active-theme";
+import { resolveThemeDefinition } from "@/platform/theme-rendering/resolve-theme-definition";
+import type { ThemePaletteRules } from "@/contexts/themes/contracts/v8";
 import type { ColorPaletteStateView } from "@/platform/theme-engine/list-color-palette-states";
 import { ActivateColorPaletteButton } from "../_components/activate-color-palette-button";
 import { ApplyPresetPaletteButton } from "../_components/apply-preset-palette-button";
 import { CustomColorPaletteForm } from "../_components/custom-color-palette-form";
 import { BrandColorPaletteForm } from "../_components/brand-color-palette-form";
+import { PaletteContrastSummary } from "../_components/palette-contrast-summary";
 
-// Seção de paleta de /admin/themes (movida de page.tsx sem mudança de markup — spec v8 §9).
-// Dono: W1.
+// Seção de paleta de /admin/themes (spec v8 §9). Dono: W1. Fluxo legado (theme.activePaletteId /
+// theme.customColorPalette.<tema>) com o gerador unificado e o resumo de contraste por região da
+// paleta ativa; o rascunho v8 da paleta mora no painel de /admin/themes/customize.
 
 const BRAND_HEX_FALLBACK = "#000000";
 
@@ -30,11 +38,12 @@ function resolveBrandHex(customPrimary: string | undefined, catalogPrimary: stri
 
 // Presets (Espaço/Ametista/Âmbar/Rubro etc.) só têm 5 tokens no catálogo estático do tema (ver
 // applyPresetPaletteAction) — pra amostra refletir a paleta INTEIRA que clicar em "Usar" de fato
-// gera (não só primary/accent), roda a mesma geração aqui, só pra preview, sem salvar nada.
-function previewTokens(palette: ColorPaletteStateView): PaletteColorTokens {
+// gera (não só primary/accent), roda a mesma geração aqui (gerador unificado, com as regras de
+// paleta do tema — v8 §7.14), só pra preview, sem salvar nada.
+function previewTokens(palette: ColorPaletteStateView, themeKey: string, rules: ThemePaletteRules): PaletteColorTokens {
   if (palette.id === "default" || palette.id === CUSTOM_COLOR_PALETTE_ID) return palette.light;
   const seed = palette.light.primary ? parseOklchNumeric(palette.light.primary) : null;
-  return seed ? buildFullPaletteFromSeed(seed).light : palette.light;
+  return seed ? generateThemePalette({ seed, rules, base: getThemeTokenValues(themeKey) }).light : palette.light;
 }
 
 // Tira de amostras da paleta (primary/accent/sidebar/background que ela define — sidebar entrou
@@ -56,7 +65,14 @@ function PaletteSwatches({ tokens }: { tokens: PaletteColorTokens }) {
 }
 
 export async function PaletteSection() {
-  const colorPaletteStates = await listColorPaletteStates();
+  const [colorPaletteStates, activePalette, { manifest }] = await Promise.all([
+    listColorPaletteStates(),
+    resolveActiveColorPalette(),
+    resolveActiveTheme(),
+  ]);
+  // Regras de paleta do tema (com herança, W9) e contraste por região da paleta ativa (W1).
+  const { theme } = resolveThemeDefinition(manifest.key);
+  const contrastProblems = checkActivePaletteContrast(theme, activePalette);
   const customPalette = colorPaletteStates.palettes.find((palette) => palette.id === CUSTOM_COLOR_PALETTE_ID);
   const firstCatalogPreset = colorPaletteStates.palettes.find(
     (palette) => palette.id !== "default" && palette.id !== CUSTOM_COLOR_PALETTE_ID,
@@ -76,6 +92,7 @@ export async function PaletteSection() {
       </div>
 
       <BrandColorPaletteForm hex={brandHex} />
+      <PaletteContrastSummary problems={contrastProblems} />
 
       <ul className="mt-4 space-y-3">
         {colorPaletteStates.palettes.map((palette) => {
@@ -83,7 +100,7 @@ export async function PaletteSection() {
           return (
             <li key={palette.id} className="flex items-center justify-between gap-4 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
-                <PaletteSwatches tokens={previewTokens(palette)} />
+                <PaletteSwatches tokens={previewTokens(palette, theme.key, theme.palette)} />
                 <span className="font-medium text-foreground">{palette.name}</span>
                 {palette.isActive && <Badge variant="secondary">Ativa</Badge>}
               </div>

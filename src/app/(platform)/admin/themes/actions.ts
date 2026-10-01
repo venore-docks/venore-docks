@@ -12,6 +12,16 @@ import { applyThemeUpdate } from "@/platform/theme-engine/apply-theme-update";
 import { resolveActiveTheme } from "@/platform/theme-rendering/resolve-active-theme";
 import { HEADER_BEHAVIOR_SETTING_KEYS } from "@/platform/header-behavior/get-header-behavior";
 import { NAV_VISIBILITY_SETTING_KEYS } from "@/platform/nav-visibility/get-nav-visibility";
+import { authorizeActor } from "@/contexts/rbac";
+import { themePaletteChoiceSchema, type ThemePaletteChoice } from "@/contexts/themes/contracts/v8";
+import { resolveThemeDefinition } from "@/platform/theme-rendering/resolve-theme-definition";
+import {
+  buildPalettePanelData,
+  checkPaletteChoiceContrast,
+  generateSeedChoice,
+  type PaletteContrastView,
+  type PalettePanelData,
+} from "@/platform/theme-engine/palette/palette-admin";
 
 export type ThemesActionState = { error: string | null };
 export type ThemeUpdateCheckState = { status: ThemeUpdateStatus | null; error: string | null };
@@ -247,3 +257,45 @@ export async function applyThemeUpdateAction(
 
   return { error: null };
 }
+
+// ── Painel de paleta do rascunho (/admin/themes/customize, spec v8 §9 — W1) ────────────────────
+// Só leitura/cálculo: nenhuma destas grava nada — o painel devolve a escolha como patch do
+// rascunho e quem salva é a página (saveThemeDraft, W6). Ainda assim exigem settings.manage: o
+// gerador e os tokens de todo tema não são dado público.
+export type PaletteActionResult<T> = { data: T | null; error: string | null };
+
+async function authorizedPaletteTheme(themeKey: unknown) {
+  const authz = await authorizeActor("settings.manage");
+  if (!authz.authorized) return { theme: null, error: authz.error.message };
+  const { theme, fallback } = resolveThemeDefinition(String(themeKey ?? ""));
+  if (fallback) return { theme: null, error: `Tema "${String(themeKey)}" indisponível.` };
+  return { theme, error: null };
+}
+
+export async function getPalettePanelDataAction(themeKey: string): Promise<PaletteActionResult<PalettePanelData>> {
+  const { theme, error } = await authorizedPaletteTheme(themeKey);
+  if (!theme) return { data: null, error };
+  return { data: buildPalettePanelData(theme), error: null };
+}
+
+export async function generateSeedPaletteAction(
+  themeKey: string,
+  seed: string,
+): Promise<PaletteActionResult<{ choice: Extract<ThemePaletteChoice, { mode: "seed" }>; problems: PaletteContrastView[] }>> {
+  const { theme, error } = await authorizedPaletteTheme(themeKey);
+  if (!theme) return { data: null, error };
+  const result = generateSeedChoice(theme, String(seed ?? ""));
+  return result.success ? { data: result.data, error: null } : { data: null, error: result.error.message };
+}
+
+export async function checkPaletteContrastAction(
+  themeKey: string,
+  choice: unknown,
+): Promise<PaletteActionResult<PaletteContrastView[]>> {
+  const { theme, error } = await authorizedPaletteTheme(themeKey);
+  if (!theme) return { data: null, error };
+  const parsed = themePaletteChoiceSchema.safeParse(choice);
+  if (!parsed.success) return { data: null, error: "Paleta inválida: use cores hex (#rrggbb) ou oklch(L C H)." };
+  return { data: checkPaletteChoiceContrast(theme, parsed.data as ThemePaletteChoice), error: null };
+}
+
