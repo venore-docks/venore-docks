@@ -319,6 +319,13 @@ type PluginManifest = {
   // botão "Popular dados de exemplo" de /admin/plugins.
   seeds?: { key: string; label: string; description?: string }[];
 
+  // Categorias reservadas do próprio plugin que aceitam upload sem sessão (ex: currículo).
+  anonymousUploadCategories?: string[];
+  // Categorias do próprio plugin com dado sensível: arquivo nasce "restricted" e só é lido por
+  // superadmin, dono ou quem tem `accessPermission` (que o plugin declara em `permissions`) —
+  // media.manage não basta. Aplicado também aos arquivos já existentes (prebuild/db:update).
+  restrictedUploadCategories?: { key: string; accessPermission: string }[];
+
   // Migrations próprias do plugin (ver "Schema e migrations"). Ausente == plugin sem schema
   // próprio (settings-only). Presente == a 1ª aplicada no install; as seguintes no build.
   migrationsPath?: string;    // relativo à pasta do plugin, ex: "./migrations"

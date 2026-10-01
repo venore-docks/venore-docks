@@ -1,6 +1,6 @@
 "use client";
 
-import { upload } from "@vercel/blob/client";
+import { uploadFileDirect } from "@/lib/upload-file-direct";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { computeFileChecksum } from "@/lib/compute-file-checksum";
@@ -42,12 +42,7 @@ export function UploadTestForm() {
       const checksum = await computeFileChecksum(file);
 
       setStatus({ step: "uploading" });
-      const blob = await upload(ticket.data.pathname, file, {
-        access: "public",
-        handleUploadUrl: "/api/media/upload",
-        contentType: ticket.data.contentType,
-        clientPayload: JSON.stringify({ filename: file.name, contentType: ticket.data.contentType, size: file.size }),
-      });
+      const blob = await uploadFileDirect(ticket.data, file);
 
       setStatus({ step: "confirming" });
       const registered = await confirmUploadAction({

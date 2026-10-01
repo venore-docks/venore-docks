@@ -27,10 +27,10 @@ describe("getMediaAsset", () => {
     findAssetByIdForScope.mockResolvedValue({ id: "asset-1", visibility: "private" });
 
     const { getMediaAsset } = await import("./service");
-    const result = await getMediaAsset({ id: "asset-1" }, { actorId: "actor-1", isMediaAdmin: false });
+    const result = await getMediaAsset({ id: "asset-1" }, { actorId: "actor-1", isMediaAdmin: false, isSuperadmin: false, permissions: [] });
 
     expect(result).toEqual({ success: true, data: { id: "asset-1", visibility: "private" } });
-    expect(findAssetByIdForScope).toHaveBeenCalledWith("asset-1", { actorId: "actor-1", isMediaAdmin: false });
+    expect(findAssetByIdForScope).toHaveBeenCalledWith("asset-1", { actorId: "actor-1", isMediaAdmin: false, isSuperadmin: false, permissions: [] });
   });
 });
 

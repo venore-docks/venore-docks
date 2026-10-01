@@ -12,6 +12,7 @@ export async function insertAsset(input: {
   size: number;
   checksum: string;
   visibility: MediaVisibility;
+  accessPermission?: string | null;
   categoryId: string | null;
   uploadedBy: string | null;
 }): Promise<MediaAsset> {

@@ -33,7 +33,7 @@ describe("resolveMediaActorScope", () => {
     const { resolveMediaActorScope } = await import("./resolve-media-actor-scope");
     const scope = await resolveMediaActorScope();
 
-    expect(scope).toEqual({ actorId: "actor-1", isMediaAdmin: true });
+    expect(scope).toMatchObject({ actorId: "actor-1", isMediaAdmin: true });
   });
 
   it("flags isMediaAdmin for a superadmin even without the explicit permission listed", async () => {
@@ -43,7 +43,7 @@ describe("resolveMediaActorScope", () => {
     const { resolveMediaActorScope } = await import("./resolve-media-actor-scope");
     const scope = await resolveMediaActorScope();
 
-    expect(scope).toEqual({ actorId: "actor-1", isMediaAdmin: true });
+    expect(scope).toMatchObject({ actorId: "actor-1", isMediaAdmin: true });
   });
 
   it("resolves a plain authenticated actor as not a media admin", async () => {
@@ -53,6 +53,6 @@ describe("resolveMediaActorScope", () => {
     const { resolveMediaActorScope } = await import("./resolve-media-actor-scope");
     const scope = await resolveMediaActorScope();
 
-    expect(scope).toEqual({ actorId: "actor-2", isMediaAdmin: false });
+    expect(scope).toMatchObject({ actorId: "actor-2", isMediaAdmin: false, isSuperadmin: false });
   });
 });

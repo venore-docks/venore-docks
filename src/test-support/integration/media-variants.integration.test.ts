@@ -39,7 +39,7 @@ describe("media — variantes de imagem", () => {
     expect(row.height).toBe(600);
     expect(row.variantsProcessedAt).not.toBeNull();
 
-    const fetched = await getMediaAsset({ id: uploaded.data.id }, { actorId: actor.id, isMediaAdmin: false });
+    const fetched = await getMediaAsset({ id: uploaded.data.id }, { actorId: actor.id, isMediaAdmin: false, isSuperadmin: false, permissions: [] });
     expect(fetched.success && fetched.data?.variants?.[1]).toMatchObject({ width: 480, height: 240, contentType: "image/webp" });
 
     const served = await readMediaAsset({ id: uploaded.data.id, width: 480 }, null);

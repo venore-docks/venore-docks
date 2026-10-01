@@ -54,16 +54,18 @@ export async function uploadReservedCategoryAsset(
   const checksum = computeSha256Hex(dataToStore);
 
   const id = crypto.randomUUID();
+  const visibility = command.restriction ? "restricted" : "private";
   const asset = await insertAsset({
     id,
     filename: command.filename,
     pathname: stored.key,
     // Não público -> rota autorizada do app; público -> URL direta do storage (asset-url.ts).
-    url: resolveAssetUrl({ id, pathname: stored.key, visibility: "private" }),
+    url: resolveAssetUrl({ id, pathname: stored.key, visibility }),
     contentType: command.contentType,
     size: stored.size,
     checksum,
-    visibility: "private",
+    visibility,
+    accessPermission: command.restriction?.accessPermission ?? null,
     categoryId: category.id,
     uploadedBy: command.actorId,
   });

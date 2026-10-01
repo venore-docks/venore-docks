@@ -1,3 +1,4 @@
+import { invalidateCacheByPrefix } from "../../../../../infrastructure/cache/memory-cache";
 import { beginOperation, endOperation } from "@/observability";
 import { compositionSchema } from "../../../contracts/block";
 import { canPublishInCategory, isLive, recordProposal, recordSnapshot, stateOf } from "../../../shared/entry-revisions";
@@ -57,6 +58,12 @@ export async function updateEntryComposition(
 
   await recordSnapshot({ ...existing, contentTypeIds: existing.contentTypeIds ?? [] }, command.actorId);
   const entry = await saveEntryComposition(command.id, nextData);
+  // Entry no ar: a página pública e os menus (âncoras de htmlId) estão em cache — mesmo critério de
+  // update-entry/publish-entry. Sem isso o site seguia mostrando a versão anterior por até 60 s.
+  if (isLive(existing)) {
+    invalidateCacheByPrefix("cms:entries:published");
+    invalidateCacheByPrefix("cms:navigation");
+  }
 
   endOperation(handle, { success: true });
   return { success: true, data: { ...entry, proposalId: null } };
