@@ -163,6 +163,25 @@ Além disso:
 - `THEME_FORCE_FALLBACK=1` força o Slime para todo mundo.
 - O safe mode (`/api/themes/safe-mode?on=1`) força o Slime só para o admin que o ativou.
 
+### Runbook: tema quebrado em produção
+
+**Sintoma só no navegador de quem está mexendo** (rascunho em preview, tema de uma seção, opção nova): use o **safe mode**.
+1. Logado com `settings.manage`, abra `https://<site>/api/themes/safe-mode?on=1` (ou o botão "Modo seguro" em `/admin/themes`). O servidor assina um cookie `venore-theme-preview` com o seu id de usuário, válido por no máximo 2 h.
+2. A partir daí, **só você** vê o Venore Slime com a configuração padrão, no site e no admin. Os outros visitantes continuam vendo o tema publicado. Em `/ext/**` o cookie é ignorado.
+3. Corrija pelo admin: descarte o rascunho (`/admin/themes/customize`) ou restaure uma publicação anterior (`/admin/themes/history` → Restaurar, que publica uma revisão nova).
+4. Saia com `https://<site>/api/themes/safe-mode?on=0` ou com "Sair do modo seguro" na faixa inferior. O cookie também vence sozinho em 2 h, e perde o efeito se você perder `settings.manage`.
+
+**Sintoma para todo mundo** (o tema publicado derruba o layout, o admin não abre): use `THEME_FORCE_FALLBACK`.
+1. Na Vercel, em *Settings → Environment Variables* do projeto, defina `THEME_FORCE_FALLBACK=1` em Production e faça *Redeploy* do último deploy (variável de ambiente só vale num deploy novo). Em self-host, defina a variável e reinicie o processo.
+2. O render ignora config, cookie de preview e seções: todo request usa o Slime com os padrões, e o diagnóstico vira `forced-fallback`. Nada é gravado; a config publicada continua intacta.
+3. Com o admin de pé, restaure a publicação anterior em `/admin/themes/history` ou corrija o rascunho e publique. Se o problema for o pacote do tema, desabilite o tema no catálogo ou volte a versão do pacote.
+4. Remova a variável (ou ponha `0`) e faça *Redeploy*.
+
+**Notas.**
+- A publicação grava também as chaves 7.x (`theme.active`, `theme.activePaletteId`, `theme.customColorPalette.*`). Então um rollback de **deploy** para uma versão anterior à v8 continua mostrando o mesmo tema e as mesmas cores.
+- Sem a tabela `themes.theme_config_revisions` (um preview sem migration), o site renderiza normalmente. Só rascunho e histórico ficam indisponíveis, e o admin avisa.
+- Headers `x-venore-theme-*` vindos de fora são descartados pelo proxy. Override de tema só existe por cookie assinado.
+
 ## 21. Compatibilidade 7.x e migração
 
 - **O que se mantém.** O range suportado passa a ser `>=7.0.0 <9.0.0`. Os 12 pacotes 7.x funcionam **sem mudança**: o adapter chama o `Shell` com as mesmas props de hoje. A exceção é que `breadcrumbsJsonLd` agora é sempre `null`, já que o core renderiza o JSON-LD, e `sidebarContextual` fica `null` quando não há conteúdo. No admin, eles continuam usando o próprio Shell.
