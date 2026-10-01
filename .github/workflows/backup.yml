@@ -1,0 +1,61 @@
+name: Backup do banco
+
+# Backup diário (pg_dump) das instâncias. Os branches de instância vivem neste mesmo repo e o
+# `schedule` do GitHub só roda no branch padrão — por isso um secret único lista todos os bancos:
+#   BACKUP_TARGETS = {"broadcast-fem": "postgres://...", "portal-colaborador": "postgres://..."}
+#   BACKUP_PASSPHRASE = frase longa usada pra cifrar (GPG AES256) — guarde fora do GitHub também.
+# O repositório é público: o dump é cifrado ANTES de virar artifact. Sem os secrets, o job só avisa
+# e termina. Restauração: docs/backup.md.
+on:
+  schedule:
+    - cron: "17 5 * * *" # 02:17 em Brasília
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    env:
+      BACKUP_TARGETS: ${{ secrets.BACKUP_TARGETS }}
+      BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+    steps:
+      - name: Conferir configuração
+        id: config
+        run: |
+          if [ -z "$BACKUP_TARGETS" ] || [ -z "$BACKUP_PASSPHRASE" ]; then
+            echo "::warning::BACKUP_TARGETS/BACKUP_PASSPHRASE não configurados — nada a fazer."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Cliente do Postgres 17
+        if: steps.config.outputs.enabled == 'true'
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client-17
+
+      - name: Dump cifrado de cada instância
+        if: steps.config.outputs.enabled == 'true'
+        run: |
+          mkdir -p backups
+          stamp=$(date -u +%Y%m%dT%H%M%SZ)
+          echo "$BACKUP_TARGETS" | jq -r 'to_entries[] | "\(.key)\t\(.value)"' | while IFS=$'\t' read -r name url; do
+            [ -n "$name" ] || continue
+            echo "::add-mask::$url"
+            file="backups/${name}-${stamp}.dump.gpg"
+            /usr/lib/postgresql/17/bin/pg_dump --format=custom --no-owner --no-privileges "$url" \
+              | gpg --batch --yes --symmetric --cipher-algo AES256 --passphrase-fd 3 3<<<"$BACKUP_PASSPHRASE" -o "$file"
+            echo "$name: $(du -h "$file" | cut -f1)"
+          done
+
+      - uses: actions/upload-artifact@v4
+        if: steps.config.outputs.enabled == 'true'
+        with:
+          name: backups-${{ github.run_id }}
+          path: backups/
+          retention-days: 14

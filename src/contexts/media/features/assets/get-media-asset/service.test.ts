@@ -1,7 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("../../../shared/attach-asset-variants", () => ({
+  attachAssetVariants: async (assets: unknown[]) => assets,
+  attachAssetVariantsToOne: async (asset: unknown) => asset,
+}));
+
 const findAssetByIdForScope = vi.fn();
 const findAssetByIdUnscoped = vi.fn();
+
+vi.mock("../../../asset-url", () => ({
+  createSignedMediaUrl: (id: string) => `/api/media/asset/${id}?exp=1&sig=s`,
+}));
 
 vi.mock("./store", () => ({
   findAssetByIdForScope: (...args: unknown[]) => findAssetByIdForScope(...args),
@@ -37,7 +46,10 @@ describe("getMediaAssetForTrustedReview", () => {
     const { getMediaAssetForTrustedReview } = await import("./service");
     const result = await getMediaAssetForTrustedReview({ id: "asset-1" });
 
-    expect(result).toEqual({ success: true, data: { id: "asset-1", visibility: "private", uploadedBy: "student-1" } });
+    expect(result).toEqual({
+      success: true,
+      data: { id: "asset-1", visibility: "private", uploadedBy: "student-1", url: "/api/media/asset/asset-1?exp=1&sig=s" },
+    });
     expect(findAssetByIdForScope).not.toHaveBeenCalled();
   });
 });

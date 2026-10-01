@@ -1,8 +1,11 @@
 name: CI
 
 on:
+  # Todo branch — inclusive os de instância (broadcast-fem, portal-colaborador...), que só diferem de
+  # main nos pacotes @venore/plugin-*/theme-*: um bump de plugin passa a rodar lint/typecheck/testes
+  # e os testes do próprio plugin (job `plugins`) antes do deploy. Branches claude/** rodam via PR.
   push:
-    branches: [main]
+    branches: ["**", "!claude/**"]
   pull_request:
 
 jobs:
@@ -26,6 +29,33 @@ jobs:
 
       - name: Test
         run: npm run test
+
+  plugins:
+    # Testes unitários dos plugins instalados neste branch (vitest.plugins.config.ts procura em
+    # ../venore-plugin-<nome>). Os pacotes vêm do npm ci em node_modules/@venore/plugin-*; o link
+    # simbólico coloca cada um onde a config espera. Em main (sem plugin) não roda nada.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Link dos plugins instalados
+        run: |
+          for dir in node_modules/@venore/plugin-*; do
+            [ -d "$dir" ] || continue
+            name="${dir#node_modules/@venore/plugin-}"
+            ln -sfn "$PWD/$dir" "../venore-plugin-$name"
+            echo "plugin: $name"
+          done
+
+      - name: Testes dos plugins
+        run: npm run test:plugins
 
   integration:
     runs-on: ubuntu-latest
@@ -88,9 +118,10 @@ jobs:
       - run: npm ci
 
       - name: Migrate (core)
-        # Migrations de plugin rodam no install (platform/plugin-engine/run-plugin-migrations.ts),
-        # não têm mais script npm próprio. O smoke só bate em rotas de core (/, /login, /setup,
-        # /cursos, /academy, /api/auth/providers), então o schema de core basta pra subir o app.
+        # A primeira migration de plugin roda no install (platform/plugin-engine/run-plugin-
+        # migrations.ts); as seguintes, de plugin já instalado, no prebuild do Build abaixo
+        # (db:migrate:plugins — no-op aqui, sem plugin instalado). O smoke só bate em rotas de core
+        # (/, /login, /setup, /cursos, /academy, /api/auth/providers), então o schema de core basta.
         run: npm run db:migrate
 
       - name: Build
@@ -106,3 +137,51 @@ jobs:
           done
           npm run smoke
           kill $APP_PID || true
+
+  e2e:
+    # Primeiro acesso de ponta a ponta (setup com SETUP_TOKEN + login) num banco vazio.
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+      AUTH_SECRET: e2e-test-secret-not-real
+      SETUP_TOKEN: e2e-setup-token-not-real-0123456789
+      CI: "true"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build (aplica as migrations no prebuild)
+        run: npm run build
+
+      - name: Chromium do Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E
+        run: npm run test:e2e
+
+      - name: Relatório do Playwright
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

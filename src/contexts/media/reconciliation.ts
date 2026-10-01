@@ -1,6 +1,7 @@
 import { db } from "@/infrastructure/database/client";
 import { storagePort } from "@/infrastructure/storage";
-import { assets } from "./database/schema";
+import { assetVariants, assets } from "./database/schema";
+import { inProcessJobsEnabled } from "@/shared/in-process-jobs";
 
 // Upload órfão (Fase 4/M2 — docs/implementation-roadmap.md, docs/media/blob-spec.md seção 8):
 // o browser subiu o blob mas fechou a aba antes de confirmar (confirmMediaUpload nunca chegou a
@@ -13,7 +14,10 @@ const ORPHAN_GRACE_PERIOD_MS = 24 * 60 * 60 * 1000;
 
 export async function reconcileOrphanUploads(now: Date = new Date()): Promise<{ removed: number }> {
   const knownRows = await db.select({ pathname: assets.pathname }).from(assets);
-  const knownPathnames = new Set(knownRows.map((row) => row.pathname));
+  // Variante de imagem tem objeto próprio no storage (image-variants.ts) — sem isso, a varredura
+  // tomaria toda variante por upload órfão e apagaria.
+  const variantRows = await db.select({ pathname: assetVariants.pathname }).from(assetVariants);
+  const knownPathnames = new Set([...knownRows, ...variantRows].map((row) => row.pathname));
 
   const objects = await storagePort.listObjects();
   const cutoff = now.getTime() - ORPHAN_GRACE_PERIOD_MS;
@@ -55,6 +59,6 @@ export function stopMediaReconciliationSweep(): void {
   }
 }
 
-if (process.env.NODE_ENV !== "test") {
+if (inProcessJobsEnabled()) {
   startMediaReconciliationSweep();
 }

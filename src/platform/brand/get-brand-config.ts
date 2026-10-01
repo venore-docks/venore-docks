@@ -46,8 +46,8 @@ const FALLBACK_LOGO_SCROLLED_PNG = "/brand/brand-logo-scrolled.png";
 const FALLBACK_FAVICON = "/brand/favicon.ico";
 
 // registerDefaultSetting faz onConflictDoNothing por chave (contexts/settings/features/
-// register-default-setting/store.ts) — chamar a cada leitura é seguro e barato (upsert
-// indexado que só grava na primeira vez). Não existe hoje um bootstrap real de app onde
+// register-default-setting/store.ts) e só vai ao banco uma vez por chave por processo — chamar a
+// cada leitura é seguro e barato. Não existe hoje um bootstrap real de app onde
 // registrar isso uma única vez (register-plugins.ts nunca é invocado em produção), então esta
 // é a única chamada que garante o default persistido sem inventar infra nova.
 async function readStringSetting(key: string, defaultValue: string): Promise<string> {

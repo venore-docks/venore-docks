@@ -53,6 +53,18 @@ function block(overrides: Partial<Block>): Block {
   return { id: "b1", key: "text", slot: "main", htmlId: null, data: {}, areas: [], ...overrides };
 }
 
+
+// Revisões (shared/entry-revisions): entry em rascunho/editor com permissão de publicar — o
+// comportamento de proposta tem cobertura própria no teste de integração entry-revisions.
+const canPublishInCategory = vi.fn(async () => true);
+vi.mock("../../../shared/entry-revisions", () => ({
+  canPublishInCategory: (...args: unknown[]) => canPublishInCategory(...(args as [])),
+  isLive: (entry: { status: string }) => entry.status === "published",
+  recordProposal: vi.fn(async () => ({ id: "proposal-1" })),
+  recordSnapshot: vi.fn(async () => undefined),
+  stateOf: (entry: unknown) => entry,
+}));
+
 describe("updateEntryComposition", () => {
   beforeEach(() => {
     findEntryById.mockReset();

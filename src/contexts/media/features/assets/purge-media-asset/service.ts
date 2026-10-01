@@ -2,6 +2,7 @@ import { invalidateCacheByPrefix } from "@/infrastructure/cache/memory-cache";
 import { storagePort } from "@/infrastructure/storage";
 import { beginOperation, endOperation } from "@/observability";
 import { findSoftDeletedAssetById, hardDeleteAssetById } from "./store";
+import { findVariantsByAssetIds } from "../../../shared/asset-variants-store";
 import type { PurgeMediaAssetCommand, PurgeMediaAssetResult } from "./types";
 
 const MEDIA_LIST_CACHE_PREFIX = "media:assets:";
@@ -28,6 +29,11 @@ export async function purgeMediaAsset(command: PurgeMediaAssetCommand): Promise<
     return { success: false, error };
   }
 
+  // Variantes primeiro (a linha delas some junto com o asset, por cascade — depois disso não daria
+  // mais pra saber quais objetos apagar).
+  for (const variant of await findVariantsByAssetIds([asset.id])) {
+    await storagePort.remove(variant.pathname);
+  }
   await storagePort.remove(asset.pathname);
   await hardDeleteAssetById(command.id);
   invalidateCacheByPrefix(MEDIA_LIST_CACHE_PREFIX);

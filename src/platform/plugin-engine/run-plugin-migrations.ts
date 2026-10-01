@@ -19,8 +19,10 @@ function resolveMigrationsSchema(pluginKey: string, declared: string | undefined
 }
 
 // Aplica a árvore de migrations própria do plugin (docs/venore-docks.md — "Schema e migrations").
-// Chamado no install (platform/plugin-engine/install-plugin.ts), nunca no vercel-build. Falha de
-// migration retorna erro sem lançar — quem chama decide não marcar o plugin como instalado.
+// Chamado no install (platform/plugin-engine/install-plugin.ts) e, pra plugin JÁ instalado, no
+// build (scripts/migrate-installed-plugins.ts, via prebuild — aplica migration nova de um bump de
+// tag). Falha de migration retorna erro sem lançar — quem chama decide não marcar o plugin como
+// instalado / derrubar o build.
 export async function runPluginMigrations(pluginKey: string): Promise<OperationResult<{ pluginKey: string }>> {
   const manifest = PLUGIN_REGISTRY.find((entry) => entry.key === pluginKey);
   if (!manifest) {

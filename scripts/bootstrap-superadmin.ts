@@ -1,5 +1,5 @@
 import { createInterface } from "node:readline/promises";
-import { findUserByEmail } from "@/contexts/auth";
+import { activateUser, findUserByEmail } from "@/contexts/auth";
 import { grantSuperadmin, superadminExists } from "@/contexts/rbac";
 
 // Script de bootstrap (docs/venore-docks.md — Autenticação / Bootstrap de superadmin), para
@@ -59,6 +59,13 @@ async function main() {
   const grantResult = await grantSuperadmin({ userId: user.id, bypassExistsCheck: true });
   if (!grantResult.success) {
     console.error(`Falha ao promover o usuário: ${grantResult.error.message}`);
+    process.exit(1);
+  }
+
+  // A conta pode estar "pending" (cadastro aguardando aprovação) — o superadmin precisa entrar.
+  const activated = await activateUser({ userId: user.id, reason: "bootstrap" });
+  if (!activated.success) {
+    console.error(`Superadmin concedido, mas falhou ao liberar a conta: ${activated.error.message}`);
     process.exit(1);
   }
 

@@ -1,5 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("../../../shared/attach-asset-variants", () => ({
+  attachAssetVariants: async (assets: unknown[]) => assets,
+  attachAssetVariantsToOne: async (asset: unknown) => asset,
+}));
+const generateAssetVariants = vi.fn<(...args: unknown[]) => Promise<unknown>>(async () => ({ success: true, data: { generated: 0, skipped: true } }));
+vi.mock("../generate-asset-variants/service", () => ({
+  generateAssetVariants: (...args: unknown[]) => generateAssetVariants(...args),
+}));
+
 vi.mock("@/observability", () => ({
   beginOperation: vi.fn(() => ({ operationId: "op-1", useCase: "test", actor: { id: "actor-1", type: "user" }, kind: "write", startedAt: new Date() })),
   endOperation: vi.fn(),
@@ -39,7 +48,7 @@ describe("uploadAvatarMediaAsset", () => {
     insertAsset.mockResolvedValue({ id: "asset-1" });
 
     const { uploadAvatarMediaAsset } = await import("./service");
-    const data = Buffer.from("avatar-bytes");
+    const data = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.from("avatar-bytes")]);
     await uploadAvatarMediaAsset({ filename: "me.png", contentType: "image/png", size: data.byteLength, data, actorId: "actor-1" });
 
     expect(getOrCreateReservedCategory).toHaveBeenCalledWith("avatars", "Avatares");
@@ -54,7 +63,7 @@ describe("uploadAvatarMediaAsset", () => {
     insertAsset.mockResolvedValue({ id: "asset-1" });
 
     const { uploadAvatarMediaAsset } = await import("./service");
-    await uploadAvatarMediaAsset({ filename: "me.png", contentType: "image/png", size: 10, data: Buffer.alloc(10), actorId: "actor-1" });
+    await uploadAvatarMediaAsset({ filename: "me.png", contentType: "image/png", size: 10, data: Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0]), actorId: "actor-1" });
 
     expect(invalidateCacheByPrefix).toHaveBeenCalledWith("media:assets:");
   });

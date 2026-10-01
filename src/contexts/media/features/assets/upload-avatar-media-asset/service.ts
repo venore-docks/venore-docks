@@ -6,8 +6,12 @@ import { getOrCreateReservedCategory } from "../../../get-or-create-reserved-cat
 import { AVATAR_RESERVED_CATEGORY_KEY, AVATAR_RESERVED_CATEGORY_NAME } from "../../../contracts/types";
 import { resolveMediaStorageFolder } from "../../../resolve-media-storage-folder";
 import { sanitizeSvgBuffer } from "../../../sanitize-svg-buffer";
+import { CONTENT_MISMATCH_ERROR, contentMatchesDeclaredType } from "../../../content-sniffing";
 import { insertAsset } from "../upload-media-asset/store";
 import type { UploadAvatarMediaAssetCommand, UploadAvatarMediaAssetResult } from "./types";
+import { resolveAssetUrl } from "../../../asset-url";
+import { generateAssetVariants } from "../generate-asset-variants/service";
+import { attachAssetVariantsToOne } from "../../../shared/attach-asset-variants";
 
 const MEDIA_LIST_CACHE_PREFIX = "media:assets:";
 
@@ -28,6 +32,13 @@ export async function uploadAvatarMediaAsset(command: UploadAvatarMediaAssetComm
 
   const avatarsCategory = await getOrCreateReservedCategory(AVATAR_RESERVED_CATEGORY_KEY, AVATAR_RESERVED_CATEGORY_NAME);
 
+  // Tipo declarado precisa bater com os bytes (content-sniffing.ts).
+  if (!contentMatchesDeclaredType(command.contentType, command.data)) {
+    const mismatch = { success: false as const, error: { ...CONTENT_MISMATCH_ERROR } };
+    endOperation(handle, mismatch);
+    return mismatch;
+  }
+
   // SVG pode carregar script embutido — sanitiza antes de gravar (mesmo motivo de
   // upload-media-asset/service.ts).
   let dataToStore = command.data;
@@ -44,10 +55,13 @@ export async function uploadAvatarMediaAsset(command: UploadAvatarMediaAssetComm
   const stored = await storagePort.store({ key: pathname, data: dataToStore, contentType: command.contentType });
   const checksum = computeSha256Hex(dataToStore);
 
+  const id = crypto.randomUUID();
   const asset = await insertAsset({
+    id,
     filename: command.filename,
     pathname: stored.key,
-    url: stored.url,
+    // Não público -> rota autorizada do app; público -> URL direta do storage (asset-url.ts).
+    url: resolveAssetUrl({ id, pathname: stored.key, visibility: "private" }),
     contentType: command.contentType,
     size: stored.size,
     checksum,
@@ -56,7 +70,11 @@ export async function uploadAvatarMediaAsset(command: UploadAvatarMediaAssetComm
     uploadedBy: command.actorId,
   });
 
+  // Cópias redimensionadas pra exibição (image-variants.ts) — os bytes já estão em memória. Falha
+  // aqui não derruba o upload: o asset serve o original e o backfill do /admin/media tenta de novo.
+  await generateAssetVariants({ assetId: asset.id, data: dataToStore });
+
   invalidateCacheByPrefix(MEDIA_LIST_CACHE_PREFIX);
   endOperation(handle, { success: true });
-  return { success: true, data: asset };
+  return { success: true, data: (await attachAssetVariantsToOne(asset)) ?? asset };
 }

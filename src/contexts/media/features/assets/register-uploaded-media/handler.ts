@@ -1,5 +1,4 @@
 import { authorizeActor } from "@/contexts/rbac";
-import { assertTypeAllowedForDirectUpload, validateMediaUploadCandidate } from "../request-media-upload-ticket/service";
 import { registerUploadedMedia } from "./service";
 import type { RegisterUploadedMediaCommand, RegisterUploadedMediaResult } from "./types";
 
@@ -28,23 +27,8 @@ export async function registerUploadedMediaHandler(command: RegisterUploadedMedi
     return { success: false, error: { code: "media.register.invalid_actor", message: "actorId não pode ser vazio." } };
   }
 
-  // Revalida allowlist/limite contra o tamanho real reportado pelo storage — o client pode
-  // mentir sobre `size` ao pedir o ticket, mas não pode mentir sobre quantos bytes o storage
-  // efetivamente recebeu (blob-spec seção 5).
-  const validation = validateMediaUploadCandidate({ contentType: command.contentType, size: command.size });
-  if (!validation.success) {
-    return validation;
-  }
-
-  // Defesa em profundidade: mesmo que requestMediaUploadTicket/onBeforeGenerateToken já
-  // rejeitem SVG antes de emitir o ticket, este handler é o segundo chamador legítimo do fluxo
-  // direto ao Blob (webhook onUploadCompleted) e não deve confiar cegamente que o contentType
-  // reportado nunca chegou até aqui por outro caminho.
-  const directUploadCheck = assertTypeAllowedForDirectUpload(command.contentType);
-  if (!directUploadCheck.success) {
-    return directUploadCheck;
-  }
-
+  // Tipo/tamanho são revalidados no service contra o que o STORAGE reporta (storagePort.stat),
+  // não contra o que o cliente declarou.
   return registerUploadedMedia(command);
 }
 
@@ -57,5 +41,6 @@ export async function confirmMediaUploadHandler(input: ConfirmMediaUploadInput):
     return { success: false, error: authz.error };
   }
 
-  return registerUploadedMediaHandler({ ...input, actorId: authz.actorId });
+  // Confirmação vinda do browser: checksum não verificado (fica fora da deduplicação).
+  return registerUploadedMediaHandler({ ...input, actorId: authz.actorId, checksumVerified: false });
 }

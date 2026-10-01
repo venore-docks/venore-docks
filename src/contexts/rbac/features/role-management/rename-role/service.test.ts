@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/observability", () => ({
   beginOperation: vi.fn(() => ({ operationId: "op-1", useCase: "test", actor: { id: "actor-1", type: "user" }, kind: "write", startedAt: new Date() })),
   endOperation: vi.fn(),
+  recordAuditEvent: vi.fn(),
 }));
 
 const findRoleById = vi.fn();
@@ -21,8 +22,22 @@ vi.mock("../../../user-context-cache", () => ({
   invalidateUserContext: (...args: unknown[]) => invalidateUserContext(...args),
 }));
 
+
+const assertActorCanManageUserRoles = vi.fn();
+const assertActorHoldsPermissions = vi.fn();
+const assertActorIsSuperadmin = vi.fn();
+vi.mock("../../../shared/privilege-guard", () => ({
+  SUPERADMIN_ROLE_KEY: "superadmin",
+  assertActorCanManageUserRoles: (...args: unknown[]) => assertActorCanManageUserRoles(...args),
+  assertActorHoldsPermissions: (...args: unknown[]) => assertActorHoldsPermissions(...args),
+  assertActorIsSuperadmin: (...args: unknown[]) => assertActorIsSuperadmin(...args),
+}));
+
 describe("renameRole", () => {
   beforeEach(() => {
+    assertActorCanManageUserRoles.mockReset().mockResolvedValue({ success: true, data: undefined });
+    assertActorHoldsPermissions.mockReset().mockResolvedValue({ success: true, data: undefined });
+    assertActorIsSuperadmin.mockReset().mockResolvedValue({ success: true, data: undefined });
     findRoleById.mockReset();
     findUserIdsWithRole.mockReset();
     updateRoleName.mockReset();
@@ -56,9 +71,8 @@ describe("renameRole", () => {
       data: { id: "role-1", key: "superadmin", name: "Overlord", isSystem: true },
     });
     expect(updateRoleName).toHaveBeenCalledWith("role-1", "Overlord");
-    expect(invalidateUserContext).toHaveBeenCalledTimes(2);
-    expect(invalidateUserContext).toHaveBeenCalledWith("user-1");
-    expect(invalidateUserContext).toHaveBeenCalledWith("user-2");
+    expect(invalidateUserContext).toHaveBeenCalledTimes(1);
+    expect(invalidateUserContext).toHaveBeenCalledWith(["user-1", "user-2"]);
   });
 
   it("renames a custom role's display name", async () => {
@@ -71,6 +85,6 @@ describe("renameRole", () => {
 
     expect(result.success).toBe(true);
     expect(updateRoleName).toHaveBeenCalledWith("role-2", "Editor de conteúdo");
-    expect(invalidateUserContext).not.toHaveBeenCalled();
+    expect(invalidateUserContext).toHaveBeenCalledWith([]);
   });
 });

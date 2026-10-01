@@ -33,8 +33,22 @@ export type MediaAsset = {
   visibility: MediaVisibility;
   categoryId: string | null;
   deletedAt: Date | null;
+  variantsProcessedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
+  // Cópias WebP redimensionadas (menor primeiro) — só imagem raster; vazio/ausente em asset que
+  // não é imagem, em upload anterior às variantes (até rodar o backfill em /admin/media) ou quando
+  // a geração falhou. Preenchido por getMediaAsset/listMediaAssets; outros caminhos que devolvem
+  // MediaAsset podem não trazer. Pra escolher qual usar: pickMediaVariantUrl/buildMediaSrcSet.
+  variants?: MediaAssetVariant[];
+};
+
+export type MediaAssetVariant = {
+  width: number;
+  height: number;
+  url: string;
+  size: number;
+  contentType: string;
 };
 
 export type MediaAssetCategory = "image" | "document" | "video" | "audio";

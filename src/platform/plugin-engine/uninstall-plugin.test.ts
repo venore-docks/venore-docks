@@ -10,6 +10,11 @@ vi.mock("@/contexts/extensions", () => ({
   listExtensionStates: (...args: unknown[]) => listExtensionStates(...args),
 }));
 
+const forgetSettingsByPrefix = vi.fn();
+vi.mock("@/contexts/settings", () => ({
+  forgetSettingsByPrefix: (...args: unknown[]) => forgetSettingsByPrefix(...args),
+}));
+
 const recordAuditEvent = vi.fn();
 vi.mock("@/observability", () => ({
   beginOperation: vi.fn(() => ({ operationId: "op-1" })),
@@ -54,6 +59,7 @@ describe("uninstallPlugin / performPluginUninstall", () => {
     authorizeActor.mockReset();
     listExtensionStates.mockReset();
     recordAuditEvent.mockReset();
+    forgetSettingsByPrefix.mockReset();
     registerPlugins.mockReset();
     transaction.mockReset();
     txExecute.mockReset();
@@ -137,6 +143,8 @@ describe("uninstallPlugin / performPluginUninstall", () => {
 
     // 2 DROP SCHEMA (dado + tracking) + DELETE settings + DELETE role_permissions + UPDATE extension_state.
     expect(txExecute).toHaveBeenCalledTimes(5);
+    // DELETE de settings por fora de contexts/settings: cache e defaults do namespace esquecidos.
+    expect(forgetSettingsByPrefix).toHaveBeenCalledWith("enrollment-dashboard.");
 
     expect(recordAuditEvent).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -188,6 +196,7 @@ describe("uninstallPlugin / performPluginUninstall", () => {
 
     // Nenhum DROP SCHEMA, nenhum DELETE: só o UPDATE em extensions.extension_state.
     expect(txExecute).toHaveBeenCalledTimes(1);
+    expect(forgetSettingsByPrefix).not.toHaveBeenCalled();
 
     expect(recordAuditEvent).toHaveBeenCalledWith(
       expect.objectContaining({

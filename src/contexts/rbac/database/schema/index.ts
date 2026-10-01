@@ -1,4 +1,4 @@
-import { boolean, foreignKey, pgSchema, primaryKey, text, timestamp } from "drizzle-orm/pg-core";
+import { boolean, foreignKey, index, pgSchema, primaryKey, text, timestamp } from "drizzle-orm/pg-core";
 import { users } from "@/contexts/auth/database/schema";
 
 export const rbacSchema = pgSchema("rbac");
@@ -38,7 +38,12 @@ export const userRoles = rbacSchema.table(
       .references(() => roles.id, { onDelete: "cascade" }),
     assignedAt: timestamp("assigned_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (userRole) => [primaryKey({ columns: [userRole.userId, userRole.roleId] })],
+  (userRole) => [
+    primaryKey({ columns: [userRole.userId, userRole.roleId] }),
+    // A PK começa por user_id; "quem tem este papel" (listUsersByRole, invalidação de cache ao
+    // mudar permissions de um papel) varria a tabela toda sem este índice.
+    index("user_roles_role_id_idx").on(userRole.roleId),
+  ],
 );
 
 // Fase B de docs/rbac-scoped-roles.md (D1) — tabela satélite que limita uma atribuição de papel

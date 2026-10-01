@@ -17,7 +17,7 @@ export async function removeScopeFromRoleAssignment(
   });
 
   await deleteRoleAssignmentScope(command.userId, command.roleId, command.scopeType, command.resourceId);
-  invalidateUserContext(command.userId);
+  await invalidateUserContext(command.userId);
 
   endOperation(handle, { success: true });
 

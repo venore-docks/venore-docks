@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import {
+  backfillAssetVariants,
   clearCategoryAssets,
   confirmMediaUpload,
   createCategory,
@@ -11,9 +12,11 @@ import {
   updateMediaAssetCategory,
   updateMediaAssetVisibility,
   uploadMediaAsset,
+  type BackfillAssetVariantsResult,
   type MediaVisibility,
   type RequestMediaUploadTicketResult,
 } from "@/contexts/media";
+import { authorizeActor } from "@/contexts/rbac";
 import { deleteMediaSafely } from "@/platform/media-lifecycle/delete-media-safely";
 import { collectMediaUsage } from "@/platform/media-usage/media-usage-registry";
 import type { MediaUsageReference } from "@/platform/media-usage/types";
@@ -90,7 +93,11 @@ export async function confirmMediaUploadAction(input: {
 
 // Consultada pelo client antes de pedir confirmação de exclusão (docs do pedido: "a deleção
 // avisa quantos locais serão afetados e exige confirmação") — leitura pura, sem apagar nada.
+// Lista onde a mídia é usada (títulos de conteúdo, telas de plugin) — só pra quem gerencia mídia;
+// sem o gate, qualquer visitante descobria por id onde cada arquivo aparece.
 export async function getMediaUsageSummaryAction(id: string): Promise<MediaUsageReference[]> {
+  const authz = await authorizeActor("media.manage");
+  if (!authz.authorized) return [];
   return collectMediaUsage(id);
 }
 
@@ -210,4 +217,12 @@ export async function clearCategoryAssetsAction(
 
   revalidatePath("/admin/media");
   return { error: null };
+}
+
+// Um lote do backfill de variantes (cópias redimensionadas das imagens antigas) — o botão chama
+// de novo até `remaining` chegar a 0. Autorização (media.manage) é do handler.
+export async function backfillMediaVariantsAction(): Promise<BackfillAssetVariantsResult> {
+  const result = await backfillAssetVariants();
+  if (result.success && result.data.generated > 0) revalidatePath("/admin/media");
+  return result;
 }

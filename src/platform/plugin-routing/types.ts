@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
 export type PluginRouteParams = Record<string, string>;
@@ -12,11 +13,23 @@ export type PluginPageComponent = (props: {
   searchParams: Promise<PluginSearchParams>;
 }) => ReactNode | Promise<ReactNode>;
 
+// Assinatura idêntica ao `generateMetadata` de um page.tsx do Next.js — title, description, Open
+// Graph (imagem de compartilhamento no WhatsApp/redes)... O que não vier aqui continua herdando do
+// layout raiz (nome do site, favicon), igual a qualquer página.
+export type PluginMetadataGenerator = (props: {
+  params: Promise<PluginRouteParams>;
+  searchParams: Promise<PluginSearchParams>;
+}) => Metadata | Promise<Metadata>;
+
 export type PluginPageRouteEntry = {
   // "" = raiz do plugin (ex: /admin/academy); "courses/:id/enrolled/:studentActorId" = segmento
   // literal ou :param — mesmo vocabulário de path-to-regexp/Express, um único : por segmento.
   pattern: string;
   Component: PluginPageComponent;
+  // Opcional, hoje só lido na área "public" (generateMetadata do catch-all do CMS,
+  // src/app/(platform)/[...slug]/page.tsx) — é a única área em que <head> de página serve pra
+  // alguém de fora (buscador, preview de link). Recebe os mesmos params/searchParams do Component.
+  generateMetadata?: PluginMetadataGenerator;
 };
 
 export type PluginApiMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
@@ -68,6 +81,14 @@ export function asPluginPage<TParams extends PluginRouteParams>(
   component: (props: { params: Promise<TParams>; searchParams: Promise<PluginSearchParams> }) => ReactNode | Promise<ReactNode>,
 ): PluginPageComponent {
   return component as unknown as PluginPageComponent;
+}
+
+// Mesmo motivo de asPluginPage (variância do `params` específico da rota) — pro generateMetadata
+// opcional de uma entrada de page.
+export function asPluginMetadata<TParams extends PluginRouteParams>(
+  generator: (props: { params: Promise<TParams>; searchParams: Promise<PluginSearchParams> }) => Metadata | Promise<Metadata>,
+): PluginMetadataGenerator {
+  return generator as unknown as PluginMetadataGenerator;
 }
 
 export function asPluginApiHandler<TParams extends PluginRouteParams>(

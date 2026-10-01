@@ -9,8 +9,20 @@ export type RateLimitResult = { allowed: boolean; remaining: number; resetAt: nu
 // Janela fixa por chave (ator ou IP), em memória do processo — suficiente pra um único
 // endpoint sensível (upload) sem depender de infra externa (Redis/Upstash) ainda não presente
 // no repo (AGENTS.md — Known Gaps, "rate limiting ... nenhuma implementação encontrada").
-export function checkRateLimit(key: string, config: RateLimitConfig): RateLimitResult {
+// Limitador em memória, por processo — só pra testes e dev sem banco. Produção usa o de Postgres
+// (postgres-rate-limiter.ts), compartilhado entre instâncias.
+const MAX_BUCKETS = 10_000;
+
+function evictExpired(now: number): void {
+  for (const [key, bucket] of buckets) {
+    if (now >= bucket.resetAt) buckets.delete(key);
+  }
+}
+
+export function checkRateLimitInMemory(key: string, config: RateLimitConfig): RateLimitResult {
   const now = Date.now();
+  // Sem isso o Map crescia pra sempre com chaves distintas (um balde por IP/chave inventada).
+  if (buckets.size >= MAX_BUCKETS) evictExpired(now);
   const existing = buckets.get(key);
 
   if (!existing || now >= existing.resetAt) {

@@ -2,6 +2,7 @@ import { beginOperation, endOperation, recordAuditEvent } from "@/observability"
 import { hashPassword } from "../password-hashing";
 import { writeUserPasswordHash } from "./store";
 import type { AdminSetUserPasswordCommand, AdminSetUserPasswordResult } from "./types";
+import { incrementSessionVersion } from "../../session/revoke-sessions/store";
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -38,6 +39,9 @@ export async function adminSetUserPassword(
     success: true,
     summary: `Ator ${command.actorId} redefiniu a senha do usuário ${command.targetUserId}.`,
   });
+
+  // Senha redefinida pelo admin: quem estava logado com a senha antiga sai.
+  await incrementSessionVersion(command.targetUserId);
 
   // Redefinir a credencial de outra pessoa é ação privilegiada — auditada sempre.
   await recordAuditEvent({

@@ -268,8 +268,14 @@ button:not(:disabled),
 /* Tailwind v4 não tem mais cor de borda default (bare `border`/`border-t`/`border-b` caem em
    currentColor) — reset padrão do próprio shadcn, aqui usando só o nosso --border, sem valor
    novo. Sem isso, table.tsx/dialog.tsx (bordas sem sufixo de cor) herdam a cor do texto. */
-* {
-  border-color: var(--color-border);
+@layer base {
+  /* Dentro de @layer base (não solto): CSS fora de camada vence QUALQUER utilitário do Tailwind
+     (que mora em @layer utilities), e solto aqui ele anulava border-transparent, border-ring,
+     border-destructive etc. no app inteiro. var(--border) (não --color-border, resolvido no
+     :root) pra respeitar --border redeclarado num escopo, ex: o rail de um tema. */
+  * {
+    border-color: var(--border);
+  }
 }
 
 body {

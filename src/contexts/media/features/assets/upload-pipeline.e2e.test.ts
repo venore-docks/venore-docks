@@ -1,5 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { InMemoryStorageAdapter } from "@/infrastructure/storage/in-memory-storage-adapter";
+
+vi.mock("../../shared/attach-asset-variants", () => ({
+  attachAssetVariants: async (assets: unknown[]) => assets,
+  attachAssetVariantsToOne: async (asset: unknown) => asset,
+}));
+const generateAssetVariants = vi.fn<(...args: unknown[]) => Promise<unknown>>(async () => ({ success: true, data: { generated: 0, skipped: true } }));
+vi.mock("./generate-asset-variants/service", () => ({
+  generateAssetVariants: (...args: unknown[]) => generateAssetVariants(...args),
+}));
+import { storagePort } from "@/infrastructure/storage";
+import type { InMemoryStorageAdapter } from "@/infrastructure/storage/in-memory-storage-adapter";
 import { computeSha256Hex } from "@/infrastructure/storage/checksum";
 
 // Caminho principal ponta a ponta do pipeline de upload (docs/media/blob-spec.md), usando o
@@ -62,8 +72,10 @@ describe("upload pipeline — caminho principal com InMemoryStorageAdapter", () 
     const { requestMediaUploadTicketHandler } = await import("./request-media-upload-ticket/handler");
     const { registerUploadedMediaHandler } = await import("./register-uploaded-media/handler");
 
-    const storage = new InMemoryStorageAdapter();
-    const fileBytes = Buffer.from("conteúdo de teste do pipeline de upload");
+    // O MESMO storagePort que o service consulta (driver "local" em memória nos testes) — o
+    // registro agora confere se o objeto existe no storage antes de criar a linha.
+    const storage = storagePort as InMemoryStorageAdapter;
+    const fileBytes = Buffer.from("%PDF-1.7\nconteúdo de teste do pipeline de upload");
 
     const ticket = await requestMediaUploadTicketHandler({ filename: "relatório final.pdf", contentType: "application/pdf", size: fileBytes.byteLength });
     expect(ticket.success).toBe(true);

@@ -1,80 +1,114 @@
 "use server";
 
-import { AuthError } from "next-auth";
+import { AuthError, CredentialsSignin } from "next-auth";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { findUserByEmail, getCurrentUser, registerWithPassword, signIn, signOut } from "@/contexts/auth";
-import type { UserRegistrationStatus } from "@/contexts/auth";
-import { grantSuperadmin, superadminExists } from "@/contexts/rbac";
+import {
+  listAvailableAuthProviders,
+  registerWithPassword,
+  requestPasswordReset,
+  resetPasswordWithToken,
+  signIn,
+  signOut,
+} from "@/contexts/auth";
+import { isBlockedAccountCode, isMfaLoginCode } from "@/contexts/auth/contracts/login-errors";
+import { checkRateLimit, getClientIp } from "@/infrastructure/rate-limit";
+import { toSafeCallbackUrl } from "@/platform/auth-flow/safe-callback-url";
+import { bootstrapSuperadmin } from "@/platform/registration/bootstrap-superadmin";
 import { handleUserRegistered } from "@/platform/registration/handle-user-registered";
+import { acceptInvitation } from "@/platform/registration/invitations";
+import { isSelfRegistrationEnabled } from "@/platform/registration/registration-settings";
+import { getSiteOrigin } from "@/platform/seo/site-origin";
 
-// Mensagem específica por status "não aprovado" — sem isso, congelado/rejeitado/removido caem no
-// mesmo "Usuário ou senha inválidos" de senha errada, o que deixa a pessoa (e quem dá suporte)
-// sem pista nenhuma do que aconteceu. Só "approved" não entra aqui: só existe motivo pra revelar o
-// status quando ele É a causa do bloqueio, nunca quando a causa é só senha errada.
-const LOGIN_BLOCKED_STATUS_MESSAGE: Partial<Record<UserRegistrationStatus, string>> = {
-  pending: "Cadastro aguardando aprovação de um administrador.",
-  rejected: "Cadastro rejeitado. Fale com um administrador se acha que isso é engano.",
-  frozen: "Conta congelada por um administrador. Fale com um administrador para reativar.",
-  removed: "Conta removida.",
-};
+// Limites por IP e por e-mail — força bruta de senha, credential stuffing e spam de cadastro.
+const LOGIN_IP_LIMIT = { limit: 30, windowMs: 15 * 60 * 1000 };
+const LOGIN_EMAIL_LIMIT = { limit: 10, windowMs: 15 * 60 * 1000 };
+const REGISTER_IP_LIMIT = { limit: 5, windowMs: 60 * 60 * 1000 };
+const RESET_REQUEST_IP_LIMIT = { limit: 5, windowMs: 15 * 60 * 1000 };
+const RESET_REQUEST_EMAIL_LIMIT = { limit: 3, windowMs: 60 * 60 * 1000 };
+const RESET_SUBMIT_IP_LIMIT = { limit: 10, windowMs: 15 * 60 * 1000 };
 
-// Consultado ANTES de signIn(): authorize() em providers.ts já recusa qualquer status != approved
-// devolvendo null, mas isso vira um AuthError genérico indistinguível de senha errada (mesmo
-// findUserByEmail que providers.ts usa — não é um uso novo do "regra 14", só adiantado pra decidir
-// a mensagem antes de tentar autenticar de verdade). Email inexistente devolve null aqui de
-// propósito: não é revelado "essa conta não existe", só "essa conta existe e está bloqueada".
-async function resolveLoginBlockMessage(email: string): Promise<string | null> {
-  // Email é sempre salvo em lowercase no registro (register-with-password/service.ts,
-  // admin-create-user/service.ts) e o lookup é exato (`eq`) — sem normalizar aqui, digitar o
-  // email com qualquer maiúscula faz o pré-check não achar o usuário, pular o aviso de status
-  // específico e cair na mensagem genérica de "senha inválida" lá embaixo.
-  const normalized = email.trim().toLowerCase();
-  if (!normalized) return null;
-  const found = await findUserByEmail({ email: normalized });
-  if (!found.success) return null;
-  return LOGIN_BLOCKED_STATUS_MESSAGE[found.data.status] ?? null;
+async function clientIp(): Promise<string> {
+  return getClientIp(await headers());
+}
+
+function postLoginPath(callbackUrl: string | null): string {
+  return callbackUrl ? `/post-login?callbackUrl=${encodeURIComponent(callbackUrl)}` : "/post-login";
+}
+
+function loginPath(params: Record<string, string>, callbackUrl: string | null): string {
+  const search = new URLSearchParams(params);
+  if (callbackUrl) search.set("callbackUrl", callbackUrl);
+  return `/login?${search.toString()}`;
 }
 
 export async function signInWithProviderAction(formData: FormData) {
   const provider = String(formData.get("provider") ?? "");
-  if (!provider) return;
+  const callbackUrl = toSafeCallbackUrl(formData.get("callbackUrl"));
+  // Só provider OAuth habilitado — nunca um id arbitrário vindo do form.
+  const enabled = listAvailableAuthProviders().some((entry) => entry.kind === "oauth" && entry.enabled && entry.key === provider);
+  if (!enabled) return;
 
-  await signIn(provider, { redirectTo: "/post-login" });
+  await signIn(provider, { redirectTo: postLoginPath(callbackUrl) });
 }
 
 export async function signInWithPasswordAction(formData: FormData) {
-  const username = String(formData.get("username") ?? "");
+  const username = String(formData.get("username") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  const otp = String(formData.get("otp") ?? "").trim();
+  const callbackUrl = toSafeCallbackUrl(formData.get("callbackUrl"));
 
-  const blockMessage = await resolveLoginBlockMessage(username);
-  if (blockMessage) {
-    redirect(`/login?error=${encodeURIComponent(blockMessage)}`);
+  const ip = await clientIp();
+  const [byIp, byEmail] = await Promise.all([
+    checkRateLimit(`auth.login.ip:${ip}`, LOGIN_IP_LIMIT),
+    checkRateLimit(`auth.login.email:${username.toLowerCase()}`, LOGIN_EMAIL_LIMIT),
+  ]);
+  if (!byIp.allowed || !byEmail.allowed) {
+    redirect(loginPath({ error: "too-many-attempts" }, callbackUrl));
   }
 
   try {
-    await signIn("credentials", { username, password, redirect: false });
+    await signIn("credentials", { username, password, otp, redirect: false });
   } catch (error) {
+    // Status da conta (pendente, congelada...) só chega aqui quando a senha estava CERTA — o
+    // authorize() recusa com um código específico depois do verify (contracts/login-errors.ts).
+    if (error instanceof CredentialsSignin && (isBlockedAccountCode(error.code) || isMfaLoginCode(error.code))) {
+      redirect(loginPath({ error: error.code }, callbackUrl));
+    }
     if (error instanceof AuthError) {
-      redirect("/login?error=invalid-credentials");
+      redirect(loginPath({ error: "invalid-credentials" }, callbackUrl));
     }
     throw error;
   }
 
-  redirect("/post-login");
+  redirect(postLoginPath(callbackUrl));
 }
 
-// Registro por senha (provider Credentials). Cria o usuário e roda a mesma composição que o
-// evento `createUser` do Auth.js roda pro OAuth (handle-user-registered): primeiro usuário do
-// sistema vira superadmin; os demais nascem "pending" e dependem de aprovação do superadmin —
-// por isso não há confirmação por email aqui (pedido do dono: quem autoriza é o superadmin).
+// Registro por senha (provider Credentials). A conta nasce "pending" (fail-closed) e a
+// composição de registro decide se libera (aprovação desligada) — mesma composição do evento
+// `createUser` do Auth.js pro OAuth.
 export async function signUpWithPasswordAction(formData: FormData) {
   const name = String(formData.get("name") ?? "");
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
 
+  if (!(await isSelfRegistrationEnabled())) {
+    redirect(loginPath({ error: "registration-closed" }, null));
+  }
+
+  const limit = await checkRateLimit(`auth.register.ip:${await clientIp()}`, REGISTER_IP_LIMIT);
+  if (!limit.allowed) {
+    redirect(loginPath({ error: "too-many-attempts" }, null));
+  }
+
   const registered = await registerWithPassword({ name, email, password });
   if (!registered.success) {
-    redirect(`/login?error=${encodeURIComponent(registered.error.message)}`);
+    // E-mail já cadastrado responde igual a um cadastro recebido — não confirma a terceiros
+    // quais e-mails têm conta. Os demais erros são de formato (a pessoa precisa corrigir).
+    if (registered.error.code === "auth.registration.email_taken") {
+      redirect(loginPath({ notice: "registration-received" }, null));
+    }
+    redirect(loginPath({ error: registered.error.code }, null));
   }
 
   const composed = await handleUserRegistered({
@@ -83,16 +117,16 @@ export async function signUpWithPasswordAction(formData: FormData) {
     name: registered.data.name,
   });
   if (!composed.success) {
-    redirect(`/login?error=${encodeURIComponent(composed.error.message)}`);
+    // Fail-closed: a conta continua pendente; um admin pode aprovar depois.
+    redirect(loginPath({ notice: "registration-received" }, null));
   }
 
-  // Entra já se o registro virou superadmin inicial (status "approved"); se ficou "pending", o
-  // provider Credentials recusa (providers.ts) — cai no catch e mostra o aviso de aprovação.
+  // Aprovação desligada: já entra. Aprovação exigida: authorize() recusa com account_pending.
   try {
     await signIn("credentials", { username: email, password, redirect: false });
   } catch (error) {
     if (error instanceof AuthError) {
-      redirect("/login?notice=registration-pending");
+      redirect(loginPath({ notice: "registration-received" }, null));
     }
     throw error;
   }
@@ -105,23 +139,107 @@ export async function signOutAction() {
   redirect("/login");
 }
 
-export async function bootstrapSuperadminAction() {
-  // P1 — escalada de privilégio: o gate ficava só na página /setup. Sem re-checar aqui, um POST
-  // direto nesta action concederia superadmin mesmo já existindo um. (grantSuperadmin também
-  // recusa no handler; esta checagem evita a chamada e manda pra lugar sensato.)
-  const existsResult = await superadminExists();
-  if (existsResult.success && existsResult.data) {
-    redirect("/post-login");
-  }
+export type SetupActionState = { error: string | null };
 
-  const currentUser = await getCurrentUser();
-  if (!currentUser.success || !currentUser.data) {
-    redirect("/login");
-  }
+// Primeiro superadmin via /setup, gated por SETUP_TOKEN (platform/registration/bootstrap-superadmin.ts).
+export async function bootstrapSuperadminAction(_prev: SetupActionState, formData: FormData): Promise<SetupActionState> {
+  const token = String(formData.get("token") ?? "");
+  const mode = formData.get("mode") === "create" ? "create" : "session";
+  const clientIpValue = await clientIp();
 
-  const result = await grantSuperadmin({ userId: currentUser.data.id });
+  const result =
+    mode === "create"
+      ? await bootstrapSuperadmin({
+          mode,
+          token,
+          clientIp: clientIpValue,
+          name: String(formData.get("name") ?? ""),
+          email: String(formData.get("email") ?? ""),
+          password: String(formData.get("password") ?? ""),
+        })
+      : await bootstrapSuperadmin({ mode, token, clientIp: clientIpValue });
+
   if (!result.success) {
-    redirect("/setup");
+    return { error: result.error.message };
+  }
+
+  if (result.data.created) {
+    try {
+      await signIn("credentials", {
+        username: String(formData.get("email") ?? ""),
+        password: String(formData.get("password") ?? ""),
+        redirect: false,
+      });
+    } catch (error) {
+      if (error instanceof AuthError) redirect("/login");
+      throw error;
+    }
   }
   redirect("/admin");
+}
+
+export type PasswordResetActionState = { error: string | null };
+
+// "Esqueci minha senha": resposta igual exista ou não a conta (a página diz "se houver conta...").
+export async function requestPasswordResetAction(
+  _prev: PasswordResetActionState,
+  formData: FormData,
+): Promise<PasswordResetActionState> {
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const ipLimit = await checkRateLimit(`auth.reset-request.ip:${await clientIp()}`, RESET_REQUEST_IP_LIMIT);
+  const emailLimit = await checkRateLimit(`auth.reset-request.email:${email}`, RESET_REQUEST_EMAIL_LIMIT);
+  if (!ipLimit.allowed || !emailLimit.allowed) {
+    return { error: "Muitas tentativas. Aguarde alguns minutos e tente de novo." };
+  }
+
+  const result = await requestPasswordReset({ email, resetUrl: `${await getSiteOrigin()}/reset-password` });
+  if (!result.success) {
+    return { error: result.error.message };
+  }
+  redirect("/forgot-password?enviado=1");
+}
+
+export async function resetPasswordAction(_prev: PasswordResetActionState, formData: FormData): Promise<PasswordResetActionState> {
+  const newPassword = String(formData.get("password") ?? "");
+  if (newPassword !== String(formData.get("confirmPassword") ?? "")) {
+    return { error: "A confirmação não bate com a nova senha." };
+  }
+  const limit = await checkRateLimit(`auth.reset-submit.ip:${await clientIp()}`, RESET_SUBMIT_IP_LIMIT);
+  if (!limit.allowed) {
+    return { error: "Muitas tentativas. Aguarde alguns minutos e tente de novo." };
+  }
+
+  const result = await resetPasswordWithToken({ token: String(formData.get("token") ?? ""), newPassword });
+  if (!result.success) {
+    return { error: result.error.message };
+  }
+  redirect(loginPath({ notice: "password-reset" }, null));
+}
+
+export type AcceptInvitationActionState = { error: string | null };
+
+const INVITE_ACCEPT_IP_LIMIT = { limit: 10, windowMs: 15 * 60 * 1000 };
+
+// Aceitar convite: cria a conta (já aprovada, com o papel do convite) e manda pro login.
+export async function acceptInvitationAction(
+  _prev: AcceptInvitationActionState,
+  formData: FormData,
+): Promise<AcceptInvitationActionState> {
+  const password = String(formData.get("password") ?? "");
+  if (password !== String(formData.get("confirmPassword") ?? "")) {
+    return { error: "A confirmação não bate com a senha." };
+  }
+  const limit = await checkRateLimit(`auth.invite-accept.ip:${await clientIp()}`, INVITE_ACCEPT_IP_LIMIT);
+  if (!limit.allowed) {
+    return { error: "Muitas tentativas. Aguarde alguns minutos e tente de novo." };
+  }
+  const result = await acceptInvitation({
+    token: String(formData.get("token") ?? ""),
+    name: String(formData.get("name") ?? ""),
+    password,
+  });
+  if (!result.success) {
+    return { error: result.error.message };
+  }
+  redirect(loginPath({ notice: "invitation-accepted" }, null));
 }

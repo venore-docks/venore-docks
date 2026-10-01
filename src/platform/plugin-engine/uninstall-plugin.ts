@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { listExtensionStates } from "@/contexts/extensions";
 import { authorizeActor } from "@/contexts/rbac";
+import { forgetSettingsByPrefix } from "@/contexts/settings";
 // Import direto do client de infra (não de um store de context): a operação é atômica por
 // natureza — DROP SCHEMA do plugin + limpeza de settings/rbac/extension_state numa transação só —
 // e não existe um context "dono" de "apagar todo o rastro de um plugin". Mesma natureza de
@@ -144,6 +145,12 @@ export async function performPluginUninstall(command: {
 
       return { settingsDeleted, permissionsDeleted };
     });
+
+    // O DELETE acima passa por fora de contexts/settings: sem isto, o cache de settings (desta e
+    // das outras instâncias) seguia servindo os valores apagados até o TTL.
+    if (purgeData) {
+      await forgetSettingsByPrefix(`${pluginKey}.`);
+    }
 
     const summary = purgeData
       ? `Plugin "${pluginKey}" desinstalado (limpeza de banco): ` +

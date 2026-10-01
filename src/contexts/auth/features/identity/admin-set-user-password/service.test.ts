@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+const incrementSessionVersion = vi.fn(async () => 1);
+vi.mock("../../session/revoke-sessions/store", () => ({ incrementSessionVersion: (...args: unknown[]) => incrementSessionVersion(...(args as [])) }));
+
 const recordAuditEvent = vi.fn();
 vi.mock("@/observability", () => ({
   beginOperation: vi.fn(() => ({ operationId: "op-1" })),

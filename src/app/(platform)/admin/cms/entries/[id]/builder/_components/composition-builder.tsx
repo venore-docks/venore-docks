@@ -88,7 +88,7 @@ export function CompositionBuilder({
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [paletteRequest, setPaletteRequest] = useState<PaletteRequest | null>(null);
   const [saveError, setSaveError] = useState<{ message: string; blockId: string | null } | null>(null);
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved] = useState<false | "saved" | "proposed">(false);
   const [isPending, startTransition] = useTransition();
 
   const definitionsByKey = useMemo(() => new Map(definitions.map((definition) => [definition.key, definition])), [definitions]);
@@ -160,7 +160,7 @@ export function CompositionBuilder({
         if (result.error.blockId) setSelectedId(result.error.blockId);
         return;
       }
-      setSaved(true);
+      setSaved(result.proposed ? "proposed" : "saved");
     });
   }
 
@@ -184,7 +184,12 @@ export function CompositionBuilder({
         </div>
       </div>
 
-      {saved && <p className="text-sm text-success">Composição salva.</p>}
+      {saved === "saved" && <p className="text-sm text-success">Composição salva.</p>}
+      {saved === "proposed" && (
+        <p className="text-sm text-muted-foreground">
+          Este conteúdo está publicado: sua alteração foi enviada como proposta e entra no ar quando um editor aplicar.
+        </p>
+      )}
       {saveError && !saveError.blockId && <p className="text-sm text-destructive">{saveError.message}</p>}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[380px_1fr]">

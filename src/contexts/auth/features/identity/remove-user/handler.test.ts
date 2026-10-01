@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const authorizeActor = vi.fn();
 vi.mock("@/contexts/rbac", () => ({
-  authorizeActor: (...args: unknown[]) => authorizeActor(...args),
+  authorizeActorOverUser: (...args: unknown[]) => authorizeActor(...args),
 }));
 
 const removeUser = vi.fn();
@@ -38,7 +38,7 @@ describe("removeUserHandler", () => {
     const { removeUserHandler } = await import("./handler");
     const result = await removeUserHandler({ targetUserId: "target-1" });
 
-    expect(authorizeActor).toHaveBeenCalledWith("rbac.users.remove");
+    expect(authorizeActor).toHaveBeenCalledWith("rbac.users.remove", expect.any(String));
     expect(result).toEqual({
       success: false,
       error: { code: "rbac.authorization.forbidden", message: "sem permission" },

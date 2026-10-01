@@ -1,4 +1,5 @@
 import { getCurrentUserService } from "../../session/get-current-user/service";
+import { renewCurrentSession } from "../../session/revoke-sessions/renew-current-session";
 import { setOwnPassword } from "./service";
 import type { SetOwnPasswordInput, SetOwnPasswordResult } from "./types";
 
@@ -16,5 +17,12 @@ export async function setOwnPasswordHandler(input: SetOwnPasswordInput): Promise
     };
   }
 
-  return setOwnPassword({ actorId: currentUser.data.id, newPassword: input.newPassword });
+  const result = await setOwnPassword({
+    actorId: currentUser.data.id,
+    newPassword: input.newPassword,
+    currentPassword: input.currentPassword,
+  });
+  // A troca derrubou as outras sessões (service); esta continua.
+  if (result.success) await renewCurrentSession(currentUser.data.id);
+  return result;
 }

@@ -90,6 +90,30 @@ describe("setPresetColorPalette", () => {
     expect(value.light.secondary).toMatch(/^#[0-9a-f]{6}$/i);
   });
 
+  it("tokens declarados pelo preset vencem os gerados (accent escrito à mão não vira complementar)", async () => {
+    resolveActiveTheme.mockResolvedValue({
+      manifest: { key: "aurora" },
+      colorPalettes: [
+        {
+          id: "fem",
+          name: "Oceano",
+          light: { primary: "oklch(0.52 0.099 210.2)", accent: "oklch(0.752 0.096 205.7)" },
+          dark: { primary: "oklch(0.752 0.096 205.7)", accent: "oklch(0.52 0.099 210.2)" },
+        },
+      ],
+    });
+
+    const { setPresetColorPalette } = await import("./brand-color-palette");
+    const { oklchToHex } = await import("./oklch-color");
+    const result = await setPresetColorPalette("fem");
+
+    expect(result.success).toBe(true);
+    const [{ value }] = setSetting.mock.calls[0];
+    expect(value.light.accent).toBe(oklchToHex(0.752, 0.096, 205.7));
+    expect(value.dark.accent).toBe(oklchToHex(0.52, 0.099, 210.2));
+    expect(value.light["sidebar-bg-start"]).toMatch(/^#[0-9a-f]{6}$/i);
+  });
+
   it("erro quando o preset não existe no catálogo do tema ativo", async () => {
     resolveActiveTheme.mockResolvedValue({ manifest: { key: "venore-slime" }, colorPalettes: [] });
 

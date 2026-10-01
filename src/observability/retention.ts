@@ -2,6 +2,7 @@ import { asc, count, inArray, lt } from "drizzle-orm";
 import { db } from "@/infrastructure/database/client";
 import { getObservabilityConfig } from "./config";
 import { observabilityEvents } from "./database/schema";
+import { inProcessJobsEnabled } from "@/shared/in-process-jobs";
 
 // Expurgo automático do log operacional — nunca toca security_audit_events (auditoria não
 // expurga, ver audit-log.ts). Dois limites independentes, ambos pedidos explicitamente:
@@ -71,6 +72,6 @@ export function stopRetentionScheduler(): void {
   }
 }
 
-if (process.env.NODE_ENV !== "test") {
+if (inProcessJobsEnabled()) {
   startRetentionScheduler();
 }

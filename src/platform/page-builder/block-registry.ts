@@ -25,6 +25,15 @@ import { heroBlockDefinition } from "./blocks/hero";
 import { ctaBlockDefinition } from "./blocks/cta";
 import { galleryBlockDefinition } from "./blocks/gallery";
 import { carouselBlockDefinition } from "./blocks/carousel";
+import { embedBlockDefinition } from "./blocks/embed";
+import { tableBlockDefinition } from "./blocks/table";
+import { fileBlockDefinition } from "./blocks/file";
+import { faqBlockDefinition } from "./blocks/faq";
+import { codeBlockDefinition } from "./blocks/code";
+import { markdownBlockDefinition } from "./blocks/markdown";
+import { statsBlockDefinition } from "./blocks/stats";
+import { timelineBlockDefinition } from "./blocks/timeline";
+import { contactFormBlockDefinition } from "./blocks/contact-form";
 
 const CORE_LEAF_BLOCKS: BlockDefinition[] = [
   headingBlockDefinition,
@@ -43,6 +52,15 @@ const CORE_LEAF_BLOCKS: BlockDefinition[] = [
   audioBlockDefinition,
   heroBlockDefinition,
   ctaBlockDefinition,
+  embedBlockDefinition,
+  tableBlockDefinition,
+  fileBlockDefinition,
+  faqBlockDefinition,
+  codeBlockDefinition,
+  markdownBlockDefinition,
+  statsBlockDefinition,
+  timelineBlockDefinition,
+  contactFormBlockDefinition,
 ];
 
 // contexts/cms não conhece plugin nenhum (regra de boundary da sessão) — este registry mora em

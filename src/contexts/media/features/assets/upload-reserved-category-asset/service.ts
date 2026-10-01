@@ -5,8 +5,12 @@ import { computeSha256Hex } from "@/infrastructure/storage/checksum";
 import { getOrCreateReservedCategory } from "../../../get-or-create-reserved-category";
 import { resolveMediaStorageFolder } from "../../../resolve-media-storage-folder";
 import { sanitizeSvgBuffer } from "../../../sanitize-svg-buffer";
+import { CONTENT_MISMATCH_ERROR, contentMatchesDeclaredType } from "../../../content-sniffing";
 import { insertAsset } from "../upload-media-asset/store";
 import type { UploadReservedCategoryAssetCommand, UploadReservedCategoryAssetResult } from "./types";
+import { resolveAssetUrl } from "../../../asset-url";
+import { generateAssetVariants } from "../generate-asset-variants/service";
+import { attachAssetVariantsToOne } from "../../../shared/attach-asset-variants";
 
 const MEDIA_LIST_CACHE_PREFIX = "media:assets:";
 
@@ -28,6 +32,13 @@ export async function uploadReservedCategoryAsset(
 
   const category = await getOrCreateReservedCategory(command.categoryKey, command.categoryName);
 
+  // Tipo declarado precisa bater com os bytes (content-sniffing.ts).
+  if (!contentMatchesDeclaredType(command.contentType, command.data)) {
+    const mismatch = { success: false as const, error: { ...CONTENT_MISMATCH_ERROR } };
+    endOperation(handle, mismatch);
+    return mismatch;
+  }
+
   let dataToStore = command.data;
   if (command.contentType === "image/svg+xml") {
     const sanitized = sanitizeSvgBuffer(command.data);
@@ -42,10 +53,13 @@ export async function uploadReservedCategoryAsset(
   const stored = await storagePort.store({ key: pathname, data: dataToStore, contentType: command.contentType });
   const checksum = computeSha256Hex(dataToStore);
 
+  const id = crypto.randomUUID();
   const asset = await insertAsset({
+    id,
     filename: command.filename,
     pathname: stored.key,
-    url: stored.url,
+    // Não público -> rota autorizada do app; público -> URL direta do storage (asset-url.ts).
+    url: resolveAssetUrl({ id, pathname: stored.key, visibility: "private" }),
     contentType: command.contentType,
     size: stored.size,
     checksum,
@@ -54,7 +68,11 @@ export async function uploadReservedCategoryAsset(
     uploadedBy: command.actorId,
   });
 
+  // Cópias redimensionadas pra exibição (image-variants.ts) — os bytes já estão em memória. Falha
+  // aqui não derruba o upload: o asset serve o original e o backfill do /admin/media tenta de novo.
+  await generateAssetVariants({ assetId: asset.id, data: dataToStore });
+
   invalidateCacheByPrefix(MEDIA_LIST_CACHE_PREFIX);
   endOperation(handle, { success: true });
-  return { success: true, data: asset };
+  return { success: true, data: (await attachAssetVariantsToOne(asset)) ?? asset };
 }

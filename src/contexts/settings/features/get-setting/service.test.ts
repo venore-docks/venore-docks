@@ -1,6 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { invalidateCache } from "../../../../infrastructure/cache/memory-cache";
 
+const syncSettingsCacheVersion = vi.fn();
+
+vi.mock("../../settings-cache-version", () => ({
+  syncSettingsCacheVersion: (...args: unknown[]) => syncSettingsCacheVersion(...args),
+}));
+
 const findSettingByKey = vi.fn();
 
 vi.mock("./store", () => ({
@@ -10,6 +16,7 @@ vi.mock("./store", () => ({
 describe("getSetting", () => {
   beforeEach(() => {
     findSettingByKey.mockReset();
+    syncSettingsCacheVersion.mockReset();
     invalidateCache("settings:theme.active");
     invalidateCache("settings:missing.key");
   });
