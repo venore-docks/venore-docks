@@ -8,5 +8,7 @@ export const KIT_LAYOUTS: Record<ThemeLayoutPreset, ThemeLayoutComponent> = {
   rail: RailLayout,
 };
 export { TopbarLayout, RailLayout };
-export { ContentFrame, ContentSlot } from "./content-frame";
+export { ContentFrame, ContentSlot, type ContextualMobileMode } from "./content-frame";
+export { SkipLink, KIT_MAIN_CONTENT_ID } from "./skip-link";
+export type { KitLayoutProps } from "./kit-layout-props";
 export { Shell } from "./kit-shell";

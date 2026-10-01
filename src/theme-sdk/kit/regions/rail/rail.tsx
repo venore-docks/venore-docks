@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import type { ReactNode } from "react";
 import { useFormStatus } from "react-dom";
 import { ChevronLeft, ChevronRight, Globe2, Loader2, ShieldCheck, type LucideIcon } from "lucide-react";
-import type { SidebarLeftSlotProps } from "@/contexts/themes/contracts/types";
-import type { ThemeStrings } from "@/contexts/themes/contracts/v8";
+import type { NavItem, SidebarLeftSlotProps } from "@/contexts/themes/contracts/types";
+import type { HeaderRegionProps, RailRegionProps, RegionCommon, ThemeMobileNavMode, ThemeStrings } from "@/contexts/themes/contracts/v8";
 import { t } from "../../i18n/t";
 import { cn } from "@/lib/utils";
+import { useSidebarCollapse } from "../../hooks/use-sidebar-collapse";
+import { regionText } from "../region-strings";
 import { MobileNavDrawer } from "../mobile-nav/mobile-nav-drawer";
 import { SidebarNavLink } from "./sidebar-nav-link";
 import { SIDEBAR_COLLAPSE_TOOLTIP_COLLAPSED_CLASSES } from "./sidebar-collapse-tooltip";
@@ -20,7 +22,7 @@ import { SIDEBAR_COLLAPSE_TOOLTIP_COLLAPSED_CLASSES } from "./sidebar-collapse-t
 // lg volta a ser a coluna fixa de sempre. Colapso (docs/ui/shell-spec.md §3.1-3.2) é exclusivo do
 // desktop: `collapsedFromServer` vem resolvido do cookie no servidor (get-sidebar-collapsed.ts),
 // então a largura certa está presente no primeiro HTML — sem flash de layout pós-hidratação. A
-// partir daí o componente é client e mantém o próprio `useState` (bug desta sessão: o toggle era
+// partir daí o componente é client e o estado vive no store otimista de colapso (bug desta sessão: o toggle era
 // um `<form action={onToggleCollapsed}>` só-servidor — cada clique esperava o round-trip da
 // Server Action pra o cookie voltar lido e só então a classe de largura mudar, então a transição
 // CSS começava num instante que variava com a latência da rede em vez de no clique). Estado local
@@ -28,6 +30,13 @@ import { SIDEBAR_COLLAPSE_TOOLTIP_COLLAPSED_CLASSES } from "./sidebar-collapse-t
 // animação) só pra persistir o cookie e o próximo carregamento completo continuar acertando de
 // primeira — não é o padrão client-only sem persistência que o protótipo tinha e que já foi
 // registrado como "não portar" (docs/ui/shell-spec.md §3.3/§6.3).
+//
+// v8 (spec §2.5 RailRegionProps): `collapseControl` decide onde mora o botão de colapso ("rail" =
+// aqui, como no slime; "header" = SidebarCollapseButton no header, arranjo Aurora; "none" = sem
+// botão) — o estado é o store compartilhado (useSidebarCollapse), nunca um useState local. Extras
+// do kit, opcionais: `arrangement` (sticky em altura total no layout "rail"), `mobileNavMode`
+// (fora de "drawer" a rail não vira off-canvas) e `headerNavVisibleFrom` (quando o menu do header
+// some abaixo de um breakpoint, ele reaparece no fim do drawer).
 //
 // `<nav>` precisa do próprio `flex-1 min-h-0 overflow-y-auto`: o `<aside>` já preenche a altura
 // inteira (h-full, sem override lg:h-auto — bug desta sessão), mas sem isso o elemento de
@@ -43,31 +52,33 @@ export function SidebarLeftSlot({
   collapsed: collapsedFromServer,
   onToggleCollapsed,
   strings,
-}: SidebarLeftSlotProps & { strings?: ThemeStrings }) {
-  const [collapsed, setCollapsed] = useState(collapsedFromServer);
-  const [, startTransition] = useTransition();
+  headerNavItems = [],
+  collapseControl = "rail",
+  headerNavVisibleFrom = "always",
+  slots,
+  arrangement = "topbar",
+  mobileNavMode = "drawer",
+}: KitRailProps) {
+  const { collapsed, toggle: handleToggleCollapsed } = useSidebarCollapse(collapsedFromServer, onToggleCollapsed);
 
   if (!enabled) return null;
 
   const isAdmin = navMode === "admin";
-
-  function handleToggleCollapsed() {
-    setCollapsed((value) => !value);
-    startTransition(() => {
-      onToggleCollapsed();
-    });
-  }
+  const offCanvas = mobileNavMode === "drawer";
+  const drawerHeaderNav = offCanvas && headerNavVisibleFrom !== "always" ? headerNavItems : [];
 
   return (
     <MobileNavDrawer
       strings={strings}
+      offCanvas={offCanvas}
+      arrangement={arrangement}
       asideClassName={cn(
         // px-5 é fixo em qualquer breakpoint e em qualquer estado de collapsed — a faixa de
         // largura do ícone não pode depender da largura do sidebar (bug desta sessão: padding
         // não está na lista de propriedades de ui-motion-emphasis, então px-5→px-3 trocava
         // instantaneamente enquanto a largura do <aside> ainda levava 300ms pra terminar,
         // deslocando o ícone antes do fim da transição). Só `width` anima.
-        "relative flex h-full w-full flex-col px-5 py-6 text-foreground shadow-float lg:w-(--sidebar-width-expanded) lg:shrink-0 lg:border-r lg:shadow-none ui-motion-emphasis",
+        "relative flex h-full w-full flex-col px-5 py-6 text-foreground shadow-float lg:w-(--sidebar-width-expanded) lg:shrink-0 lg:border-e lg:shadow-none ui-motion-emphasis",
         isAdmin ? "border-ring bg-(image:--sidebar-bg-admin)" : "border-border bg-(image:--sidebar-bg)",
         collapsed && "lg:w-(--sidebar-width-collapsed)",
       )}
@@ -76,7 +87,8 @@ export function SidebarLeftSlot({
           de conteúdo, onde o HeaderSlot mora — header é sticky com z-40, e com z-10 o header
           ficava por cima e cortava a seta ao meio (mesmo bug corrigido nos temas
           aurora/nebula/vega/halo/harbor — venore-slime tinha a mesma cópia, sem o fix). */}
-      <div className="absolute top-4 right-0 z-50 hidden translate-x-1/2 lg:block">
+      {collapseControl === "rail" && (
+      <div className="absolute top-4 end-0 z-50 hidden translate-x-1/2 rtl:-translate-x-1/2 lg:block">
         <button
           type="button"
           onClick={handleToggleCollapsed}
@@ -85,12 +97,13 @@ export function SidebarLeftSlot({
           className="flex size-11 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-panel ui-motion-base outline-none hover:bg-muted hover:border-ring active:border-ring focus-visible:ring-2 focus-visible:ring-ring"
         >
           {collapsed ? (
-            <ChevronRight className="size-4" aria-hidden="true" />
+            <ChevronRight className="size-4 rtl:rotate-180" aria-hidden="true" />
           ) : (
-            <ChevronLeft className="size-4" aria-hidden="true" />
+            <ChevronLeft className="size-4 rtl:rotate-180" aria-hidden="true" />
           )}
         </button>
       </div>
+      )}
 
       {canToggleAdminNav && (
         // pt-8: espaço reservado pro botão flutuante de colapso (top-4, size-11), que fica
@@ -101,7 +114,10 @@ export function SidebarLeftSlot({
         </div>
       )}
 
+      {slots?.outletTop ?? null}
+
       <nav
+        aria-label={regionText(strings, isAdmin ? "rail.adminNavLabel" : "rail.navLabel")}
         data-nav-mode={navMode}
         className={cn(
           "min-h-0 flex-1 space-y-1 overflow-y-auto",
@@ -144,9 +160,55 @@ export function SidebarLeftSlot({
           <p className="px-3 text-sm text-muted-foreground/56">—</p>
         )}
         {!isAdmin && navItems.length === 0 && <p className="px-3 text-sm text-muted-foreground/56">—</p>}
+
+        {drawerHeaderNav.length > 0 && <DrawerHeaderNav items={drawerHeaderNav} visibleFrom={headerNavVisibleFrom} />}
       </nav>
+
+      {slots?.outletBottom ?? null}
     </MobileNavDrawer>
   );
+}
+
+export type KitRailProps = SidebarLeftSlotProps &
+  Partial<RegionCommon> & {
+    strings?: ThemeStrings;
+    headerNavItems?: NavItem[];
+    collapseControl?: RailRegionProps["collapseControl"];
+    slots?: Partial<RailRegionProps["slots"]>;
+    headerNavVisibleFrom?: HeaderRegionProps["headerNavVisibleFrom"];
+    arrangement?: "topbar" | "rail";
+    mobileNavMode?: ThemeMobileNavMode;
+  };
+
+// Menu do header no fim do drawer, só abaixo do breakpoint em que ele some do header (Aurora 0.1.13).
+function DrawerHeaderNav({ items, visibleFrom }: { items: NavItem[]; visibleFrom: "md" | "lg" | "always" }) {
+  return (
+    <div className={cn("mt-4 space-y-1 border-t border-border pt-4", visibleFrom === "md" ? "md:hidden" : "lg:hidden")}>
+      {items.map((item) => (
+        <a
+          key={item.key}
+          href={item.href}
+          className="flex rounded-lg px-3 py-2.5 text-xs font-medium uppercase tracking-caps text-muted-foreground ui-motion-base outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          {item.label}
+        </a>
+      ))}
+    </div>
+  );
+}
+
+// Alternância site/admin avulsa (só o pill), pras camadas mobile que não mostram a rail
+// ("bottom-bar", "fullscreen") — o ThemeRenderer passa como `navModeSwitch` da região mobileNav.
+export function KitNavModeSwitch({
+  navMode,
+  onToggleNavMode,
+  strings,
+}: {
+  navMode: SidebarLeftSlotProps["navMode"];
+  onToggleNavMode: () => Promise<void>;
+  strings?: ThemeStrings;
+}): ReactNode {
+  return <SidebarSurfaceSwitch isAdmin={navMode === "admin"} collapsed={false} onToggleNavMode={onToggleNavMode} strings={strings} />;
 }
 
 function SidebarSurfaceSwitch({
@@ -184,7 +246,7 @@ function SidebarSurfaceSwitch({
         aria-hidden="true"
         className={cn(
           "pointer-events-none absolute inset-y-1 z-0 w-[calc(50%-0.125rem)] rounded-lg border border-ring bg-card shadow-panel ui-motion-base",
-          isAdmin ? "left-[calc(50%+0.125rem)]" : "left-1",
+          isAdmin ? "start-[calc(50%+0.125rem)]" : "start-1",
         )}
       />
       <NavModeSegmentButton isActive={!isAdmin} icon={Globe2} text={t(strings, "rail.site")} />

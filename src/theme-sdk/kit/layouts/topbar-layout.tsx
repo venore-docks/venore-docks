@@ -1,11 +1,12 @@
-import type { ThemeLayoutProps } from "@/contexts/themes/contracts/v8";
 import { ContentFrame } from "./content-frame";
+import type { KitLayoutProps } from "./kit-layout-props";
 
-// Layout "topbar" do kit = o arranjo do Shell do venore-slime (header em cima; rail e coluna de
-// conteúdo lado a lado; footer DENTRO da coluna de conteúdo, pra a rail terminar junto com ele —
-// ver o histórico em kit-shell.tsx). Recebe as regiões já renderizadas pelo ThemeRenderer.
-// Dono a partir da Fase F: W3.
-export function TopbarLayout({ regions, children }: ThemeLayoutProps) {
+// Layout "topbar" do kit = o arranjo do Shell do venore-slime (header em cima, largura total; rail
+// e coluna de conteúdo lado a lado; footer DENTRO da coluna de conteúdo, pra a rail terminar junto
+// com ele — ver o histórico em kit-shell.tsx). Recebe as regiões já renderizadas pelo ThemeRenderer.
+// O skip link vem primeiro (primeiro Tab da página); a navegação mobile (bottom-bar/tela cheia/
+// drawer sem rail) por último, fora do fluxo.
+export function TopbarLayout({ regions, page, children, strings, contextualMobile }: KitLayoutProps) {
   return (
     <>
       {regions.skipLink}
@@ -13,7 +14,13 @@ export function TopbarLayout({ regions, children }: ThemeLayoutProps) {
       <div className="flex flex-1">
         {regions.rail}
         <div className="flex min-w-0 flex-1 flex-col">
-          <ContentFrame breadcrumbs={regions.breadcrumbs} contextualBar={regions.contextualBar}>
+          <ContentFrame
+            breadcrumbs={regions.breadcrumbs}
+            contextualBar={regions.contextualBar}
+            contextualPlacement={page.contextualPlacement}
+            contextualMobile={contextualMobile}
+            strings={strings}
+          >
             {children}
           </ContentFrame>
           {regions.footer}

@@ -3,6 +3,7 @@ import { HeaderSlot } from "../regions/site-header/site-header";
 import { FooterSlot } from "../regions/footer/footer";
 import { SidebarLeftSlot } from "../regions/rail/rail";
 import { ContentSlot } from "./content-frame";
+import { SkipLink } from "./skip-link";
 
 // Shell 7.x do kit (ex-Shell do venore-slime, movido na Fase F da v8 sem mudança de markup; o
 // venore-slime/components/Shell.tsx reexporta daqui). Único export que o contrato de tema 7.x exige (docs/themes/shell-contract.md — Abordagem A): dono
@@ -32,8 +33,12 @@ export function Shell({
   breadcrumbs,
   breadcrumbsJsonLd,
 }: ThemeShellProps) {
+  // SkipLink + <main id="conteudo"> (v8, W3): o Shell 7.x do kit produz o MESMO HTML que o layout
+  // "topbar" do ThemeRenderer — os três caminhos (Shell, ThemeRenderer, LegacyShellAdapter) batem
+  // com os mesmos arquivos de paridade em venore-slime/__parity__/.
   return (
     <>
+      <SkipLink />
       <HeaderSlot {...header} />
       <div className="flex flex-1">
         <SidebarLeftSlot {...sidebarLeft} />

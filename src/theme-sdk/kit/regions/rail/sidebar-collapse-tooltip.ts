@@ -19,9 +19,9 @@ export const SIDEBAR_COLLAPSE_TOOLTIP_COLLAPSED_CLASSES =
   "lg:group-[:is(:hover,:focus-visible)]/sidebar-collapse-target:pointer-events-auto " +
   "lg:group-[:is(:hover,:focus-visible)]/sidebar-collapse-target:absolute " +
   "lg:group-[:is(:hover,:focus-visible)]/sidebar-collapse-target:top-1/2 " +
-  "lg:group-[:is(:hover,:focus-visible)]/sidebar-collapse-target:left-full " +
+  "lg:group-[:is(:hover,:focus-visible)]/sidebar-collapse-target:start-full " +
   "lg:group-[:is(:hover,:focus-visible)]/sidebar-collapse-target:z-50 " +
-  "lg:group-[:is(:hover,:focus-visible)]/sidebar-collapse-target:ml-2 " +
+  "lg:group-[:is(:hover,:focus-visible)]/sidebar-collapse-target:ms-2 " +
   "lg:group-[:is(:hover,:focus-visible)]/sidebar-collapse-target:max-w-none " +
   "lg:group-[:is(:hover,:focus-visible)]/sidebar-collapse-target:-translate-y-1/2 " +
   "lg:group-[:is(:hover,:focus-visible)]/sidebar-collapse-target:translate-x-0 " +

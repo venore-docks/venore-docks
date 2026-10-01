@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Sitemap } from "@/components/sitemap";
 import type { FooterSlotProps } from "@/contexts/themes/contracts/types";
-import type { ThemeStrings } from "@/contexts/themes/contracts/v8";
+import type { FooterRegionProps, RegionCommon, ThemeStrings } from "@/contexts/themes/contracts/v8";
 import { t } from "../../i18n/t";
 import { PlatformBrand } from "../../platform-brand";
 
@@ -12,12 +12,19 @@ import { PlatformBrand } from "../../platform-brand";
 // negócio injetada via prop, não um token semântico shadcn (mesma exceção documentada em
 // build-birthday-pdf-html.ts). Server component puro, sem I/O — quem busca dado (getBrandConfig +
 // getMenuByLocation("sitemap")) é platform/theme-rendering/resolve-theme-slot-props.ts.
-export function FooterSlot({ brand, sitemapItems, creditsEnabled, loginLinkHref, strings }: FooterSlotProps & { strings?: ThemeStrings }) {
+//
+// v8: `slots.outletTop/outletBottom` (outlets footer.top/footer.bottom) entram como primeira/última
+// faixa do grid, de ponta a ponta; ausentes no Shell 7.x.
+export type KitFooterProps = FooterSlotProps & Partial<RegionCommon> & { strings?: ThemeStrings; slots?: Partial<FooterRegionProps["slots"]> };
+
+export function FooterSlot({ brand, sitemapItems, creditsEnabled, loginLinkHref, strings, slots }: KitFooterProps) {
   return (
     <footer data-region="footer" className="mt-auto grid gap-8 border-t border-border px-4 py-12 text-muted-foreground sm:px-6 lg:grid-cols-[max-content_minmax(0,1fr)] lg:gap-12 lg:px-8">
+      {slots?.outletTop ? <div className="col-span-full">{slots.outletTop}</div> : null}
       <div className="w-fit max-w-full justify-self-start space-y-5 rounded-panel border border-border bg-accent/14 px-6 py-6">
         <div>
-          <div className="max-w-40 origin-left scale-125">
+          {/* origin no canto inicial: `0_50%` == `left` em LTR (pixel-idêntico), espelhado em RTL. */}
+          <div className="max-w-40 origin-[0_50%] rtl:origin-[100%_50%] scale-125">
             <PlatformBrand
               name={brand.name}
               mode={brand.mode}
@@ -56,6 +63,7 @@ export function FooterSlot({ brand, sitemapItems, creditsEnabled, loginLinkHref,
           {t(strings, "footer.credits")}
         </div>
       ) : null}
+      {slots?.outletBottom ? <div className="col-span-full">{slots.outletBottom}</div> : null}
     </footer>
   );
 }

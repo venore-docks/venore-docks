@@ -51,7 +51,7 @@ export function SidebarNavLink({ item, collapsed, isAdmin }: { item: MainNavItem
           aria-controls={contentId}
           data-active-ancestor={isActiveAncestor ? "true" : undefined}
           className={cn(
-            "group/sidebar-collapse-target relative flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm ui-motion-base outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            "group/sidebar-collapse-target relative flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-start text-sm ui-motion-base outline-none focus-visible:ring-2 focus-visible:ring-ring",
             isActiveAncestor ? "font-semibold text-primary" : "font-medium text-muted-foreground",
             "hover:bg-muted hover:text-foreground active:bg-muted active:text-foreground",
           )}
@@ -78,7 +78,7 @@ export function SidebarNavLink({ item, collapsed, isAdmin }: { item: MainNavItem
           />
         </button>
         {expanded && (
-          <div id={contentId} className={cn("ml-8 space-y-1", collapsed && "lg:ml-0")}>
+          <div id={contentId} className={cn("ms-8 space-y-1", collapsed && "lg:ms-0")}>
             {item.children.map((child) => (
               <SidebarNavLink key={child.key} item={child} collapsed={collapsed} isAdmin={isAdmin} />
             ))}

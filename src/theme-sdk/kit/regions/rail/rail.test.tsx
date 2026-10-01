@@ -69,7 +69,7 @@ describe("SidebarLeftSlot — estados de colapso", () => {
     const html = renderToStaticMarkup(<SidebarLeftSlot {...baseProps} />);
 
     expect(html).toContain("size-11");
-    expect(html).toContain("hidden translate-x-1/2 lg:block");
+    expect(html).toContain("hidden translate-x-1/2 rtl:-translate-x-1/2 lg:block");
   });
 
   it("<aside> preenche a altura inteira em qualquer breakpoint (sem override lg:h-auto) e <nav> estica/rola por conta própria", () => {

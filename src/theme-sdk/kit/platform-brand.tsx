@@ -28,7 +28,9 @@ export function PlatformBrand({
   logoUrl,
   scrolledLogoUrl,
 }: HeaderBrand & { isScrolled: boolean }) {
-  const originClass = position === "center" ? "origin-center" : "origin-left";
+  // origin 0 50% == o antigo "origin na borda esquerda" em LTR (pixel-idêntico); em RTL a marca cresce a partir da
+  // borda inicial (direita). Propriedades lógicas no kit (spec v8 §7.11).
+  const originClass = position === "center" ? "origin-center" : "origin-[0_50%] rtl:origin-[100%_50%]";
   // `transform`, não a propriedade `scale` dedicada do Tailwind v4: ui-motion-emphasis já lista
   // `transform` em transition-property (theme.css/globals.css), então a troca anima de graça sem
   // precisar duplicar o vocabulário de motion só pra essa propriedade.
