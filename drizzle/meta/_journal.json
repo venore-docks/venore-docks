@@ -379,6 +379,13 @@
       "when": 1790811920079,
       "tag": "0053_media_asset_variants",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1790874459846,
+      "tag": "0054_media_access_permission",
+      "breakpoints": true
     }
   ]
 }

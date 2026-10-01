@@ -5,6 +5,15 @@ vi.mock("@/observability", () => ({
   endOperation: vi.fn(),
 }));
 
+const directUploadKind = vi.fn(() => "vercel-blob");
+const createUploadTicket = vi.fn();
+vi.mock("@/infrastructure/storage", () => ({
+  storagePort: {
+    directUploadKind: () => directUploadKind(),
+    createUploadTicket: (...args: unknown[]) => createUploadTicket(...args),
+  },
+}));
+
 describe("validateMediaUploadCandidate", () => {
   it("rejects a contentType that is not in the allowlist", async () => {
     const { validateMediaUploadCandidate } = await import("./service");
@@ -63,5 +72,30 @@ describe("requestMediaUploadTicket", () => {
     if (!result.success) return;
     expect(result.data.pathname).toMatch(/^Imagens\/[0-9a-f-]{36}-my_photo__final__\.png$/);
     expect(result.data.contentType).toBe("image/png");
+  });
+
+  it("diz ao browser pra usar o cliente do Vercel Blob no driver vercel-blob", async () => {
+    directUploadKind.mockReturnValue("vercel-blob");
+    const { requestMediaUploadTicket } = await import("./service");
+    const result = await requestMediaUploadTicket({ filename: "v.mp4", contentType: "video/mp4", size: 1024, actorId: "actor-1" });
+    expect(result.success && result.data.directUpload).toEqual({ method: "vercel-blob" });
+    expect(createUploadTicket).not.toHaveBeenCalled();
+  });
+
+  it("emite um presigned POST no driver s3, com o limite de tamanho do tipo", async () => {
+    directUploadKind.mockReturnValue("presigned-post");
+    createUploadTicket.mockResolvedValue({ key: "k", uploadUrl: "https://b.s3.amazonaws.com/", token: "", fields: { key: "k", Policy: "p" }, expiresAt: new Date() });
+    const { requestMediaUploadTicket } = await import("./service");
+    const result = await requestMediaUploadTicket({ filename: "v.mp4", contentType: "video/mp4", size: 1024, actorId: "actor-1" });
+
+    expect(result.success && result.data.directUpload).toEqual({ method: "presigned-post", url: "https://b.s3.amazonaws.com/", fields: { key: "k", Policy: "p" } });
+    expect(createUploadTicket).toHaveBeenCalledWith(expect.objectContaining({ contentType: "video/mp4", maxSizeBytes: 200 * 1024 * 1024 }));
+  });
+
+  it("recusa upload direto no driver que não suporta (filesystem)", async () => {
+    directUploadKind.mockReturnValue("unsupported");
+    const { requestMediaUploadTicket } = await import("./service");
+    const result = await requestMediaUploadTicket({ filename: "v.mp4", contentType: "video/mp4", size: 1024, actorId: "actor-1" });
+    expect(result).toMatchObject({ success: false, error: { code: "media.upload.direct_unsupported" } });
   });
 });

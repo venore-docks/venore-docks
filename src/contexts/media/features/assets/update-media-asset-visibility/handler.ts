@@ -11,5 +11,5 @@ export async function updateMediaAssetVisibilityHandler(input: UpdateMediaAssetV
     };
   }
 
-  return updateMediaAssetVisibility({ ...input, actorId: scope.actorId, isMediaAdmin: scope.isMediaAdmin });
+  return updateMediaAssetVisibility({ ...input, actorId: scope.actorId, isMediaAdmin: scope.isMediaAdmin, isSuperadmin: scope.isSuperadmin });
 }

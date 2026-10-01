@@ -40,6 +40,10 @@ export { createSignedMediaUrl } from "./asset-url";
 // partir de UI/action que não tenha checado permissão antes. Ver comentário em
 // features/assets/get-media-asset/service.ts.
 export { getMediaAssetForTrustedReview } from "./features/assets/get-media-asset/service";
+// Só via platform/media-lifecycle/apply-restricted-upload-categories.ts (regra 14): a categoria e
+// a permission vêm do manifesto do plugin dono, nunca de quem chama.
+export { restrictReservedCategoryAssets } from "./features/assets/restrict-reserved-category-assets/service";
+export type { UploadReservedCategoryRestriction } from "./features/assets/upload-reserved-category-asset/types";
 // Não checa se o arquivo está em uso por uma entry de cms — media não pode depender de cms
 // (fecharia ciclo com a validação de mediaId em create-entry/update-entry, regra 11). Quem
 // precisa dessa garantia deve chamar platform/media-lifecycle/delete-media-safely.ts, não este

@@ -1,6 +1,6 @@
 "use client";
 
-import { upload } from "@vercel/blob/client";
+import { uploadFileDirect } from "@/lib/upload-file-direct";
 import Link from "next/link";
 import { ImageOff, Loader2, Upload } from "lucide-react";
 import { useRef, useState, useTransition } from "react";
@@ -106,12 +106,7 @@ export function MediaPickerField({
       }
 
       const checksum = await computeFileChecksum(file);
-      const blob = await upload(ticket.data.pathname, file, {
-        access: "public",
-        handleUploadUrl: "/api/media/upload",
-        contentType: ticket.data.contentType,
-        clientPayload: JSON.stringify({ filename: file.name, contentType: ticket.data.contentType, size: file.size }),
-      });
+      const blob = await uploadFileDirect(ticket.data, file);
 
       const registered = await confirmUploadForPickerAction({
         filename: file.name,
