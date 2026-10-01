@@ -8,6 +8,8 @@ import { ThemeDomSync } from "@/components/theme-dom-sync";
 import { resolveThemeMetadataDefaults } from "@/platform/seo/metadata-defaults";
 import { generateViewport as generateThemeViewport } from "@/platform/seo/viewport";
 import { resolveDocumentModel } from "@/platform/theme-rendering/document-model";
+import { resolveThemeStrings } from "@/platform/theme-rendering/resolve-theme-strings";
+import { serializeJsonLd } from "@/shared/json-ld";
 import "./globals.css";
 
 // Root layout — congelado depois da Fase F da v8 (spec §6). Toda variação de tema (definição,
@@ -44,6 +46,11 @@ export default async function RootLayout({
   // some. Tema bimodal (o caso atual de todos): forcedColorMode fica undefined e nada muda.
   const forcedColorMode = manifest.colorModes.length === 1 ? manifest.colorModes[0] : undefined;
 
+  // Strings que os error boundaries client (components/theme-error-state.tsx) leem depois do
+  // mount — só as chaves de erro, dado puro (serializeJsonLd escapa `<`).
+  const strings = resolveThemeStrings(doc.theme, doc.locale);
+  const errorStrings = Object.fromEntries(Object.entries(strings).filter(([key]) => key.startsWith("error.")));
+
   return (
     <html
       lang={doc.locale}
@@ -58,6 +65,7 @@ export default async function RootLayout({
             escopado pela posição no DOM) — evita depender de suporte a <head> customizado em
             root layout do App Router (mesmo padrão de ChartStyle, src/components/ui/chart.tsx). */}
         {runtimeCss && <style id="theme-runtime" nonce={nonce} dangerouslySetInnerHTML={{ __html: runtimeCss }} />}
+        <script id="theme-strings" type="application/json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(errorStrings) }} />
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem forcedTheme={forcedColorMode} nonce={nonce}>
           <ThemeDomSync themeKey={doc.theme.key} attributes={doc.htmlAttributes} lang={doc.locale} dir={doc.dir} />
           {children}
