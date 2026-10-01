@@ -29,8 +29,18 @@ function readNullableString(data: Block["data"], name: string): string | null {
   return typeof value === "string" && value.length > 0 ? value : null;
 }
 
+// Valor legado em string (campo de antes da troca pra Tiptap, ou importado) vira um doc de
+// parágrafos — sem isso o editor abria vazio e a primeira edição apagava o texto antigo.
 function readJSONContent(data: Block["data"], name: string): JSONContent | null {
   const value = data[name];
+  if (typeof value === "string") {
+    const paragraphs = value.split(/\n{2,}/).map((part) => part.trim()).filter((part) => part.length > 0);
+    if (paragraphs.length === 0) return null;
+    return {
+      type: "doc",
+      content: paragraphs.map((text) => ({ type: "paragraph", content: [{ type: "text", text }] })),
+    };
+  }
   return value && typeof value === "object" ? (value as JSONContent) : null;
 }
 
