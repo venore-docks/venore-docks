@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { BREADCRUMB_PATHNAME_HEADER } from "@/platform/breadcrumbs/pathname-header";
 import { buildCspHeaders, generateNonce, resolveCspMode } from "@/platform/security/content-security-policy";
+import { stripInboundThemeHeaders } from "@/platform/theme-preview/strip-inbound-theme-headers";
 
 // `middleware.ts` foi renomeado para `proxy.ts` no Next.js 16 (node_modules/next/dist/docs/01-app/
 // 03-api-reference/03-file-conventions/proxy.md — "Migration to Proxy"); mesmo arquivo, mesmo
@@ -13,8 +14,11 @@ import { buildCspHeaders, generateNonce, resolveCspMode } from "@/platform/secur
 // 2. Content Security Policy com nonce por request (platform/security/content-security-policy.ts
 //    — docs/content-security-policy.md do Next: nonce exige renderização dinâmica, que todas as
 //    páginas já usam). O Next aplica o nonce nos próprios <script> lendo o header da request.
+// 3. Remover headers `x-venore-theme-*` vindos de fora (canal interno do tema v8, spec §6) — o
+//    override de preview só existe via cookie assinado, nunca por header.
 export function proxy(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
+  stripInboundThemeHeaders(requestHeaders);
   requestHeaders.set(BREADCRUMB_PATHNAME_HEADER, request.nextUrl.pathname);
 
   const nonce = generateNonce();

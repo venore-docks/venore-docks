@@ -12,7 +12,8 @@ import { areaForPathname } from "./area";
 import { buildPaletteCss } from "./resolve-active-color-palette";
 import { buildOptionsCssAndAttrs } from "./build-options-css";
 import { matchSectionOverride } from "./match-section-override";
-import { readThemeOverride } from "./read-theme-override";
+import { loadOverrideThemeConfig, readThemeOverride } from "./read-theme-override";
+import { loadThemeEnabledCheck } from "./theme-enabled-check";
 import { resolveDocumentFonts } from "./resolve-document-fonts";
 import { resolveDocumentLocale } from "./resolve-document-locale";
 import { FALLBACK_THEME_KEY, resolveThemeDefinition } from "./resolve-theme-definition";
@@ -42,7 +43,8 @@ export const resolveDocumentModel = cache(async (): Promise<DocumentModel> => {
   if (forced) {
     config = slimeDefaultConfig();
   } else {
-    const published = await getPublishedThemeConfig();
+    // Rascunho em preview (W6): a config do rascunho apontado pelo cookie, senão a publicada.
+    const published = await loadOverrideThemeConfig(override, getPublishedThemeConfig);
     configReadFailed = !published.success;
     config = published.success ? published.data : slimeDefaultConfig();
   }
@@ -52,7 +54,10 @@ export const resolveDocumentModel = cache(async (): Promise<DocumentModel> => {
   const themeKey = forced || override?.kind === "safe-mode" ? FALLBACK_THEME_KEY : (section?.themeKey ?? config.themeKey);
 
   // 7 definição (registro → faixa → normaliza → herança)
-  const { theme, fallback } = resolveThemeDefinition(themeKey);
+  // Seção que troca de tema (W6): o tema da seção precisa estar habilitado (o ativo nunca está
+  // desabilitado — toggle-theme-enabled impede —, então só a seção paga a leitura do estado).
+  const isEnabled = section?.themeKey && section.themeKey === themeKey ? await loadThemeEnabledCheck() : undefined;
+  const { theme, fallback } = resolveThemeDefinition(themeKey, { isEnabled });
   const stored = config.byTheme[theme.key];
 
   // 8 opções (W2) — 9 paleta (W1) — 10 CSS/atributos de opção (W2) — 11 fontes (W8) — 12 locale (W8)
