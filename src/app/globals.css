@@ -18,6 +18,8 @@
    `venore-slime` é o único hardcoded (fallback obrigatório); o resto vem do @import gerado abaixo
    (pacotes @venore/theme-* — scripts/gen-theme-registry.ts, a partir das deps do package.json). */
 @import "../themes/venore-slime/theme.css";
+/* Herança v8 (spec §3.1, W9): CSS dos ancestros reescrito com :is(), antes dos temas filhos. */
+@import "../themes/theme-lineage.generated.css";
 @import "../themes/theme-imports.generated.css";
 /* Contrato de tema v8 (spec §3): cada arquivo tem dono próprio e só consome var(). */
 @import "./styles/region-tokens.css";
