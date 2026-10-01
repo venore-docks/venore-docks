@@ -59,8 +59,17 @@ function ContextualMenuItem({ item }: { item: ContextualMenuItemView }) {
   );
 }
 
-// Região: menu do CMS ou nó do plugin (spec §2.5). F só renderiza o conteúdo; a moldura <aside>
-// é do layout (ContentFrame).
-export function ContextualBar({ data, strings }: ContextualBarRegionProps) {
-  return data.source === "menu" ? <KitContextualMenuNav items={data.items} strings={strings} /> : <>{data.node}</>;
+// Região da barra contextual (spec §2.5/§7.5). Recebe o dado explícito — nunca `none`: quem
+// renderiza a região (ThemeRenderer / layouts do kit) já não monta <aside> nenhum quando
+// `contextual.source === "none"` (B6). Conteúdo: menu do CMS (markup de hoje) ou o nó do slot do
+// plugin, entre os outlets contextual.top / contextual.bottom. A moldura (<aside>, placement
+// side/top, comportamento mobile) é do layout (ContentFrame, W3).
+export function ContextualBar({ data, strings, slots }: ContextualBarRegionProps) {
+  return (
+    <>
+      {slots?.outletTop}
+      {data.source === "menu" ? <KitContextualMenuNav items={data.items} strings={strings} /> : data.node}
+      {slots?.outletBottom}
+    </>
+  );
 }
