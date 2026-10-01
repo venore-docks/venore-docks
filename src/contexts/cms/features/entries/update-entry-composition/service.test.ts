@@ -54,6 +54,11 @@ function block(overrides: Partial<Block>): Block {
 }
 
 
+const invalidateCacheByPrefix = vi.fn();
+vi.mock("../../../../../infrastructure/cache/memory-cache", () => ({
+  invalidateCacheByPrefix: (...args: unknown[]) => invalidateCacheByPrefix(...args),
+}));
+
 // Revisões (shared/entry-revisions): entry em rascunho/editor com permissão de publicar — o
 // comportamento de proposta tem cobertura própria no teste de integração entry-revisions.
 const canPublishInCategory = vi.fn(async () => true);
@@ -71,6 +76,7 @@ describe("updateEntryComposition", () => {
     saveEntryComposition.mockReset();
     assertCmsCategoryScope.mockReset();
     assertCmsCategoryScope.mockResolvedValue({ success: true, data: undefined });
+    invalidateCacheByPrefix.mockReset();
   });
 
   it("rejects when the actor's scope does not reach the entry's category (Fase C)", async () => {
@@ -221,5 +227,28 @@ describe("updateEntryComposition", () => {
 
     expect(result.success).toBe(true);
     expect(saveEntryComposition).toHaveBeenCalledWith("entry-1", { body: "legacy", blocks: composition });
+  });
+
+  it("invalida o cache público quando a entry salva está no ar", async () => {
+    findEntryById.mockResolvedValue({ ...existingEntry, status: "published" });
+    const composition = [block({ id: "b1", key: "text" })];
+    saveEntryComposition.mockResolvedValue({ ...existingEntry, status: "published", data: { blocks: composition } });
+
+    const { updateEntryComposition } = await import("./service");
+    await updateEntryComposition({ id: "entry-1", composition, resolveDefinition, actorId: "actor-1" });
+
+    expect(invalidateCacheByPrefix).toHaveBeenCalledWith("cms:entries:published");
+    expect(invalidateCacheByPrefix).toHaveBeenCalledWith("cms:navigation");
+  });
+
+  it("não mexe no cache público ao salvar rascunho", async () => {
+    findEntryById.mockResolvedValue(existingEntry);
+    const composition = [block({ id: "b1", key: "text" })];
+    saveEntryComposition.mockResolvedValue({ ...existingEntry, data: { blocks: composition } });
+
+    const { updateEntryComposition } = await import("./service");
+    await updateEntryComposition({ id: "entry-1", composition, resolveDefinition, actorId: "actor-1" });
+
+    expect(invalidateCacheByPrefix).not.toHaveBeenCalled();
   });
 });

@@ -4,6 +4,7 @@ import { Readable } from "node:stream";
 import path from "node:path";
 import { resolveWithinRoot } from "./filesystem-path";
 import type {
+  DirectUploadKind,
   ByteRange,
   RemoteObjectSummary,
   StoragePort,
@@ -121,6 +122,10 @@ export class FilesystemStorageAdapter implements StoragePort {
 
   servesPublicly(): boolean {
     return true;
+  }
+
+  directUploadKind(): DirectUploadKind {
+    return "unsupported";
   }
 
   async createUploadTicket(): Promise<UploadTicket> {

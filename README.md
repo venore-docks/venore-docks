@@ -35,7 +35,7 @@ As que costumam importar em produção:
 | Variável | Para quê |
 | --- | --- |
 | `SETUP_TOKEN` | Libera o `/setup` (criar o primeiro superadmin pela web). 16+ caracteres; remova depois. |
-| `MEDIA_STORAGE_DRIVER` + `BLOB_READ_WRITE_TOKEN` | Onde a mídia fica (`vercel-blob` ou `filesystem`). Sem isso, upload em produção falha. |
+| `MEDIA_STORAGE_DRIVER` + `BLOB_READ_WRITE_TOKEN` | Onde a mídia fica (`vercel-blob`, `s3` ou `filesystem`). Sem isso, upload em produção falha. Para AWS/S3: [`docs/media/s3-storage.md`](docs/media/s3-storage.md). |
 | `CRON_SECRET` | Protege `/api/cron/tick` (publicação agendada, flush de logs, limpezas). Sem ela a rota responde 503 e nada agendado roda. Quem chama a rota: o workflow `.github/workflows/cron.yml` (a cada 5 min, via secret `CRON_TARGETS` do repositório — funciona no plano Hobby da Vercel) ou outro cron seu. |
 | `CSP_MODE` / `FRAME_ANCESTORS` | Content Security Policy (`report-only` por padrão) e quem pode exibir o site em iframe. |
 | `GOOGLE_*` / `GITHUB_*` / `MICROSOFT_*` | Login OAuth. Sem nenhum, o login por email + senha é o único caminho. |
