@@ -2,6 +2,7 @@
 // isto; src/themes/theme-registry-codegen.test.ts testa sem disco. Dono: Fase F (W9 pluga a
 // lineage em `lineageCss`, W1 o parser de tokens em `tokensModule`).
 import semver from "semver";
+import { buildThemeTokensModule } from "../theme-tokens";
 
 export type ThemePackageInput = {
   dep: string; // "@venore/theme-<key>"
@@ -9,6 +10,7 @@ export type ThemePackageInput = {
   // Quais subpaths do pacote resolvem.
   resolvable: { manifest: boolean; theme: boolean; colorPalettes: boolean; themeClient: boolean };
   sourceDir: string; // diretório do pacote relativo a src/themes (pro @source do Tailwind)
+  themeCss?: string; // conteúdo do theme.css do pacote (W1: parser de tokens); ausente = sem tokens
 };
 
 export type ThemeReportIssue = { level: "error" | "warning"; themeKey: string; code: string; message: string };
@@ -45,7 +47,7 @@ export class ThemeCodegenError extends Error {
 
 export function buildThemeRegistry(
   packages: ThemePackageInput[],
-  options: { strict: boolean; now?: Date },
+  options: { strict: boolean; now?: Date; slimeCss?: string },
 ): ThemeCodegenOutput {
   const issues: ThemeReportIssue[] = [];
   const error = (themeKey: string, code: string, message: string) => issues.push({ level: "error", themeKey, code, message });
@@ -183,11 +185,14 @@ export function buildThemeRegistry(
 
   // W9 preenche (reescrita :is() dos ancestrais). Vazio na Fase F.
   const lineageCss = CSS_HEADER;
-  // W1 preenche (valores light/dark parseados por tema efetivo). Vazio na Fase F.
-  const tokensModule =
-    HEADER +
-    `export type ThemeTokenValues = { light: Record<string, string>; dark: Record<string, string> };\n` +
-    `export const THEME_TOKEN_VALUES: Record<string, ThemeTokenValues> = {};\n`;
+  // W1: valores light/dark parseados por tema efetivo (scripts/theme-tokens.ts), slime incluído.
+  const tokensModule = buildThemeTokensModule(
+    [
+      ...(options.slimeCss !== undefined ? [{ key: RESERVED_KEY, css: options.slimeCss }] : []),
+      ...included.flatMap(({ key, input }) => (input.themeCss !== undefined ? [{ key, css: input.themeCss }] : [])),
+    ],
+    Object.fromEntries(included.map(({ key, lineage }) => [key, lineage])),
+  );
 
   const excluded = packages
     .map((input) => input.dep.slice("@venore/theme-".length))

@@ -3,7 +3,7 @@
 //   src/themes/registry.client.generated.ts  — THEME_CLIENT_REGISTRY ("use client", lazy por tema)
 //   src/themes/theme-imports.generated.css   — @import "<pkg>/theme.css" + @source por tema
 //   src/themes/theme-lineage.generated.css   — CSS de herança (W9; vazio na Fase F)
-//   src/themes/theme-tokens.generated.ts     — tokens parseados por tema (W1; vazio na Fase F)
+//   src/themes/theme-tokens.generated.ts     — tokens parseados por tema (W1, scripts/theme-tokens.ts)
 //   src/themes/theme-report.generated.json   — erros/avisos/excluídos (registry.test falha com erro)
 // Roda nos hooks pre* junto com gen-plugin-registry.
 //
@@ -34,6 +34,10 @@ function resolveOrNull(spec: string): string | null {
   } catch {
     return null;
   }
+}
+
+function readOrUndefined(file: string | null): string | undefined {
+  return file && existsSync(file) ? readFileSync(file, "utf-8") : undefined;
 }
 
 // O package.json do pacote nem sempre está em "exports" — sobe a partir de um entry resolvido.
@@ -68,13 +72,18 @@ const inputs: ThemePackageInput[] = Object.keys(hostPkg.dependencies ?? {})
           colorPalettes: Boolean(resolveOrNull(`${dep}/color-palettes`)),
           themeClient: Boolean(resolveOrNull(`${dep}/theme-client`)),
         },
+        // W1: parser de tokens (scripts/theme-tokens.ts) — valores light/dark por tema.
+        themeCss: readOrUndefined(resolveOrNull(`${dep}/theme.css`)),
         // Caminho via require.resolve, relativo a src/themes (onde o CSS gerado mora) — sobrevive a hoisting.
         sourceDir: path.relative(THEMES_DIR, path.dirname(anchor)).split(path.sep).join("/"),
       },
     ];
   });
 
-const output = buildThemeRegistry(inputs, { strict });
+const output = buildThemeRegistry(inputs, {
+  strict,
+  slimeCss: readOrUndefined(path.join(THEMES_DIR, "venore-slime", "theme.css")),
+});
 
 writeFileSync(path.join(THEMES_DIR, "registry.generated.ts"), output.registry);
 writeFileSync(path.join(THEMES_DIR, "registry.client.generated.ts"), output.clientRegistry);
