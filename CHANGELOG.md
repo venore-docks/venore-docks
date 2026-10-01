@@ -45,6 +45,17 @@ redimensionadas das imagens já enviadas (migration `0053` roda sozinha no build
 
 ### Fixed
 
+- **Cor de borda dos utilitários Tailwind era ignorada no app inteiro.** O reset
+  `* { border-color }` de `globals.css` ficava fora de `@layer` e vencia `border-transparent`,
+  `border-destructive`, `border-ring` etc. — botões shadcn ganhavam borda visível e campo inválido
+  não ficava vermelho, em todos os temas. Movido para `@layer base`, com `var(--border)`.
+  **Visual muda em todos os temas** onde havia cor de borda declarada.
+- **Contrato de tokens agora cobre os temas em pacote** (`@venore/theme-*`), não só `src/themes/`.
+- **Classes Tailwind usadas só dentro de um pacote de tema não eram geradas.** O `@import` do
+  `theme.css` não faz o Tailwind ler os componentes do pacote; `gen-theme-registry.ts` agora emite
+  um `@source` por tema (como já fazia para plugin). Ex: a borda do modo admin no Aurora.
+- **Preset de paleta escrito à mão perdia os próprios tokens ao ser aplicado.** O gerador só
+  completa o que o preset não declara — o "Oceano" do Aurora mantém o accent no mesmo matiz.
 - **"Esconder o link de Entrar" funcionava só no Venore Slime.** O core também desliga a userbar
   do visitante deslogado (todos os temas respeitam), tira "Entrar" dos menus de exemplo (sidebar e
   rodapé sem menu configurado) e os 13 temas `@venore/theme-*` ganharam suporte a

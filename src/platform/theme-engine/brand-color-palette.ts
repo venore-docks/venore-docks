@@ -1,6 +1,7 @@
 import type { OperationResult } from "@/shared/types";
 import { resolveActiveTheme } from "@/platform/theme-rendering/resolve-active-theme";
-import { hexToOklch, isValidHexColor, parseOklchNumeric } from "./oklch-color";
+import { hexToOklch, isValidHexColor, oklchToHex, parseOklchNumeric } from "./oklch-color";
+import type { PaletteColorTokens } from "@/contexts/themes/contracts/types";
 import { buildFullPaletteFromSeed } from "./full-palette-generator";
 import { setCustomColorPalette } from "./custom-color-palette";
 
@@ -58,6 +59,25 @@ export async function setPresetColorPalette(paletteId: string): Promise<Operatio
     };
   }
 
-  const palette = buildFullPaletteFromSeed(seed);
+  // Os tokens que o próprio preset declara vencem os gerados: o gerador só completa o que falta
+  // (fundo, card, sidebar…). Sem isso, um preset escrito à mão perdia a relação que justificava
+  // existir — ex: "Oceano" (id `fem`) do Aurora tem primary e accent no MESMO matiz, e o gerador
+  // jogava o accent pro complementar (+180°).
+  const generated = buildFullPaletteFromSeed(seed);
+  // A paleta personalizada só aceita #rrggbb (validação em custom-color-palette.ts), e o catálogo
+  // declara oklch() — converte; valor que não for oklch nem hex é ignorado (fica o gerado).
+  const asHexTokens = (tokens: PaletteColorTokens): PaletteColorTokens =>
+    Object.fromEntries(
+      Object.entries(tokens).flatMap(([token, value]) => {
+        if (typeof value !== "string") return [];
+        if (isValidHexColor(value)) return [[token, value]];
+        const parsed = parseOklchNumeric(value);
+        return parsed ? [[token, oklchToHex(parsed.l, parsed.c, parsed.h)]] : [];
+      }),
+    );
+  const palette = {
+    light: { ...generated.light, ...asHexTokens(preset.light) },
+    dark: { ...generated.dark, ...asHexTokens(preset.dark) },
+  };
   return setCustomColorPalette(manifest.key, palette);
 }

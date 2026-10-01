@@ -64,9 +64,18 @@ const registry =
     .join("\n") +
   `\n};\n`;
 
+// Além do @import dos tokens, um @source por tema: Tailwind v4 nunca escaneia node_modules, e
+// importar o theme.css de um pacote NÃO faz ele ler os componentes desse pacote — classe usada só
+// no tema (ex: `lg:border-r-2` do Aurora) simplesmente não era gerada. Mesmo mecanismo do
+// plugin-sources.generated.css (gen-plugin-registry.ts); caminho via require.resolve, relativo a
+// src/themes (onde este CSS mora), sobrevive a hoisting.
+const themeSource = (key: string) => {
+  const themeDir = path.dirname(require.resolve(`${pkgFor(key)}/manifest`));
+  return `@source "${path.relative(THEMES_DIR, themeDir).split(path.sep).join("/")}";`;
+};
 const cssImports =
   "/* GERADO por scripts/gen-theme-registry.ts — NÃO editar à mão (gitignored). */\n" +
-  keys.map((key) => `@import "${pkgFor(key)}/theme.css";`).join("\n") +
+  keys.map((key) => `@import "${pkgFor(key)}/theme.css";\n${themeSource(key)}`).join("\n") +
   (keys.length ? "\n" : "");
 
 writeFileSync(path.join(THEMES_DIR, "registry.generated.ts"), registry);
