@@ -29,6 +29,37 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/",
 }));
 
+// As páginas resolvem o tema do request (resolveTemplateContext → resolveDocumentModel). Aqui:
+// venore-slime pelo resolvedor puro de verdade, com locale pt-BR — o kit é o que está sob teste.
+vi.mock("next/headers", () => ({ headers: async () => new Headers({ "x-nonce": "n0nce" }) }));
+vi.mock("@/platform/seo/site-origin", () => ({ getSiteOrigin: async () => "https://site.test" }));
+vi.mock("@/platform/theme-rendering/resolve-maintenance", () => ({
+  resolveMaintenance: async () => false,
+  readMaintenanceSetting: async () => ({ enabled: false, message: "" }),
+}));
+vi.mock("@/platform/theme-rendering/document-model", async () => {
+  const { resolveThemeDefinition } = await import("@/platform/theme-rendering/resolve-theme-definition");
+  const { defaultThemeConfigDocument } = await import("@/contexts/themes/contracts/v8");
+  const theme = resolveThemeDefinition("venore-slime").theme;
+  return {
+    resolveDocumentModel: async () => ({
+      pathname: "/",
+      area: "public",
+      theme,
+      config: { ...defaultThemeConfigDocument("venore-slime"), revisionId: null, publishedAt: null, source: "legacy-synthesis" },
+      section: null,
+      options: { values: {}, ignored: [] },
+      fonts: { classNames: "", css: "" },
+      locale: "pt-BR",
+      dir: "ltr",
+      htmlAttributes: {},
+      runtimeCss: "",
+      override: null,
+      diagnostics: { source: "legacy-synthesis", fallback: null, ignoredOptions: [], section: null },
+    }),
+  };
+});
+
 vi.mock("@/contexts/cms", () => ({
   extractEntryComposition: (data: { composition?: unknown[] } | null) => data?.composition ?? null,
   getEntryBody: (data: { body?: string } | null) => data?.body ?? "",
@@ -119,8 +150,12 @@ async function resolveAsync(node: ReactNode): Promise<ReactNode> {
   return element;
 }
 
+// JSON-LD de template (spec v8 §7.7) é acréscimo da v8, coberto em templates.seo.test.tsx — o
+// snapshot de paridade compara só o markup visível de antes.
 async function render(page: Promise<ReactNode>): Promise<string> {
-  return renderToStaticMarkup(<>{await resolveAsync(await page)}</>).replace(/ data-(?:region|outlet|block[a-z-]*)(?:="[^"]*")?/g, "");
+  return renderToStaticMarkup(<>{await resolveAsync(await page)}</>)
+    .replace(/<script type="application\/ld\+json"[^>]*>[\s\S]*?<\/script>/g, "")
+    .replace(/ data-(?:region|outlet|block[a-z-]*)(?:="[^"]*")?/g, "");
 }
 
 const publishedAt = new Date("2026-03-15T12:00:00Z");
@@ -179,7 +214,8 @@ describe("templates — paridade do markup de hoje", () => {
 
   it("home com entry composta", async () => {
     const { default: HomePage } = await import("./page");
-    state.homeEntry = { id: "h", title: "Home", slug: "home", visibility: "public", data: {} };
+    // Uma consulta só (spec v8 §12 W4): a composição vem do `data` da entry publicada.
+    state.homeEntry = { id: "h", title: "Home", slug: "home", visibility: "public", data: { composition: richComposition } };
     state.homeComposition = richComposition;
     await expect(await render(HomePage())).toMatchFileSnapshot("./__parity__/home-entry.html");
   });

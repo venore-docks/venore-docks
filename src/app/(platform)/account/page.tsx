@@ -1,7 +1,10 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser, getOwnAccountData, getOwnMfaStatus } from "@/contexts/auth";
 import { getMediaAsset } from "@/contexts/media";
+import type { AccountTemplateProps } from "@/contexts/themes/contracts/v8";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { renderTemplate, resolveTemplateContext, resolveTemplateVariant } from "@/platform/theme-rendering/render-template";
+import type { KitAccountTemplateExtras } from "@/theme-sdk/kit/templates/simple-templates";
 import { AvatarForm } from "./_components/avatar-form";
 import { NameForm } from "./_components/name-form";
 import { ChangePasswordForm, RevokeSessionsForm } from "./_components/security-forms";
@@ -39,76 +42,87 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
         }
       : null;
 
-  return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground">Minha conta</h1>
-        <p className="mt-2 text-sm text-muted-foreground">{user.name ?? user.email}</p>
-      </div>
+  const context = await resolveTemplateContext();
+  // subtitle: extensão que o kit lê e o contrato §2.7 ainda não declara (requests/w4.md).
+  const props: AccountTemplateProps & KitAccountTemplateExtras = {
+    ...context.common,
+    title: "Minha conta",
+    subtitle: user.name ?? user.email,
+    jsonLd: null,
+    outlets: { before: null, after: null },
+    sections: (
+      <>
+        {notice && (
+          <p role="status" className="rounded-md border border-border bg-accent/14 px-3 py-2 text-sm text-foreground">
+            {notice}
+          </p>
+        )}
 
-      {notice && (
-        <p role="status" className="rounded-md border border-border bg-accent/14 px-3 py-2 text-sm text-foreground">
-          {notice}
-        </p>
-      )}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Nome</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <NameForm name={user.name} editable={user.authProvider === "credentials"} />
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Nome</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <NameForm name={user.name} editable={user.authProvider === "credentials"} />
-        </CardContent>
-      </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Avatar</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AvatarForm avatarMedia={avatarMedia} />
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Avatar</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <AvatarForm avatarMedia={avatarMedia} />
-        </CardContent>
-      </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Senha</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ChangePasswordForm hasPasswordLogin={hasPassword} />
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Senha</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ChangePasswordForm hasPasswordLogin={hasPassword} />
-        </CardContent>
-      </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Verificação em duas etapas</CardTitle>
+          </CardHeader>
+          <CardContent>{mfa?.enabled ? <DisableMfa recoveryCodesLeft={mfa.recoveryCodesLeft} /> : <EnableMfa />}</CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Verificação em duas etapas</CardTitle>
-        </CardHeader>
-        <CardContent>{mfa?.enabled ? <DisableMfa recoveryCodesLeft={mfa.recoveryCodesLeft} /> : <EnableMfa />}</CardContent>
-      </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Sessões</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <RevokeSessionsForm />
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Sessões</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <RevokeSessionsForm />
-        </CardContent>
-      </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Privacidade</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Baixe os dados que este site guarda sobre você (perfil, papéis, arquivos e conteúdos).
+              </p>
+              <a href="/api/account/export" className="text-sm font-medium text-primary hover:underline" download>
+                Baixar meus dados (JSON)
+              </a>
+            </div>
+            <DeleteAccountForm hasPasswordLogin={hasPassword} />
+          </CardContent>
+        </Card>
+      </>
+    ),
+  };
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Privacidade</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">Baixe os dados que este site guarda sobre você (perfil, papéis, arquivos e conteúdos).</p>
-            <a href="/api/account/export" className="text-sm font-medium text-primary hover:underline" download>
-              Baixar meus dados (JSON)
-            </a>
-          </div>
-          <DeleteAccountForm hasPasswordLogin={hasPassword} />
-        </CardContent>
-      </Card>
-    </div>
-  );
+  // Formulários de conta são do core (ações com autorização própria); o tema só desenha a moldura.
+  return renderTemplate(context.theme, "account", props, {
+    variant: resolveTemplateVariant("account", { section: context.section }),
+  });
 }
