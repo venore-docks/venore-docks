@@ -4,7 +4,7 @@ export type { KitHeaderProps, KitRailProps, KitFooterProps, KitUserMenuProps, Ki
 export { KitContextualMenuNav } from "../regions/contextual-bar/contextual-bar";
 export { KitNavModeSwitch } from "../regions/rail/rail";
 export { splitBottomBarItems } from "../regions/mobile-nav/mobile-nav";
-export { KIT_REGION_STRINGS_PT_BR, regionText } from "../regions/region-strings";
+export { regionText } from "../regions/region-strings";
 export {
   KIT_LAYOUTS,
   TopbarLayout,

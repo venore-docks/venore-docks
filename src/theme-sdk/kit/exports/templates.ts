@@ -2,4 +2,4 @@
 export * from "../templates";
 export { KIT_STATES, KitPageState, KitLoadingState, KitMaintenanceState, KitEmptyPageState, KitEmptyState } from "../states";
 export { CoreJsonLd } from "../json-ld";
-export { templateText, formatEntryDate, KIT_TEMPLATE_STRINGS_PT_BR } from "../templates/template-strings";
+export { templateText, formatEntryDate } from "../templates/template-strings";

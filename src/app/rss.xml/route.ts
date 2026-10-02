@@ -3,6 +3,7 @@ import { getBrandConfig } from "@/platform/brand/get-brand-config";
 import { extractExcerpt } from "@/platform/seo/entry-excerpt";
 import { listPublicEntryLinks } from "@/platform/seo/public-content";
 import { getSiteOrigin } from "@/platform/seo/site-origin";
+import { resolveDocumentLocale } from "@/platform/theme-rendering/resolve-document-locale";
 
 export const dynamic = "force-dynamic";
 
@@ -18,12 +19,13 @@ function escapeXml(value: string): string {
 }
 
 // RSS 2.0 dos últimos conteúdos públicos; ?category=<slug> filtra por categoria (linkado no <head>
-// de cada blogroll).
+// de cada blogroll). <language> segue o setting platform.locale (spec v8 §7.11).
 export async function GET(request: Request): Promise<Response> {
   const categorySlug = new URL(request.url).searchParams.get("category") ?? undefined;
-  const [origin, brand, { entries, categories }] = await Promise.all([
+  const [origin, brand, { locale }, { entries, categories }] = await Promise.all([
     getSiteOrigin(),
     getBrandConfig(),
+    resolveDocumentLocale(),
     listPublicEntryLinks({ categorySlug, limit: FEED_SIZE }),
   ]);
   const category = categorySlug ? categories.find((item) => item.slug === categorySlug) : undefined;
@@ -57,7 +59,7 @@ export async function GET(request: Request): Promise<Response> {
     <title>${escapeXml(title)}</title>
     <link>${escapeXml(channelLink)}</link>
     <description>${escapeXml(brand.footerDescription ?? title)}</description>
-    <language>pt-BR</language>
+    <language>${escapeXml(locale)}</language>
     <atom:link href="${escapeXml(`${origin}/rss.xml${category ? `?category=${category.slug}` : ""}`)}" rel="self" type="application/rss+xml"/>
 ${items}
   </channel>
