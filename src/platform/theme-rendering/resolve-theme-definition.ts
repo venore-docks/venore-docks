@@ -2,7 +2,7 @@ import semver from "semver";
 import { SUPPORTED_THEME_CONTRACT_RANGE } from "@/contexts/themes/contracts/contract-version";
 import type { ResolvedThemeDefinition, ThemeRenderDiagnostics } from "@/contexts/themes/contracts/v8";
 import { THEME_REGISTRY, type ThemeRegistryEntry } from "@/themes/registry";
-import { applyInheritance } from "./apply-inheritance";
+import { resolveInheritance } from "./apply-inheritance";
 import { normalizeRegistryEntry } from "./normalize-entry";
 
 export const FALLBACK_THEME_KEY = "venore-slime";
@@ -48,7 +48,9 @@ export function resolveThemeDefinition(themeKey: string, options: ResolveThemeDe
     }
     ancestors.push(normalizeRegistryEntry(ancestor));
   }
-  return { theme: applyInheritance(normalized, ancestors), fallback: null };
+  const inherited = resolveInheritance(normalized, ancestors, slime);
+  if (inherited.error) return { theme: inherited.theme, fallback: { reason: "invalid-chain", requestedKey: themeKey } };
+  return { theme: inherited.theme, fallback: null };
 }
 
 // Admin sob v8 (invariante §0.5): só cores (data-theme/paleta) e marca do tema — layout topbar,
