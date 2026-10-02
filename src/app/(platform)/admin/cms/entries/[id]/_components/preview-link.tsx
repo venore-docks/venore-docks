@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useActionToast } from "@/hooks/use-action-toast";
 import { createPreviewLinkAction, type PreviewLinkState } from "../actions";
+import { DEFAULT_DATE_LOCALE, formatDate } from "@/shared/format-date";
 
 const initialState: PreviewLinkState = { error: null, url: null, expiresAt: null };
 
@@ -30,7 +31,7 @@ export function PreviewLink({ entryId }: { entryId: string }) {
           <Input readOnly value={state.url} onFocus={(event) => event.currentTarget.select()} aria-label="Link de pré-visualização" />
           <p className="text-xs text-muted-foreground">
             Qualquer pessoa com este link vê a versão atual deste conteúdo até{" "}
-            {state.expiresAt ? new Date(state.expiresAt).toLocaleString("pt-BR") : "expirar"}.
+            {formatDate(state.expiresAt, DEFAULT_DATE_LOCALE, "dateTimeSeconds") ?? "expirar"}.
           </p>
         </div>
       )}

@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound, unstable_rethrow } from "next/navigation";
 import { cache } from "react";
-import { ArrowLeft, ArrowRight, BookOpen, Calendar } from "lucide-react";
 import {
   extractEntryComposition,
   getCachedCategoryBySlug,
@@ -15,9 +13,24 @@ import type { EntryRecord } from "@/contexts/cms";
 import { getCurrentUser } from "@/contexts/auth";
 import { getMediaAssetUrls } from "@/contexts/media";
 import { resolvePublicPluginRoute } from "@/platform/plugin-routing/resolve-public-route";
+import type { ThemeEntryView } from "@/contexts/themes/contracts/v8";
 import { BlockRenderer } from "@/components/page-builder/block-renderer";
-import { EmptyState } from "@/components/empty-state";
+import { PageLayoutMarker } from "@/platform/page-builder/page-layout-marker";
+import { getAdminPageData } from "@/platform/admin-shell/get-admin-page-data";
 import { extractExcerpt } from "@/platform/seo/entry-excerpt";
+import { getSiteOrigin } from "@/platform/seo/site-origin";
+import { resolveDefaultOgImage } from "@/platform/seo/og-image";
+import { renderState } from "@/platform/theme-rendering/render-state";
+import {
+  renderTemplate,
+  resolvePageOutlets,
+  resolveTemplateContext,
+  resolveTemplateVariant,
+  toOutletUser,
+} from "@/platform/theme-rendering/render-template";
+import { resolveMaintenance } from "@/platform/theme-rendering/resolve-maintenance";
+import { buildTemplateJsonLd } from "@/platform/theme-rendering/template-json-ld";
+import { CoreJsonLd } from "@/theme-sdk/kit/json-ld";
 
 // force-dynamic: mesmo motivo de app/page.tsx — conteúdo e tema ativo mudam em runtime.
 export const dynamic = "force-dynamic";
@@ -30,9 +43,7 @@ type CatchAllProps = {
 // generateMetadata e a página resolvem a MESMA rota de plugin no mesmo request — cache() evita
 // ler o registro de plugins ativos (registerPlugins, sem cache próprio) duas vezes. Chave em JSON
 // (não join("/")) porque um segmento decodificado pode conter "/".
-const resolvePublicPluginRouteForRequest = cache((segmentsKey: string) =>
-  resolvePublicPluginRoute(JSON.parse(segmentsKey) as string[]),
-);
+const resolvePublicPluginRouteForRequest = cache((segmentsKey: string) => resolvePublicPluginRoute(JSON.parse(segmentsKey) as string[]));
 
 // Só rota de plugin com generateMetadata na route-table (ex: página pública de um jogo do
 // erasto-league, com a capa como imagem de compartilhamento) sobrescreve algo aqui — o resto
@@ -66,6 +77,8 @@ const isViewerAuthenticated = cache(async (): Promise<boolean> => {
 // Conteúdo "authenticated" sai com noindex — mesmo pra quem está logado vendo a página.
 async function generateCmsMetadata(segments: string[]): Promise<Metadata> {
   if (segments.length === 0 || segments.length > 2) return {};
+  // Manutenção (spec v8 §7.9): quem não é admin vê só o aviso — nada do conteúdo vai pro <head>.
+  if (await resolveMaintenance(await getAdminPageData())) return { robots: { index: false, follow: false } };
 
   const categoryResult = await getCachedCategoryBySlug(segments[0]);
   const category = categoryResult.success ? categoryResult.data : null;
@@ -104,7 +117,8 @@ async function generateCmsMetadata(segments: string[]): Promise<Metadata> {
       description,
       url: path,
       publishedTime: entry.publishedAt?.toISOString(),
-      images: coverUrl ? [{ url: coverUrl }] : undefined,
+      // Sem capa: a imagem padrão de compartilhamento (config do tema → asset do tema), spec §7.7.
+      images: coverUrl ? [{ url: coverUrl }] : await resolveDefaultOgImage(),
     },
   };
 }
@@ -116,10 +130,13 @@ async function isVisibleToCurrentViewer(entry: EntryRecord): Promise<boolean> {
   return isViewerAuthenticated();
 }
 
-function formatDate(date: Date | null): string | null {
-  if (!date) return null;
-  return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "long", year: "numeric" }).format(date);
+function toIso(date: Date | null | undefined): string | null {
+  return date ? date.toISOString() : null;
 }
+
+// Variante "hero" do template de entry: a composição abre com um bloco hero (o tema pode, por
+// exemplo, esconder o título duplicado).
+const HERO_BLOCK_KEY = "core.content.hero";
 
 // BL1 (docs/implementation-roadmap.md, Fase 4): rota de categoria em formato blog — lista as
 // entries publicadas daquela categoria, respeitando status (listEntries já filtra
@@ -135,13 +152,10 @@ function parsePage(value: string | string[] | undefined): number {
 }
 
 // Uma consulta de entries (a página pedida + 1, pra saber se há próxima), uma de mídia pra todas
-// as capas, e o resumo vem do `data` que a listagem já trouxe. Antes: todas as entries da
-// categoria + getMediaAsset + getEntryComposition POR card.
-async function renderCategoryBlogroll(
-  category: { id: string; name: string; slug: string; description: string | null },
-  page: number,
-) {
-  const viewerIsAuthenticated = await isViewerAuthenticated();
+// as capas, e o resumo vem do `data` que a listagem já trouxe. O desenho é o template "category"
+// do tema (spec v8 §2.7); o dado continua resolvido aqui.
+async function renderCategoryBlogroll(category: { id: string; name: string; slug: string; description: string | null }, page: number) {
+  const [viewerIsAuthenticated, context] = await Promise.all([isViewerAuthenticated(), resolveTemplateContext()]);
   const entriesResult = await listEntries({
     categoryId: category.id,
     // C7: visitante sem sessão só vê "public" — filtrado no banco, antes da paginação.
@@ -157,79 +171,66 @@ async function renderCategoryBlogroll(
   const coversResult = await getMediaAssetUrls({ ids: coverIds });
   const coverUrls = coversResult.success ? coversResult.data : {};
 
-  const cards = pageEntries.map((entry) => ({
-    entry,
-    coverUrl: entry.mediaId ? (coverUrls[entry.mediaId] ?? null) : null,
-    excerpt: extractExcerpt(extractEntryComposition(entry.data)),
-  }));
+  const categoryPath = `/${category.slug}`;
+  const entries: ThemeEntryView[] = pageEntries.map((entry) => {
+    const coverUrl = entry.mediaId ? (coverUrls[entry.mediaId] ?? null) : null;
+    return {
+      id: entry.id,
+      title: entry.title,
+      excerpt: extractExcerpt(extractEntryComposition(entry.data)),
+      path: `${categoryPath}/${entry.slug}`,
+      publishedAt: toIso(entry.publishedAt),
+      updatedAt: toIso(entry.updatedAt),
+      category: { label: category.name, href: categoryPath },
+      cover: coverUrl ? { url: coverUrl, alt: "" } : null,
+    };
+  });
 
-  return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground">{category.name}</h1>
-        {category.description && <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{category.description}</p>}
-      </div>
+  // JSON-LD só lista o que é público — mesmo para quem tem sessão e vê itens "authenticated" (C7).
+  const origin = await getSiteOrigin();
+  const publicItems = pageEntries
+    .map((entry, index) => ({ entry, view: entries[index] }))
+    .filter(({ entry }) => entry.visibility === "public")
+    .map(({ view }) => ({ title: view.title, url: `${origin}${view.path}` }));
+  const jsonLd = buildTemplateJsonLd(context.theme, {
+    kind: "category",
+    name: category.name,
+    url: `${origin}${categoryPath}`,
+    description: category.description,
+    items: publicItems,
+  });
 
-      {cards.length === 0 ? (
-        <EmptyState
-          icon={<BookOpen className="size-8" strokeWidth={1.5} />}
-          title="Nenhum conteúdo publicado nesta categoria ainda"
-          description="Volte mais tarde — novos textos aparecem aqui assim que forem publicados."
-        />
-      ) : (
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))] gap-4 sm:gap-5">
-          {cards.map(({ entry, coverUrl, excerpt }) => (
-            <Link key={entry.id} href={`/${category.slug}/${entry.slug}`} className="group block">
-              <article className="flex h-full flex-col overflow-hidden rounded-panel border border-border bg-card ui-motion-base group-hover:shadow-float">
-                <div className="aspect-video w-full overflow-hidden bg-muted">
-                  {coverUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element -- mesmo padrão do resto do page-builder, sem domínio remoto configurado pra next/image
-                    <img
-                      src={coverUrl}
-                      alt=""
-                      className="h-full w-full object-cover ui-motion-emphasis group-hover:scale-105"
-                    />
-                  ) : (
-                    <div className="flex h-full items-center justify-center text-muted-foreground/56">
-                      <BookOpen className="size-8" strokeWidth={1.5} aria-hidden="true" />
-                    </div>
-                  )}
-                </div>
-                <div className="flex flex-1 flex-col gap-2 p-4">
-                  {entry.publishedAt && (
-                    <p className="flex items-center gap-1 text-[11px] font-medium tracking-caps text-muted-foreground/56 uppercase">
-                      <Calendar className="size-3" aria-hidden="true" /> {formatDate(entry.publishedAt)}
-                    </p>
-                  )}
-                  <h2 className="text-base font-semibold text-foreground">{entry.title}</h2>
-                  {excerpt && <p className="line-clamp-3 text-sm text-muted-foreground">{excerpt}</p>}
-                  <p className="mt-auto flex items-center gap-1 pt-1 text-sm font-medium text-primary">
-                    Ler mais <ArrowRight className="size-3.5" aria-hidden="true" />
-                  </p>
-                </div>
-              </article>
-            </Link>
-          ))}
-        </div>
-      )}
+  const empty = renderState(context.theme, "empty", {
+    ...context.common,
+    title: "Nenhum conteúdo publicado nesta categoria ainda",
+    message: "Volte mais tarde — novos textos aparecem aqui assim que forem publicados.",
+    action: null,
+  });
 
-      {(page > 1 || hasNextPage) && (
-        <nav aria-label="Paginação" className="flex items-center justify-between gap-4 text-sm">
-          {page > 1 ? (
-            <Link href={page === 2 ? `/${category.slug}` : `/${category.slug}?page=${page - 1}`} className="flex items-center gap-1 font-medium text-primary">
-              <ArrowLeft className="size-3.5" aria-hidden="true" /> Mais recentes
-            </Link>
-          ) : (
-            <span />
-          )}
-          {hasNextPage && (
-            <Link href={`/${category.slug}?page=${page + 1}`} className="flex items-center gap-1 font-medium text-primary">
-              Mais antigos <ArrowRight className="size-3.5" aria-hidden="true" />
-            </Link>
-          )}
-        </nav>
-      )}
-    </div>
+  return renderTemplate(
+    context.theme,
+    "category",
+    {
+      ...context.common,
+      category: {
+        label: category.name,
+        description: category.description,
+        path: categoryPath,
+        rssPath: `/rss.xml?category=${category.slug}`,
+      },
+      entries,
+      pagination: {
+        page,
+        pageCount: hasNextPage ? page + 1 : page,
+        prevHref: page > 1 ? (page === 2 ? categoryPath : `${categoryPath}?page=${page - 1}`) : null,
+        nextHref: hasNextPage ? `${categoryPath}?page=${page + 1}` : null,
+      },
+      sort: { current: "recent", options: [] },
+      empty,
+      jsonLd: <CoreJsonLd data={jsonLd} nonce={context.nonce} />,
+      outlets: { before: null, after: null },
+    },
+    { variant: resolveTemplateVariant("category", { section: context.section }) },
   );
 }
 
@@ -259,6 +260,7 @@ export default async function CatchAllPage({ params, searchParams }: CatchAllPro
   let entryResult;
   let backHref = "/";
   let backLabel = "Início";
+  let entryCategory: ThemeEntryView["category"] = null;
 
   if (segments.length === 1) {
     // BL1: categoria tem precedência sobre uma entry raiz de mesmo slug — decisão registrada
@@ -281,6 +283,7 @@ export default async function CatchAllPage({ params, searchParams }: CatchAllPro
     entryResult = await getCachedPublishedEntryBySlug(categoryResult.data.id, segments[1]);
     backHref = `/${categoryResult.data.slug}`;
     backLabel = categoryResult.data.name;
+    entryCategory = { label: categoryResult.data.name, href: backHref };
   } else {
     notFound();
   }
@@ -300,33 +303,70 @@ export default async function CatchAllPage({ params, searchParams }: CatchAllPro
 
   recordEntryView(entry.id);
 
+  const [context, currentUser, adminGate, origin] = await Promise.all([
+    resolveTemplateContext(),
+    getCurrentUser(),
+    getAdminPageData(),
+    getSiteOrigin(),
+  ]);
+  const user = currentUser.success && currentUser.data ? currentUser.data : null;
+  const outlets = await resolvePageOutlets(context, {
+    user: toOutletUser(user),
+    canAccessAdmin: adminGate.granted,
+  });
+
   // A entry publicada já veio com `data` — extrair a composição dali evita um segundo SELECT.
   const composition = extractEntryComposition(entry.data);
-  const publishedLabel = formatDate(entry.publishedAt);
+  const path = entryCategory ? `${entryCategory.href}/${entry.slug}` : `/${entry.slug}`;
+  const coverResult = entry.mediaId ? await getMediaAssetUrls({ ids: [entry.mediaId] }) : null;
+  const coverUrl = entry.mediaId && coverResult?.success ? (coverResult.data[entry.mediaId] ?? null) : null;
+  const view: ThemeEntryView = {
+    id: entry.id,
+    title: entry.title,
+    excerpt: extractExcerpt(composition),
+    path,
+    publishedAt: toIso(entry.publishedAt),
+    updatedAt: toIso(entry.updatedAt),
+    category: entryCategory,
+    cover: coverUrl ? { url: coverUrl, alt: "" } : null,
+  };
 
-  return (
-    // Sem max-w/mx-auto próprios: ContentSlot (cada tema) já centra o conteúdo em max-w-6xl e
-    // Breadcrumbs.tsx usa a mesma largura — um max-w mais estreito aqui empurrava título/corpo
-    // pra dentro de uma coluna ainda mais centrada DENTRO da já centrada, desalinhando com a
-    // trilha de breadcrumb acima (a "margem" reportada: título mais à direita que o breadcrumb).
-    <article className="space-y-6">
-      <Link
-        href={backHref}
-        className="inline-flex items-center gap-1 rounded-sm text-xs font-medium text-muted-foreground/56 outline-none ui-motion-base hover:text-foreground hover:underline focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        <ArrowLeft className="size-3.5" aria-hidden="true" /> {backLabel}
-      </Link>
+  // C7: só conteúdo "public" ganha dado estruturado; "authenticated" (visto por quem tem sessão)
+  // é noindex e sai sem JSON-LD.
+  const jsonLd =
+    entry.visibility === "public"
+      ? buildTemplateJsonLd(context.theme, {
+          kind: "entry",
+          title: entry.title,
+          url: `${origin}${path}`,
+          publishedAt: view.publishedAt,
+          updatedAt: view.updatedAt,
+          image: coverUrl ? new URL(coverUrl, origin).toString() : null,
+          description: view.excerpt,
+          siteName: null,
+        })
+      : null;
 
-      <div className="space-y-2">
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">{entry.title}</h1>
-        {publishedLabel && (
-          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Calendar className="size-3.5" aria-hidden="true" /> {publishedLabel}
-          </p>
-        )}
-      </div>
-
-      {composition ? <BlockRenderer blocks={composition} mode="published" /> : <p className="text-muted-foreground">{getEntryBody(entry.data)}</p>}
-    </article>
+  return renderTemplate(
+    context.theme,
+    "entry",
+    {
+      ...context.common,
+      entry: view,
+      content: composition ? (
+        <BlockRenderer blocks={composition} mode="published" />
+      ) : (
+        <>
+          {/* Sem composição não há BlockRenderer: o marcador do layout da página sai daqui. */}
+          <PageLayoutMarker />
+          <p className="text-muted-foreground">{getEntryBody(entry.data)}</p>
+        </>
+      ),
+      backLink: { href: backHref, label: backLabel },
+      firstBlockIsHero: composition?.[0]?.key === HERO_BLOCK_KEY,
+      jsonLd: <CoreJsonLd data={jsonLd} nonce={context.nonce} />,
+      outlets: { before: null, after: outlets["entry.after-content"] ?? null },
+    },
+    { variant: resolveTemplateVariant("entry", { section: context.section, entryData: entry.data }) },
   );
 }

@@ -6,6 +6,7 @@ import { getDiagnosticsAuditPageData } from "@/platform/admin-shell/get-diagnost
 import { EmptyState } from "@/components/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DEFAULT_DATE_LOCALE, formatDate } from "@/shared/format-date";
 
 type AuditSearchParams = {
   actorId?: string;
@@ -85,7 +86,7 @@ export default async function DiagnosticsAuditPage({
               {entries.map((entry) => (
                 <li key={entry.id} className="py-3">
                   <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground/56">
-                    <span className="whitespace-nowrap">{entry.occurredAt.toLocaleString("pt-BR")}</span>
+                    <span className="whitespace-nowrap">{formatDate(entry.occurredAt, DEFAULT_DATE_LOCALE, "dateTimeSeconds")}</span>
                     <Badge variant={entry.outcome === "success" ? "secondary" : "destructive"}>
                       {entry.outcome === "success" ? "sucesso" : "falha"}
                     </Badge>

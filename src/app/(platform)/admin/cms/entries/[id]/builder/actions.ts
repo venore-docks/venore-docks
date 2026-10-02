@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { updateEntryComposition, validateComposition, type Composition } from "@/contexts/cms";
+import { updateEntryComposition, updateEntryLayout, validateComposition, type Composition, type PageLayout } from "@/contexts/cms";
 import { resolveBlockDefinition } from "@/platform/page-builder/block-registry";
 import { resolveErrorBlockId } from "@/platform/page-builder/composition-tree";
 
@@ -34,4 +34,17 @@ export async function saveEntryCompositionAction(entryId: string, composition: C
   revalidatePath(`/admin/cms/entries/${entryId}`);
   revalidatePath(`/admin/cms/entries/${entryId}/builder`);
   return { success: true, proposed: result.data.proposalId !== null };
+}
+
+export type SaveEntryLayoutResult = { success: true; proposed: boolean; layout: PageLayout } | { success: false; error: { code: string; message: string } };
+
+// Layout da página (v8, spec §7.15). Autorização (cms.entries.manage + escopo por categoria) e o
+// fluxo de proposta ficam no use case — a action só repassa e revalida.
+export async function saveEntryLayoutAction(entryId: string, layout: PageLayout): Promise<SaveEntryLayoutResult> {
+  const result = await updateEntryLayout({ entryId, layout });
+  if (!result.success) return { success: false, error: result.error };
+
+  revalidatePath(`/admin/cms/entries/${entryId}/builder`);
+  if (!result.data.proposed) revalidatePath("/", "layout");
+  return { success: true, proposed: result.data.proposed, layout: result.data.layout };
 }

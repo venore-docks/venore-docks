@@ -57,6 +57,10 @@ yarn-error.log*
 # Gerados por scripts/gen-theme-registry.ts a partir das deps @venore/theme-* do package.json.
 /src/themes/registry.generated.ts
 /src/themes/theme-imports.generated.css
+/src/themes/registry.client.generated.ts
+/src/themes/theme-lineage.generated.css
+/src/themes/theme-tokens.generated.ts
+/src/themes/theme-report.generated.json
 
 # Cada plugin é um PACOTE npm (@venore/plugin-<key>) — instala em node_modules, nunca em
 # src/plugins/. Só os fixtures _fixture-cross-* do teste de boundary continuam versionados lá.

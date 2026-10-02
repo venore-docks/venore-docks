@@ -1,0 +1,273 @@
+/* Tokens de região/seção — tier 3 (spec v8 §3). Dono: W1.
+
+   1. Defaults (`:where([data-theme])`, especificidade 0): todo `--region-<região>-<papel>` e
+      `--section-<estilo>-<papel>` aponta pro token tier-2 correspondente. Para as regiões o
+      default é IDENTIDADE (`--region-rail-background: var(--background)`), então nada muda
+      enquanto ninguém declara o tier-3 — o slime renderiza idêntico (snapshots de paridade e
+      estilos computados). Quem quer uma região diferente declara o tier-3: o theme.css do tema
+      (`[data-theme="k"] { --region-rail-background: … }`, especificidade 0,1,0) ou a paleta do
+      admin (`html[data-theme="k"]`, 0,1,1 — ver palette/generate-theme-palette.ts, tons por região).
+      Os estilos de seção (page builder, W5) já nascem com papéis trocados (brand = fundo primary),
+      sempre por var(): o valor de cada estilo continua sendo do tema.
+   2. Remapeamento: dentro de `[data-region="…"]` / `[data-section-style="…"]` o vocabulário shadcn
+      passa a ler o tier-3. Funciona porque o `@theme inline` de globals.css inline-a
+      `var(--background)` nas utilities: `bg-card`/`text-muted-foreground` de dentro da região
+      seguem a região. O tier-3 é computado no elemento do tema (<html>, ou a raiz da galeria) e
+      herdado já resolvido — não há ciclo com o `--background` redeclarado aqui.
+
+   Só var() (globals.no-design-values.test.ts); region-tokens.test.ts prova que todo papel de toda
+   região/estilo está declarado e remapeado. Shells 7.x não emitem data-region: não são afetados. */
+
+:where([data-theme]) {
+  --region-header-background: var(--background);
+  --region-header-foreground: var(--foreground);
+  --region-header-muted: var(--muted);
+  --region-header-muted-foreground: var(--muted-foreground);
+  --region-header-card: var(--card);
+  --region-header-card-foreground: var(--card-foreground);
+  --region-header-primary: var(--primary);
+  --region-header-primary-foreground: var(--primary-foreground);
+  --region-header-accent: var(--accent);
+  --region-header-accent-foreground: var(--accent-foreground);
+  --region-header-border: var(--border);
+  --region-header-ring: var(--ring);
+
+  --region-rail-background: var(--background);
+  --region-rail-foreground: var(--foreground);
+  --region-rail-muted: var(--muted);
+  --region-rail-muted-foreground: var(--muted-foreground);
+  --region-rail-card: var(--card);
+  --region-rail-card-foreground: var(--card-foreground);
+  --region-rail-primary: var(--primary);
+  --region-rail-primary-foreground: var(--primary-foreground);
+  --region-rail-accent: var(--accent);
+  --region-rail-accent-foreground: var(--accent-foreground);
+  --region-rail-border: var(--border);
+  --region-rail-ring: var(--ring);
+
+  --region-contextual-background: var(--background);
+  --region-contextual-foreground: var(--foreground);
+  --region-contextual-muted: var(--muted);
+  --region-contextual-muted-foreground: var(--muted-foreground);
+  --region-contextual-card: var(--card);
+  --region-contextual-card-foreground: var(--card-foreground);
+  --region-contextual-primary: var(--primary);
+  --region-contextual-primary-foreground: var(--primary-foreground);
+  --region-contextual-accent: var(--accent);
+  --region-contextual-accent-foreground: var(--accent-foreground);
+  --region-contextual-border: var(--border);
+  --region-contextual-ring: var(--ring);
+
+  --region-content-background: var(--background);
+  --region-content-foreground: var(--foreground);
+  --region-content-muted: var(--muted);
+  --region-content-muted-foreground: var(--muted-foreground);
+  --region-content-card: var(--card);
+  --region-content-card-foreground: var(--card-foreground);
+  --region-content-primary: var(--primary);
+  --region-content-primary-foreground: var(--primary-foreground);
+  --region-content-accent: var(--accent);
+  --region-content-accent-foreground: var(--accent-foreground);
+  --region-content-border: var(--border);
+  --region-content-ring: var(--ring);
+
+  --region-footer-background: var(--background);
+  --region-footer-foreground: var(--foreground);
+  --region-footer-muted: var(--muted);
+  --region-footer-muted-foreground: var(--muted-foreground);
+  --region-footer-card: var(--card);
+  --region-footer-card-foreground: var(--card-foreground);
+  --region-footer-primary: var(--primary);
+  --region-footer-primary-foreground: var(--primary-foreground);
+  --region-footer-accent: var(--accent);
+  --region-footer-accent-foreground: var(--accent-foreground);
+  --region-footer-border: var(--border);
+  --region-footer-ring: var(--ring);
+
+  --section-muted-background: var(--muted);
+  --section-muted-foreground: var(--foreground);
+  --section-muted-muted: var(--muted);
+  --section-muted-muted-foreground: var(--muted-foreground);
+  --section-muted-card: var(--card);
+  --section-muted-card-foreground: var(--card-foreground);
+  --section-muted-primary: var(--primary);
+  --section-muted-primary-foreground: var(--primary-foreground);
+  --section-muted-accent: var(--accent);
+  --section-muted-accent-foreground: var(--accent-foreground);
+  --section-muted-border: var(--border);
+  --section-muted-ring: var(--ring);
+
+  --section-brand-background: var(--primary);
+  --section-brand-foreground: var(--primary-foreground);
+  --section-brand-muted: var(--primary);
+  --section-brand-muted-foreground: var(--primary-foreground);
+  --section-brand-card: var(--primary);
+  --section-brand-card-foreground: var(--primary-foreground);
+  --section-brand-primary: var(--primary-foreground);
+  --section-brand-primary-foreground: var(--primary);
+  --section-brand-accent: var(--accent);
+  --section-brand-accent-foreground: var(--accent-foreground);
+  --section-brand-border: var(--border);
+  --section-brand-ring: var(--primary-foreground);
+
+  --section-inverted-background: var(--foreground);
+  --section-inverted-foreground: var(--background);
+  --section-inverted-muted: var(--foreground);
+  --section-inverted-muted-foreground: var(--muted);
+  --section-inverted-card: var(--foreground);
+  --section-inverted-card-foreground: var(--background);
+  --section-inverted-primary: var(--primary);
+  --section-inverted-primary-foreground: var(--primary-foreground);
+  --section-inverted-accent: var(--accent);
+  --section-inverted-accent-foreground: var(--accent-foreground);
+  --section-inverted-border: var(--muted-foreground);
+  --section-inverted-ring: var(--ring);
+
+  --section-accent-background: var(--accent);
+  --section-accent-foreground: var(--accent-foreground);
+  --section-accent-muted: var(--accent);
+  --section-accent-muted-foreground: var(--accent-foreground);
+  --section-accent-card: var(--accent);
+  --section-accent-card-foreground: var(--accent-foreground);
+  --section-accent-primary: var(--primary);
+  --section-accent-primary-foreground: var(--primary-foreground);
+  --section-accent-accent: var(--accent);
+  --section-accent-accent-foreground: var(--accent-foreground);
+  --section-accent-border: var(--border);
+  --section-accent-ring: var(--ring);
+}
+
+[data-region="header"] {
+  --background: var(--region-header-background);
+  --foreground: var(--region-header-foreground);
+  --muted: var(--region-header-muted);
+  --muted-foreground: var(--region-header-muted-foreground);
+  --card: var(--region-header-card);
+  --card-foreground: var(--region-header-card-foreground);
+  --primary: var(--region-header-primary);
+  --primary-foreground: var(--region-header-primary-foreground);
+  --accent: var(--region-header-accent);
+  --accent-foreground: var(--region-header-accent-foreground);
+  --border: var(--region-header-border);
+  --ring: var(--region-header-ring);
+}
+
+[data-region="rail"] {
+  --background: var(--region-rail-background);
+  --foreground: var(--region-rail-foreground);
+  --muted: var(--region-rail-muted);
+  --muted-foreground: var(--region-rail-muted-foreground);
+  --card: var(--region-rail-card);
+  --card-foreground: var(--region-rail-card-foreground);
+  --primary: var(--region-rail-primary);
+  --primary-foreground: var(--region-rail-primary-foreground);
+  --accent: var(--region-rail-accent);
+  --accent-foreground: var(--region-rail-accent-foreground);
+  --border: var(--region-rail-border);
+  --ring: var(--region-rail-ring);
+}
+
+[data-region="contextual"] {
+  --background: var(--region-contextual-background);
+  --foreground: var(--region-contextual-foreground);
+  --muted: var(--region-contextual-muted);
+  --muted-foreground: var(--region-contextual-muted-foreground);
+  --card: var(--region-contextual-card);
+  --card-foreground: var(--region-contextual-card-foreground);
+  --primary: var(--region-contextual-primary);
+  --primary-foreground: var(--region-contextual-primary-foreground);
+  --accent: var(--region-contextual-accent);
+  --accent-foreground: var(--region-contextual-accent-foreground);
+  --border: var(--region-contextual-border);
+  --ring: var(--region-contextual-ring);
+}
+
+[data-region="content"] {
+  --background: var(--region-content-background);
+  --foreground: var(--region-content-foreground);
+  --muted: var(--region-content-muted);
+  --muted-foreground: var(--region-content-muted-foreground);
+  --card: var(--region-content-card);
+  --card-foreground: var(--region-content-card-foreground);
+  --primary: var(--region-content-primary);
+  --primary-foreground: var(--region-content-primary-foreground);
+  --accent: var(--region-content-accent);
+  --accent-foreground: var(--region-content-accent-foreground);
+  --border: var(--region-content-border);
+  --ring: var(--region-content-ring);
+}
+
+[data-region="footer"] {
+  --background: var(--region-footer-background);
+  --foreground: var(--region-footer-foreground);
+  --muted: var(--region-footer-muted);
+  --muted-foreground: var(--region-footer-muted-foreground);
+  --card: var(--region-footer-card);
+  --card-foreground: var(--region-footer-card-foreground);
+  --primary: var(--region-footer-primary);
+  --primary-foreground: var(--region-footer-primary-foreground);
+  --accent: var(--region-footer-accent);
+  --accent-foreground: var(--region-footer-accent-foreground);
+  --border: var(--region-footer-border);
+  --ring: var(--region-footer-ring);
+}
+
+[data-section-style="muted"] {
+  --background: var(--section-muted-background);
+  --foreground: var(--section-muted-foreground);
+  --muted: var(--section-muted-muted);
+  --muted-foreground: var(--section-muted-muted-foreground);
+  --card: var(--section-muted-card);
+  --card-foreground: var(--section-muted-card-foreground);
+  --primary: var(--section-muted-primary);
+  --primary-foreground: var(--section-muted-primary-foreground);
+  --accent: var(--section-muted-accent);
+  --accent-foreground: var(--section-muted-accent-foreground);
+  --border: var(--section-muted-border);
+  --ring: var(--section-muted-ring);
+}
+
+[data-section-style="brand"] {
+  --background: var(--section-brand-background);
+  --foreground: var(--section-brand-foreground);
+  --muted: var(--section-brand-muted);
+  --muted-foreground: var(--section-brand-muted-foreground);
+  --card: var(--section-brand-card);
+  --card-foreground: var(--section-brand-card-foreground);
+  --primary: var(--section-brand-primary);
+  --primary-foreground: var(--section-brand-primary-foreground);
+  --accent: var(--section-brand-accent);
+  --accent-foreground: var(--section-brand-accent-foreground);
+  --border: var(--section-brand-border);
+  --ring: var(--section-brand-ring);
+}
+
+[data-section-style="inverted"] {
+  --background: var(--section-inverted-background);
+  --foreground: var(--section-inverted-foreground);
+  --muted: var(--section-inverted-muted);
+  --muted-foreground: var(--section-inverted-muted-foreground);
+  --card: var(--section-inverted-card);
+  --card-foreground: var(--section-inverted-card-foreground);
+  --primary: var(--section-inverted-primary);
+  --primary-foreground: var(--section-inverted-primary-foreground);
+  --accent: var(--section-inverted-accent);
+  --accent-foreground: var(--section-inverted-accent-foreground);
+  --border: var(--section-inverted-border);
+  --ring: var(--section-inverted-ring);
+}
+
+[data-section-style="accent"] {
+  --background: var(--section-accent-background);
+  --foreground: var(--section-accent-foreground);
+  --muted: var(--section-accent-muted);
+  --muted-foreground: var(--section-accent-muted-foreground);
+  --card: var(--section-accent-card);
+  --card-foreground: var(--section-accent-card-foreground);
+  --primary: var(--section-accent-primary);
+  --primary-foreground: var(--section-accent-primary-foreground);
+  --accent: var(--section-accent-accent);
+  --accent-foreground: var(--section-accent-accent-foreground);
+  --border: var(--section-accent-border);
+  --ring: var(--section-accent-ring);
+}

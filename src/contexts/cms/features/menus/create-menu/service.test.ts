@@ -98,4 +98,20 @@ describe("createMenu", () => {
     expect(result.success).toBe(true);
     expect(findMenuByLocation).not.toHaveBeenCalled();
   });
+
+  it.each([
+    ["/RH/", "/rh"],
+    ["rh", "/rh"],
+    ["  /Notícias// ", "/notícias"],
+    ["/not%C3%ADcias", "/notícias"],
+  ])("normalizes contextual scopePath %j to %j before checking and inserting (B2)", async (input, expected) => {
+    insertMenu.mockResolvedValue({ id: "menu-1", key: "ctx", name: "Ctx", location: "contextual", scopePath: expected });
+
+    const { createMenu } = await import("./service");
+    const result = await createMenu({ key: "ctx", name: "Ctx", location: "contextual", scopePath: input, actorId: "actor-1" });
+
+    expect(result.success).toBe(true);
+    expect(findMenuByScopePath).toHaveBeenCalledWith(expected);
+    expect(insertMenu).toHaveBeenCalledWith(expect.objectContaining({ scopePath: expected }));
+  });
 });

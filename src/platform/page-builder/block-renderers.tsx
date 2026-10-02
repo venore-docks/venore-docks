@@ -53,7 +53,13 @@ export type BlockRendererProps = {
   // dos renderers só empilha `{content}` direto (ReactNode[] é um ReactNode válido), mas
   // CarouselBlock precisa envolver cada item individualmente em CarouselItem.
   renderBlocks: (blocks: Composition) => Promise<ReactNode[]>;
+  // Apresentação resolvida pelo dispatch (components/page-builder/block-renderer.tsx, spec v8
+  // §7.15) a partir das chaves planas data.presentationVariant / data.sectionStyle: variante do
+  // tema pedida (null = padrão) e estilo de seção efetivo (só no bloco Seção; desconhecido já caiu
+  // em "default"). Opcional — ausente, o renderer se comporta como sempre (sem atributos novos).
+  presentation?: BlockPresentation;
 };
+export type BlockPresentation = { variant: string | null; sectionStyle: string | null };
 export type BlockRendererComponent = (props: BlockRendererProps) => ReactNode | Promise<ReactNode>;
 
 const GAP_CLASSES: Record<string, string> = {
@@ -224,6 +230,18 @@ const CARD_GRID_COLUMN_CLASSES: Record<number, string> = {
   4: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4",
 };
 
+// Atributos da raiz de um renderer do core: data-block (+ data-block-variant / data-section-style)
+// — ganchos estáveis pro CSS do tema e pro page-layout.css. Só existem quando o dispatch passou
+// `presentation`; data-section-style só sai com estilo diferente do padrão (region-tokens.css
+// remapeia o vocabulário shadcn dentro dele).
+function presentationAttributes(block: Block, presentation: BlockPresentation | undefined): Record<string, string> {
+  if (!presentation) return {};
+  const attributes: Record<string, string> = { "data-block": block.key };
+  if (presentation.variant) attributes["data-block-variant"] = presentation.variant;
+  if (presentation.sectionStyle && presentation.sectionStyle !== "default") attributes["data-section-style"] = presentation.sectionStyle;
+  return attributes;
+}
+
 function readString(data: Block["data"], key: string, fallback = ""): string {
   const value = data[key];
   return typeof value === "string" ? value : fallback;
@@ -239,7 +257,7 @@ function clampPercent(value: unknown): number {
   return Math.min(100, Math.max(0, Math.round(numeric)));
 }
 
-async function RowBlock({ block, renderBlocks }: BlockRendererProps) {
+async function RowBlock({ block, renderBlocks, presentation }: BlockRendererProps) {
   const columns = resolveRowColumns(block.data);
   const gap = GAP_CLASSES[readString(block.data, "gap", "md")] ?? GAP_CLASSES.md;
   const align = ALIGN_CLASSES[readString(block.data, "align", "stretch")] ?? ALIGN_CLASSES.stretch;
@@ -255,7 +273,7 @@ async function RowBlock({ block, renderBlocks }: BlockRendererProps) {
   );
 
   return (
-    <div id={block.htmlId ?? undefined} className={cn("grid", resolveRowGridClasses(block.data, columns), gap, align, surface)}>
+    <div id={block.htmlId ?? undefined} {...presentationAttributes(block, presentation)} className={cn("grid", resolveRowGridClasses(block.data, columns), gap, align, surface)}>
       {areas.map(({ key, content }) => (
         // space-y-4: cada coluna nunca tinha espaçamento próprio entre os blocos empilhados
         // dentro dela (bug — heading/texto/botão renderizavam colados). Mesmo passo de
@@ -268,7 +286,7 @@ async function RowBlock({ block, renderBlocks }: BlockRendererProps) {
   );
 }
 
-function HeadingBlock({ block }: BlockRendererProps) {
+function HeadingBlock({ block, presentation }: BlockRendererProps) {
   const data = block.data;
   const level = Number(data.level) || 2;
   const text = readString(data, "text");
@@ -282,10 +300,11 @@ function HeadingBlock({ block }: BlockRendererProps) {
   const className = cn("font-semibold text-foreground", size, fontFamily, tracking, uppercase && "uppercase", align);
 
   const id = block.htmlId ?? undefined;
-  if (level === 1) return <h1 id={id} className={className}>{text}</h1>;
-  if (level === 3) return <h3 id={id} className={className}>{text}</h3>;
-  if (level === 4) return <h4 id={id} className={className}>{text}</h4>;
-  return <h2 id={id} className={className}>{text}</h2>;
+  const attributes = presentationAttributes(block, presentation);
+  if (level === 1) return <h1 id={id} {...attributes} className={className}>{text}</h1>;
+  if (level === 3) return <h3 id={id} {...attributes} className={className}>{text}</h3>;
+  if (level === 4) return <h4 id={id} {...attributes} className={className}>{text}</h4>;
+  return <h2 id={id} {...attributes} className={className}>{text}</h2>;
 }
 
 const RICHTEXT_CLASSES = cn(
@@ -293,8 +312,8 @@ const RICHTEXT_CLASSES = cn(
   "[&_a]:text-primary [&_a]:underline",
   "[&_h1]:text-3xl [&_h1]:font-semibold [&_h2]:text-2xl [&_h2]:font-semibold [&_h3]:text-xl [&_h3]:font-semibold",
   "[&_p]:leading-relaxed",
-  "[&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5",
-  "[&_blockquote]:border-l-2 [&_blockquote]:border-border [&_blockquote]:pl-3 [&_blockquote]:text-muted-foreground",
+  "[&_ul]:list-disc [&_ul]:ps-5 [&_ol]:list-decimal [&_ol]:ps-5",
+  "[&_blockquote]:border-s-2 [&_blockquote]:border-border [&_blockquote]:ps-3 [&_blockquote]:text-muted-foreground",
 );
 
 function RichtextBlock({ block }: BlockRendererProps) {
@@ -366,11 +385,11 @@ function BadgeBlock({ block }: BlockRendererProps) {
   );
 }
 
-function QuoteBlock({ block }: BlockRendererProps) {
+function QuoteBlock({ block, presentation }: BlockRendererProps) {
   const text = block.data.text;
   const author = readString(block.data, "author");
   return (
-    <blockquote className="border-l-2 border-border pl-4">
+    <blockquote {...presentationAttributes(block, presentation)} className="border-s-2 border-border ps-4">
       <div className={cn("text-lg leading-relaxed text-foreground italic", RICH_TEXT_INLINE_CLASSES)}>
         {renderRichTextContent(text)}
       </div>
@@ -387,9 +406,9 @@ function QuoteBlock({ block }: BlockRendererProps) {
 // título no desktop, acima no mobile) — Alert e Section usam o mesmo padrão, então mora aqui em
 // vez de duplicado nos dois renderers.
 const ICON_TITLE_ALIGN_CLASSES: Record<string, string> = {
-  start: "items-start text-left sm:items-center sm:justify-start",
+  start: "items-start text-start sm:items-center sm:justify-start",
   center: "items-center text-center sm:items-center sm:justify-center",
-  end: "items-end text-right sm:items-center sm:justify-end",
+  end: "items-end text-end sm:items-center sm:justify-end",
 };
 
 function IconTitleRow({
@@ -447,7 +466,7 @@ function ListBlock({ block }: BlockRendererProps) {
     return null;
   }
 
-  const className = cn("space-y-1 pl-5 text-foreground", ordered ? "list-decimal" : "list-disc");
+  const className = cn("space-y-1 ps-5 text-foreground", ordered ? "list-decimal" : "list-disc");
   if (ordered) {
     return (
       <ol className={className}>
@@ -481,7 +500,7 @@ function ProgressBlockRenderer({ block }: BlockRendererProps) {
   );
 }
 
-async function CardBlock({ block }: BlockRendererProps) {
+async function CardBlock({ block, presentation }: BlockRendererProps) {
   const data = block.data;
   const mediaId = readString(data, "mediaId");
   const title = readString(data, "title");
@@ -498,7 +517,7 @@ async function CardBlock({ block }: BlockRendererProps) {
   }
 
   return (
-    <Card className="h-full ui-motion-base hover:shadow-float">
+    <Card {...presentationAttributes(block, presentation)} className="h-full ui-motion-base hover:shadow-float">
       {mediaUrl && (
         // Card (ui/card.tsx) já trata <img> como primeiro filho: remove o padding-top e arredonda
         // o topo sozinho (has-[>img:first-child]:pt-0, *:[img:first-child]:rounded-t-xl).
@@ -553,8 +572,13 @@ async function AudioBlock({ block }: BlockRendererProps) {
   );
 }
 
-async function SectionBlock({ block, renderBlocks }: BlockRendererProps) {
-  const background = SECTION_BACKGROUND_CLASSES[readString(block.data, "background", "none")] ?? "";
+async function SectionBlock({ block, renderBlocks, presentation }: BlockRendererProps) {
+  // Estilo de seção (v8) ganha do `background` legado quando não é "default": o fundo passa a ser
+  // o --background remapeado por [data-section-style] (region-tokens.css), e o texto segue junto.
+  const styled = Boolean(presentation?.sectionStyle && presentation.sectionStyle !== "default");
+  const background = styled
+    ? "bg-background text-foreground"
+    : (SECTION_BACKGROUND_CLASSES[readString(block.data, "background", "none")] ?? "");
   const maxWidth = SECTION_MAX_WIDTH_CLASSES[readString(block.data, "maxWidth", "full")] ?? SECTION_MAX_WIDTH_CLASSES.full;
   const paddingY = SECTION_PADDING_Y_CLASSES[readString(block.data, "paddingY", "md")] ?? SECTION_PADDING_Y_CLASSES.md;
   const paddingX = SECTION_PADDING_X_CLASSES[readString(block.data, "paddingX", "md")] ?? SECTION_PADDING_X_CLASSES.md;
@@ -566,7 +590,7 @@ async function SectionBlock({ block, renderBlocks }: BlockRendererProps) {
   const content = area ? await renderBlocks(area.blocks) : null;
 
   return (
-    <section id={block.htmlId ?? undefined} className={cn(background, paddingY, paddingX)}>
+    <section id={block.htmlId ?? undefined} {...presentationAttributes(block, presentation)} className={cn(background, paddingY, paddingX)}>
       {/* space-y-6 (não -4): uma seção empilha blocos estruturalmente distintos (um heading, um
           card-grid inteiro, um botão) — pede mais respiro que o ritmo interno de uma coluna de
           row (RowBlock, mais acima) ou de parágrafos do mesmo texto corrido (RICHTEXT_CLASSES,
@@ -650,13 +674,13 @@ async function TabsItemBlock({ block, renderBlocks }: BlockRendererProps) {
   return <TabsContent value={block.id}>{content}</TabsContent>;
 }
 
-async function CardGridBlock({ block, renderBlocks }: BlockRendererProps) {
+async function CardGridBlock({ block, renderBlocks, presentation }: BlockRendererProps) {
   const requestedColumns = Number(block.data.columns) || 3;
   const columns = CARD_GRID_COLUMN_CLASSES[requestedColumns] ? requestedColumns : 3;
   const area = readArea(block, "items");
   const content = area ? await renderBlocks(area.blocks) : null;
 
-  return <div className={cn("grid gap-4 sm:gap-6", CARD_GRID_COLUMN_CLASSES[columns])}>{content}</div>;
+  return <div {...presentationAttributes(block, presentation)} className={cn("grid gap-4 sm:gap-6", CARD_GRID_COLUMN_CLASSES[columns])}>{content}</div>;
 }
 
 function ButtonBlock({ block }: BlockRendererProps) {
@@ -673,7 +697,7 @@ function ButtonBlock({ block }: BlockRendererProps) {
   );
 }
 
-async function HeroBlock({ block }: BlockRendererProps) {
+async function HeroBlock({ block, presentation }: BlockRendererProps) {
   const data = block.data;
   const eyebrow = readString(data, "eyebrow");
   const title = readString(data, "title");
@@ -702,7 +726,7 @@ async function HeroBlock({ block }: BlockRendererProps) {
   const mutedToneClass = onMedia ? "text-primary-foreground/80" : "text-muted-foreground";
 
   return (
-    <div id={block.htmlId ?? undefined} className="relative overflow-hidden rounded-panel">
+    <div id={block.htmlId ?? undefined} {...presentationAttributes(block, presentation)} className="relative overflow-hidden rounded-panel">
       {mediaUrl && (
         // eslint-disable-next-line @next/next/no-img-element -- mesmo padrão do resto do page-builder, sem domínio remoto configurado pra next/image
         <img src={mediaUrl} alt="" aria-hidden className="absolute inset-0 h-full w-full object-cover" />
@@ -737,7 +761,7 @@ async function HeroBlock({ block }: BlockRendererProps) {
   );
 }
 
-function CTABlock({ block }: BlockRendererProps) {
+function CTABlock({ block, presentation }: BlockRendererProps) {
   const data = block.data;
   const title = readString(data, "title");
   const description = readString(data, "description");
@@ -747,7 +771,7 @@ function CTABlock({ block }: BlockRendererProps) {
   const onPrimary = readString(data, "background", "muted") === "primary";
 
   return (
-    <div className={cn("flex flex-col items-start gap-4 rounded-panel p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8", background)}>
+    <div {...presentationAttributes(block, presentation)} className={cn("flex flex-col items-start gap-4 rounded-panel p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8", background)}>
       <div className="space-y-1">
         <h2 className="text-xl font-semibold tracking-display sm:text-2xl">{title}</h2>
         {description && (
@@ -763,7 +787,7 @@ function CTABlock({ block }: BlockRendererProps) {
   );
 }
 
-async function GalleryBlock({ block, renderBlocks }: BlockRendererProps) {
+async function GalleryBlock({ block, renderBlocks, presentation }: BlockRendererProps) {
   const requestedColumns = Number(block.data.columns) || 3;
   const columns = CARD_GRID_COLUMN_CLASSES[requestedColumns] ? requestedColumns : 3;
   const gap = GAP_CLASSES[readString(block.data, "gap", "md")] ?? GAP_CLASSES.md;
@@ -771,7 +795,7 @@ async function GalleryBlock({ block, renderBlocks }: BlockRendererProps) {
   const content = area ? await renderBlocks(area.blocks) : [];
 
   return (
-    <div id={block.htmlId ?? undefined} className={cn("grid", CARD_GRID_COLUMN_CLASSES[columns], gap)}>
+    <div id={block.htmlId ?? undefined} {...presentationAttributes(block, presentation)} className={cn("grid", CARD_GRID_COLUMN_CLASSES[columns], gap)}>
       {content}
     </div>
   );
@@ -948,9 +972,9 @@ const MARKDOWN_CLASSES = cn(
   RICHTEXT_CLASSES,
   "[&_code]:rounded-sm [&_code]:bg-muted [&_code]:px-1 [&_code]:text-sm",
   "[&_pre]:overflow-x-auto [&_pre]:rounded-panel [&_pre]:border [&_pre]:border-border [&_pre]:bg-muted [&_pre]:p-4 [&_pre_code]:bg-transparent [&_pre_code]:p-0",
-  "[&_table]:w-full [&_table]:text-sm [&_th]:border-b [&_th]:border-border [&_th]:py-2 [&_th]:text-left [&_th]:font-semibold [&_td]:border-b [&_td]:border-border [&_td]:py-2",
+  "[&_table]:w-full [&_table]:text-sm [&_th]:border-b [&_th]:border-border [&_th]:py-2 [&_th]:text-start [&_th]:font-semibold [&_td]:border-b [&_td]:border-border [&_td]:py-2",
   "[&_img]:max-w-full [&_img]:rounded-panel [&_hr]:border-border [&_del]:text-muted-foreground",
-  "[&_li:has(input)]:list-none [&_input]:mr-2",
+  "[&_li:has(input)]:list-none [&_input]:me-2",
 );
 
 // react-markdown não renderiza HTML cru (sem rehype-raw) e o urlTransform padrão neutraliza
@@ -991,10 +1015,10 @@ function TimelineBlock({ block }: BlockRendererProps) {
   const items = parseTimelineItems(readString(block.data, "items"));
   if (items.length === 0) return null;
   return (
-    <ol className="relative space-y-6 border-l border-border pl-6">
+    <ol className="relative space-y-6 border-s border-border ps-6">
       {items.map((item, index) => (
         <li key={index} className="relative">
-          <span className="absolute -left-7.5 top-1.5 size-3 rounded-full border-2 border-background bg-primary" aria-hidden="true" />
+          <span className="absolute -start-7.5 top-1.5 size-3 rounded-full border-2 border-background bg-primary" aria-hidden="true" />
           {item.date && <p className="text-xs font-medium tracking-caps text-muted-foreground uppercase">{item.date}</p>}
           {item.title && <p className="text-base font-semibold text-foreground">{item.title}</p>}
           {item.description && <p className="text-sm text-muted-foreground">{item.description}</p>}

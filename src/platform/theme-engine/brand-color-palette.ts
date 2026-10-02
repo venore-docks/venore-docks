@@ -2,10 +2,11 @@ import type { OperationResult } from "@/shared/types";
 import { resolveActiveTheme } from "@/platform/theme-rendering/resolve-active-theme";
 import { hexToOklch, isValidHexColor, oklchToHex, parseOklchNumeric } from "./oklch-color";
 import type { PaletteColorTokens } from "@/contexts/themes/contracts/types";
-import { buildFullPaletteFromSeed } from "./full-palette-generator";
+import { generateThemePalette } from "./palette/generate-theme-palette";
+import { getThemeTokenValues } from "./token-values";
 import { setCustomColorPalette } from "./custom-color-palette";
 
-// "1 cor de marca": o admin escolhe 1 hex, buildFullPaletteFromSeed monta a paleta completa (9
+// "1 cor de marca": o admin escolhe 1 hex, generateThemePalette monta a paleta completa (9
 // tokens, os dois modos) em cima dela — sobrescreve a paleta personalizada inteira (não mescla:
 // agora que os 9 tokens são sempre gerados de uma vez, não sobra nada "só do tema" pra preservar,
 // ao contrário da versão anterior que só tocava 5 tokens de marca). O admin ainda pode reabrir
@@ -22,9 +23,15 @@ export async function setBrandColorPalette(input: { hex: string }): Promise<Oper
     };
   }
 
+  // Gerador unificado com as regras do tema ativo (v8 §7.14): sem regras, a saída é a de sempre;
+  // com `regions.rail = { tone: "dark" }` (ex: Aurora) o rail continua escuro com qualquer cor.
   const { manifest } = await resolveActiveTheme();
-  const palette = buildFullPaletteFromSeed(hexToOklch(input.hex));
-  return setCustomColorPalette(manifest.key, palette);
+  const { light, dark } = generateThemePalette({
+    seed: hexToOklch(input.hex),
+    rules: manifest.palette,
+    base: getThemeTokenValues(manifest.key),
+  });
+  return setCustomColorPalette(manifest.key, { light, dark }, manifest.palette);
 }
 
 // Presets do catálogo (Espaço/Ametista/Âmbar/Rubro, + o que cada tema tiver de próprio) — em vez
@@ -63,7 +70,7 @@ export async function setPresetColorPalette(paletteId: string): Promise<Operatio
   // (fundo, card, sidebar…). Sem isso, um preset escrito à mão perdia a relação que justificava
   // existir — ex: "Oceano" (id `fem`) do Aurora tem primary e accent no MESMO matiz, e o gerador
   // jogava o accent pro complementar (+180°).
-  const generated = buildFullPaletteFromSeed(seed);
+  const generated = generateThemePalette({ seed, rules: manifest.palette, base: getThemeTokenValues(manifest.key) });
   // A paleta personalizada só aceita #rrggbb (validação em custom-color-palette.ts), e o catálogo
   // declara oklch() — converte; valor que não for oklch nem hex é ignorado (fica o gerado).
   const asHexTokens = (tokens: PaletteColorTokens): PaletteColorTokens =>
@@ -79,5 +86,5 @@ export async function setPresetColorPalette(paletteId: string): Promise<Operatio
     light: { ...generated.light, ...asHexTokens(preset.light) },
     dark: { ...generated.dark, ...asHexTokens(preset.dark) },
   };
-  return setCustomColorPalette(manifest.key, palette);
+  return setCustomColorPalette(manifest.key, palette, manifest.palette);
 }

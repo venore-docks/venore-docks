@@ -18,9 +18,24 @@ atualização" em `VENORE-DOCKS.md`).
 contas em `/admin/settings` (sem escolha, continua valendo `RBAC_DEFAULT_REGISTRATION_ROLE_KEY` ou
 `member`) e criar um menu de location "Cabeçalho (header)" em `/admin/cms/menus`. Depois do
 deploy, clicar em **"Otimizar imagens antigas"** em `/admin/media` pra gerar as cópias
-redimensionadas das imagens já enviadas (migration `0053` roda sozinha no build).
+redimensionadas das imagens já enviadas (migration `0053` roda sozinha no build). A migration
+`0054` (`themes.theme_config_revisions`, rascunho/histórico de tema) também roda no build; sem ela
+o site renderiza normal e só o rascunho/histórico ficam indisponíveis. A config de tema atual é
+convertida sozinha (lida das chaves 7.x) até a primeira publicação.
 
 ### Added
+
+- **Contrato de tema 8.0.0** (`docs/themes/theme-system-v8.md`). O `venore-slime` virou o kit
+  (`src/theme-sdk/kit`): regiões substituíveis com fallback, layouts `topbar`/`rail`, navegação
+  mobile drawer/bottom-bar/tela cheia, templates e estados de página, catálogos pt-BR/en/es/ar e
+  RTL. Tema v8 declara só o que difere (`defineTheme`), com tokens por região, opções no
+  manifesto, fontes curadas, herança (`extends`, até 3 níveis), variantes de bloco, estilos de
+  seção e layout por página no page builder. `/admin/themes/customize` edita rascunho com preview
+  ao vivo, publica, mostra histórico com rollback e exporta/importa; seções do site podem trocar
+  tema/layout por prefixo. Safe mode (`/api/themes/safe-mode`) e `THEME_FORCE_FALLBACK`.
+  Galeria viva em `/admin/themes/gallery` e gate de CI (`npm run theme:check`: contrato de
+  tokens, contraste por região, orçamento, harness SSR e Playwright com axe a 390/1280 px).
+  Os 12 pacotes 7.x continuam funcionando sem mudança.
 
 - **Mídia restrita de verdade** (migration `0054`, coluna `media.assets.access_permission`). Um
   plugin declara em `manifest.restrictedUploadCategories` quais das suas categorias guardam dado
@@ -52,6 +67,7 @@ redimensionadas das imagens já enviadas (migration `0053` roda sozinha no build
 - **Papel padrão de novas contas em `/admin/settings`** (setting `auth.registration_default_role`).
   Só aparece para quem gerencia papéis, e só oferece papéis que a pessoa poderia conceder.
 - **Navegação do cabeçalho** vem do menu de location `header` do CMS (antes era sempre vazia).
+- **Editar o escopo de um menu contextual** em `/admin/cms/menus` (antes só dava para criar).
 - **Permission por namespace para settings de plugin (G5):** uma setting `<plugin>.*` também pode
   ser gravada com `<plugin>.settings.manage`, se o plugin declarar essa permission.
 
@@ -92,6 +108,9 @@ redimensionadas das imagens já enviadas (migration `0053` roda sozinha no build
 
 ### Security
 
+- **JSON-LD do breadcrumb dos temas 7.x passa a ser renderizado pelo core** (escapado,
+  `serializeJsonLd`): fecha uma XSS presente em 12 pacotes. O Shell 7.x recebe
+  `breadcrumbsJsonLd: null`. Headers `x-venore-theme-*` vindos de fora são descartados no proxy.
 - `dompurify` 3.4.16, `undici` 6.29.0/7.30.0 (alerta alto, via `@vercel/blob`), `ip-address`
   10.7.2 e `vitest` 4.1.11. Resta o `esbuild` antigo do `@esbuild-kit` (via `drizzle-kit`), que só
   afeta o dev server do esbuild — não usado.

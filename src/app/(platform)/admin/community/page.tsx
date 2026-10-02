@@ -11,6 +11,7 @@ import { USER_STATUS_LABEL, UsersTable } from "./_components/users-table";
 import { listRoles } from "@/contexts/rbac";
 import { listInvitationsForAdmin } from "@/platform/registration/invitations";
 import { CancelInvitationButton, InviteForm } from "./_components/invitations";
+import { DEFAULT_DATE_LOCALE, formatDate } from "@/shared/format-date";
 
 type CommunitySearchParams = {
   search?: string;
@@ -81,7 +82,7 @@ export default async function CommunityAdminPage({
               {pendingInvitations.map((invitation) => (
                 <li key={invitation.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
                   <span className="text-foreground">
-                    {invitation.email} <span className="text-muted-foreground">· {invitation.roleName} · expira {invitation.expiresAt.toLocaleDateString("pt-BR")}</span>
+                    {invitation.email} <span className="text-muted-foreground">· {invitation.roleName} · expira {formatDate(invitation.expiresAt, DEFAULT_DATE_LOCALE, "short")}</span>
                   </span>
                   <CancelInvitationButton invitationId={invitation.id} />
                 </li>

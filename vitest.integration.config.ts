@@ -7,6 +7,9 @@ export default defineConfig({
     alias: [
       { find: /^@venore\/plugin-sdk$/, replacement: fileURLToPath(new URL("./src/sdk/index.ts", import.meta.url)) },
       { find: /^@venore\/plugin-sdk\/(.*)$/, replacement: fileURLToPath(new URL("./src/sdk/", import.meta.url)) + "$1.ts" },
+      // @venore/theme-sdk (spec v8 §11) — mesmo alias do vitest.config.ts.
+      { find: /^@venore\/theme-sdk$/, replacement: fileURLToPath(new URL("./src/theme-sdk/index.ts", import.meta.url)) },
+      { find: /^@venore\/theme-sdk\/(.*)$/, replacement: fileURLToPath(new URL("./src/theme-sdk/", import.meta.url)) + "$1.ts" },
       { find: "@", replacement: fileURLToPath(new URL("./src", import.meta.url)) },
       // Só o especificador exato "next-auth" — next-auth/providers/* e next-auth/adapters
       // continuam resolvendo pro pacote real. Ver stubs/next-auth.ts.

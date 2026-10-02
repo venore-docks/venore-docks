@@ -185,3 +185,65 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+  themes:
+    # Gate de temas da v8 (spec §10) — sem banco e sem `next build`. O harness SSR renderiza todo tema
+    # do registro × cenários de fixture (os mesmos da galeria) e grava o HTML + o CSS do app compilado
+    # (@tailwindcss/postcss no globals.css); o Playwright abre cada página via setContent a 390×844 e
+    # 1280×800, claro e escuro: overflow horizontal, landmarks, teclado (skip link → navegação →
+    # botão mobile com anel de foco) e axe wcag2a/aa contra e2e-themes/a11y-baseline.json.
+    # Screenshots e relatórios são artefatos (14 dias) — não são gate de pixel. O mesmo gate, pros
+    # repositórios de tema: .github/workflows/theme-check.yml (scripts/theme-check.ts).
+    runs-on: ubuntu-latest
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Codegen estrito dos temas
+        run: npx tsx scripts/gen-theme-registry.ts --strict
+
+      - name: Suíte de temas (registro, contraste, orçamento, harness SSR + CSS compilado)
+        run: npx vitest run --config vitest.themes.config.ts
+
+      - name: Chromium do Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Playwright (390/1280, claro/escuro — overflow, teclado, axe)
+        run: npx playwright test --config playwright.themes.config.ts
+
+      - name: Relatório dos temas (codegen + orçamento)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: theme-report
+          path: src/themes/theme-report.generated.json
+          retention-days: 14
+
+      - name: Screenshots dos temas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: theme-screenshots
+          path: test-results/themes-screenshots/
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: HTML do harness SSR e resultado de a11y
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: theme-ssr-a11y
+          path: |
+            test-results/themes-ssr/
+            test-results/themes-a11y/
+            playwright-report/themes/
+          retention-days: 14
+          if-no-files-found: ignore

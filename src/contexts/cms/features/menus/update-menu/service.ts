@@ -1,5 +1,6 @@
 import { invalidateCacheByPrefix } from "@/infrastructure/cache/memory-cache";
 import { beginOperation, endOperation } from "@/observability";
+import { normalizePathPrefix } from "@/shared/normalize-path-prefix";
 import { findMenuById, findMenuByScopePath, updateMenuFields } from "./store";
 import type { UpdateMenuCommand, UpdateMenuResult } from "./types";
 
@@ -17,6 +18,8 @@ export async function updateMenu(command: UpdateMenuCommand): Promise<UpdateMenu
     return { success: false, error };
   }
 
+  // B2: mesma forma canônica da criação e da leitura (normalizePathPrefix).
+  let scopePath: string | undefined;
   if (command.scopePath !== undefined) {
     if (existing.location !== "contextual") {
       const error = {
@@ -34,12 +37,14 @@ export async function updateMenu(command: UpdateMenuCommand): Promise<UpdateMenu
       return { success: false, error };
     }
 
-    if (trimmed !== existing.scopePath) {
-      const conflict = await findMenuByScopePath(trimmed);
+    scopePath = normalizePathPrefix(trimmed);
+    const existingScope = existing.scopePath === null ? null : normalizePathPrefix(existing.scopePath);
+    if (scopePath !== existingScope) {
+      const conflict = await findMenuByScopePath(scopePath);
       if (conflict) {
         const error = {
           code: "cms.menus.scope_path_taken",
-          message: `Já existe um menu contextual com o escopo "${trimmed}".`,
+          message: `Já existe um menu contextual com o escopo "${scopePath}".`,
         };
         endOperation(handle, { success: false, error });
         return { success: false, error };
@@ -49,7 +54,7 @@ export async function updateMenu(command: UpdateMenuCommand): Promise<UpdateMenu
 
   const menu = await updateMenuFields(command.id, {
     name: command.name,
-    scopePath: command.scopePath?.trim(),
+    scopePath,
   });
 
   invalidateCacheByPrefix("cms:navigation");

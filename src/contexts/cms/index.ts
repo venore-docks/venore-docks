@@ -11,6 +11,8 @@ export { listCategoriesForAdminHandler as listCategoriesForAdmin } from "./featu
 export { getCategoryBySlugHandler as getCategoryBySlug } from "./features/categories/get-category-by-slug/handler";
 export { createEntryHandler as createEntry } from "./features/entries/create-entry/handler";
 export { updateEntryHandler as updateEntry } from "./features/entries/update-entry/handler";
+// Layout por página (v8, spec §4.5) — use case de W5.
+export { updateEntryLayoutHandler as updateEntryLayout } from "./features/entries/update-entry-layout/handler";
 export {
   updateEntryCompositionHandler as updateEntryComposition,
 } from "./features/entries/update-entry-composition/handler";
@@ -130,6 +132,8 @@ export type {
 } from "./features/categories/get-category-by-slug/types";
 export type { CreateEntryInput, CreateEntryResult } from "./features/entries/create-entry/types";
 export type { UpdateEntryInput, UpdateEntryResult } from "./features/entries/update-entry/types";
+export type { UpdateEntryLayoutInput, UpdateEntryLayoutResult } from "./features/entries/update-entry-layout/types";
+export type { PageLayout } from "./contracts/page-layout";
 export type {
   UpdateEntryCompositionInput,
   UpdateEntryCompositionResult,

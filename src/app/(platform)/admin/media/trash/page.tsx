@@ -4,6 +4,7 @@ import { listDeletedMediaAssets } from "@/contexts/media";
 import { getMediaTrashPageData } from "@/platform/admin-shell/get-media-trash-page-data";
 import { EmptyState } from "@/components/empty-state";
 import { PurgeMediaButton } from "./_components/purge-media-button";
+import { DEFAULT_DATE_LOCALE, formatDate } from "@/shared/format-date";
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -65,7 +66,7 @@ export default async function MediaTrashPage() {
                 {asset.filename}
               </p>
               <p className="text-xs text-muted-foreground/56">
-                {formatSize(asset.size)} · excluído em {asset.deletedAt ? new Date(asset.deletedAt).toLocaleDateString("pt-BR") : "—"}
+                {formatSize(asset.size)} · excluído em {formatDate(asset.deletedAt, DEFAULT_DATE_LOCALE, "short") ?? "—"}
               </p>
               <PurgeMediaButton id={asset.id} filename={asset.filename} />
             </div>

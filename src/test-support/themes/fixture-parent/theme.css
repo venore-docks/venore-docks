@@ -1,0 +1,32 @@
+/* Fixture de herança (W9): pai que estende o venore-slime. Só diffs — o vocabulário completo vem
+   do slime pela lineage (scripts/theme-lineage.ts). */
+@import "tailwindcss/theme.css";
+
+@font-face {
+  font-family: "Fixture Parent";
+  src: url("./fixture.woff2");
+}
+
+[data-theme="fixture-parent"] {
+  --primary: oklch(0.55 0.2 30);
+  --primary-foreground: oklch(0.98 0 0);
+  --radius: 0.5rem;
+}
+
+[data-theme="fixture-parent"].dark {
+  --primary: oklch(0.7 0.18 30);
+  --primary-foreground: oklch(0.2 0 0);
+  --background: oklch(0.18 0.02 30);
+}
+
+/* comentário que a lineage descarta */
+[data-theme="fixture-parent"] [data-slot="button"],
+.fixture-unscoped {
+  letter-spacing: 0.01em;
+}
+
+@media (min-width: 64rem) {
+  [data-theme="fixture-parent"]:not(.dark) [data-region="rail"] {
+    --radius: 0.75rem;
+  }
+}

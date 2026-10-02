@@ -1,0 +1,9 @@
+/* Fixture de herança (W9): filho de fixture-parent. Só diffs, com o .dark completo (todo token
+   que o filho troca no base e algum ancestral flipa no .dark, ele redeclara no .dark). */
+[data-theme="fixture-child"] {
+  --primary: oklch(0.5 0.2 300);
+}
+
+[data-theme="fixture-child"].dark {
+  --primary: oklch(0.72 0.17 300);
+}

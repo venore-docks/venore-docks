@@ -35,3 +35,16 @@ export function permissionsToWriteSetting(key: string): string[] {
   }
   return ["settings.manage", `${namespace}.settings.manage`];
 }
+
+// Chaves core novas da v8 de temas (spec §4.1) e o valor que vale quando a linha não existe.
+// Leitura de render NUNCA insere (registerDefaultSetting gravaria no banco a cada processo):
+// quem lê aplica este padrão. `theme.config` ausente é significativo — dispara a síntese a partir
+// de theme.active/theme.activePaletteId — por isso o padrão dele é `null`, nunca um documento.
+// Todas em namespaces core ("theme", "platform") ⇒ escrita exige settings.manage.
+export const CORE_SETTING_DEFAULTS = {
+  "theme.config": null,
+  "platform.locale": "pt-BR",
+  "platform.textDirection": "auto",
+  "platform.maintenance": { enabled: false, message: "" },
+} as const satisfies Record<string, unknown>;
+export type CoreSettingDefaultKey = keyof typeof CORE_SETTING_DEFAULTS;

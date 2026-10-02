@@ -1,0 +1,834 @@
+{
+  "academy": {
+    "admin/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "admin/desktop/light": [
+      "axe:color-contrast@nav",
+      "keyboard:skip-link-first"
+    ],
+    "admin/mobile/dark": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first"
+    ],
+    "admin/mobile/light": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first"
+    ],
+    "collapsed/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "collapsed/desktop/light": [
+      "axe:color-contrast@nav",
+      "keyboard:skip-link-first"
+    ],
+    "collapsed/mobile/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "collapsed/mobile/light": [
+      "keyboard:skip-link-first"
+    ],
+    "logged-in/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "logged-in/desktop/light": [
+      "axe:color-contrast@nav",
+      "keyboard:skip-link-first"
+    ],
+    "logged-in/mobile/dark": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first"
+    ],
+    "logged-in/mobile/light": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first"
+    ],
+    "rtl-ar/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "rtl-ar/desktop/light": [
+      "axe:color-contrast@nav",
+      "keyboard:skip-link-first"
+    ],
+    "rtl-ar/mobile/dark": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first"
+    ],
+    "rtl-ar/mobile/light": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first"
+    ]
+  },
+  "aurora": {
+    "admin/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "admin/desktop/light": [
+      "keyboard:skip-link-first"
+    ],
+    "admin/mobile/dark": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first"
+    ],
+    "admin/mobile/light": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first"
+    ],
+    "collapsed/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "collapsed/desktop/light": [
+      "keyboard:skip-link-first"
+    ],
+    "collapsed/mobile/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "collapsed/mobile/light": [
+      "keyboard:skip-link-first"
+    ],
+    "logged-in/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "logged-in/desktop/light": [
+      "keyboard:skip-link-first"
+    ],
+    "logged-in/mobile/dark": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first"
+    ],
+    "logged-in/mobile/light": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first"
+    ],
+    "rtl-ar/desktop/dark": [
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "rtl-ar/desktop/light": [
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "rtl-ar/mobile/dark": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first"
+    ],
+    "rtl-ar/mobile/light": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first"
+    ]
+  },
+  "druids": {
+    "admin/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "admin/desktop/light": [
+      "keyboard:skip-link-first"
+    ],
+    "admin/mobile/dark": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "admin/mobile/light": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "collapsed/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "collapsed/desktop/light": [
+      "keyboard:skip-link-first"
+    ],
+    "collapsed/mobile/dark": [
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "collapsed/mobile/light": [
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "logged-in/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "logged-in/desktop/light": [
+      "keyboard:skip-link-first"
+    ],
+    "logged-in/mobile/dark": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "logged-in/mobile/light": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "rtl-ar/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "rtl-ar/desktop/light": [
+      "keyboard:skip-link-first"
+    ],
+    "rtl-ar/mobile/dark": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "rtl-ar/mobile/light": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ]
+  },
+  "fearless": {
+    "admin/desktop/dark": [
+      "axe:color-contrast@nav",
+      "keyboard:skip-link-first"
+    ],
+    "admin/desktop/light": [
+      "axe:color-contrast@nav",
+      "keyboard:skip-link-first"
+    ],
+    "admin/mobile/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "admin/mobile/light": [
+      "keyboard:skip-link-first"
+    ],
+    "collapsed/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "collapsed/desktop/light": [
+      "keyboard:skip-link-first"
+    ],
+    "collapsed/mobile/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "collapsed/mobile/light": [
+      "keyboard:skip-link-first"
+    ],
+    "logged-in/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "logged-in/desktop/light": [
+      "keyboard:skip-link-first"
+    ],
+    "logged-in/mobile/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "logged-in/mobile/light": [
+      "keyboard:skip-link-first"
+    ],
+    "rtl-ar/desktop/dark": [
+      "axe:color-contrast@nav",
+      "keyboard:skip-link-first"
+    ],
+    "rtl-ar/desktop/light": [
+      "axe:color-contrast@nav",
+      "keyboard:skip-link-first"
+    ],
+    "rtl-ar/mobile/dark": [
+      "axe:color-contrast@nav",
+      "keyboard:skip-link-first"
+    ],
+    "rtl-ar/mobile/light": [
+      "axe:color-contrast@nav",
+      "keyboard:skip-link-first"
+    ]
+  },
+  "halo": {
+    "admin/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "admin/desktop/light": [
+      "keyboard:skip-link-first"
+    ],
+    "admin/mobile/dark": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "admin/mobile/light": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "collapsed/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "collapsed/desktop/light": [
+      "keyboard:skip-link-first"
+    ],
+    "collapsed/mobile/dark": [
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "collapsed/mobile/light": [
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "logged-in/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "logged-in/desktop/light": [
+      "keyboard:skip-link-first"
+    ],
+    "logged-in/mobile/dark": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "logged-in/mobile/light": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "rtl-ar/desktop/dark": [
+      "axe:color-contrast@nav",
+      "keyboard:skip-link-first"
+    ],
+    "rtl-ar/desktop/light": [
+      "axe:color-contrast@nav",
+      "keyboard:skip-link-first"
+    ],
+    "rtl-ar/mobile/dark": [
+      "axe:color-contrast@nav",
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "rtl-ar/mobile/light": [
+      "axe:color-contrast@nav",
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ]
+  },
+  "knights": {
+    "admin/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "admin/desktop/light": [
+      "keyboard:skip-link-first"
+    ],
+    "admin/mobile/dark": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "admin/mobile/light": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "collapsed/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "collapsed/desktop/light": [
+      "keyboard:skip-link-first"
+    ],
+    "collapsed/mobile/dark": [
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "collapsed/mobile/light": [
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "logged-in/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "logged-in/desktop/light": [
+      "keyboard:skip-link-first"
+    ],
+    "logged-in/mobile/dark": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "logged-in/mobile/light": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "rtl-ar/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "rtl-ar/desktop/light": [
+      "keyboard:skip-link-first"
+    ],
+    "rtl-ar/mobile/dark": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "rtl-ar/mobile/light": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ]
+  },
+  "nebula": {
+    "admin/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "admin/desktop/light": [
+      "keyboard:skip-link-first"
+    ],
+    "admin/mobile/dark": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "admin/mobile/light": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "collapsed/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "collapsed/desktop/light": [
+      "keyboard:skip-link-first"
+    ],
+    "collapsed/mobile/dark": [
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "collapsed/mobile/light": [
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "logged-in/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "logged-in/desktop/light": [
+      "keyboard:skip-link-first"
+    ],
+    "logged-in/mobile/dark": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "logged-in/mobile/light": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "rtl-ar/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "rtl-ar/desktop/light": [
+      "keyboard:skip-link-first"
+    ],
+    "rtl-ar/mobile/dark": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "rtl-ar/mobile/light": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ]
+  },
+  "nimbus": {
+    "admin/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "admin/desktop/light": [
+      "keyboard:skip-link-first"
+    ],
+    "admin/mobile/dark": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "admin/mobile/light": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "collapsed/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "collapsed/desktop/light": [
+      "keyboard:skip-link-first"
+    ],
+    "collapsed/mobile/dark": [
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "collapsed/mobile/light": [
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "logged-in/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "logged-in/desktop/light": [
+      "keyboard:skip-link-first"
+    ],
+    "logged-in/mobile/dark": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "logged-in/mobile/light": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "rtl-ar/desktop/dark": [
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "rtl-ar/desktop/light": [
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "rtl-ar/mobile/dark": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "rtl-ar/mobile/light": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ]
+  },
+  "nite": {
+    "admin/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "admin/desktop/light": [
+      "keyboard:skip-link-first"
+    ],
+    "admin/mobile/dark": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "admin/mobile/light": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "collapsed/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "collapsed/desktop/light": [
+      "keyboard:skip-link-first"
+    ],
+    "collapsed/mobile/dark": [
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "collapsed/mobile/light": [
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "logged-in/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "logged-in/desktop/light": [
+      "keyboard:skip-link-first"
+    ],
+    "logged-in/mobile/dark": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "logged-in/mobile/light": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "rtl-ar/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "rtl-ar/desktop/light": [
+      "keyboard:skip-link-first"
+    ],
+    "rtl-ar/mobile/dark": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "rtl-ar/mobile/light": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ]
+  },
+  "paladins": {
+    "admin/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "admin/desktop/light": [
+      "keyboard:skip-link-first"
+    ],
+    "admin/mobile/dark": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "admin/mobile/light": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "collapsed/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "collapsed/desktop/light": [
+      "keyboard:skip-link-first"
+    ],
+    "collapsed/mobile/dark": [
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "collapsed/mobile/light": [
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "logged-in/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "logged-in/desktop/light": [
+      "keyboard:skip-link-first"
+    ],
+    "logged-in/mobile/dark": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "logged-in/mobile/light": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "rtl-ar/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "rtl-ar/desktop/light": [
+      "keyboard:skip-link-first"
+    ],
+    "rtl-ar/mobile/dark": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "rtl-ar/mobile/light": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ]
+  },
+  "sorcerers": {
+    "admin/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "admin/desktop/light": [
+      "keyboard:skip-link-first"
+    ],
+    "admin/mobile/dark": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "admin/mobile/light": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "collapsed/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "collapsed/desktop/light": [
+      "keyboard:skip-link-first"
+    ],
+    "collapsed/mobile/dark": [
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "collapsed/mobile/light": [
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "logged-in/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "logged-in/desktop/light": [
+      "keyboard:skip-link-first"
+    ],
+    "logged-in/mobile/dark": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "logged-in/mobile/light": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "rtl-ar/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "rtl-ar/desktop/light": [
+      "keyboard:skip-link-first"
+    ],
+    "rtl-ar/mobile/dark": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "rtl-ar/mobile/light": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ]
+  },
+  "vega": {
+    "admin/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "admin/desktop/light": [
+      "keyboard:skip-link-first"
+    ],
+    "admin/mobile/dark": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "admin/mobile/light": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "collapsed/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "collapsed/desktop/light": [
+      "keyboard:skip-link-first"
+    ],
+    "collapsed/mobile/dark": [
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "collapsed/mobile/light": [
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "logged-in/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "logged-in/desktop/light": [
+      "keyboard:skip-link-first"
+    ],
+    "logged-in/mobile/dark": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "logged-in/mobile/light": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "rtl-ar/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "rtl-ar/desktop/light": [
+      "keyboard:skip-link-first"
+    ],
+    "rtl-ar/mobile/dark": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "rtl-ar/mobile/light": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ]
+  },
+  "volt": {
+    "admin/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "admin/desktop/light": [
+      "axe:color-contrast@main",
+      "keyboard:skip-link-first"
+    ],
+    "admin/mobile/dark": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "admin/mobile/light": [
+      "axe:color-contrast@main",
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "collapsed/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "collapsed/desktop/light": [
+      "axe:color-contrast@main",
+      "keyboard:skip-link-first"
+    ],
+    "collapsed/mobile/dark": [
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "collapsed/mobile/light": [
+      "axe:color-contrast@main",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "logged-in/desktop/dark": [
+      "keyboard:skip-link-first"
+    ],
+    "logged-in/desktop/light": [
+      "axe:color-contrast@main",
+      "keyboard:skip-link-first"
+    ],
+    "logged-in/mobile/dark": [
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "logged-in/mobile/light": [
+      "axe:color-contrast@main",
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "rtl-ar/desktop/dark": [
+      "axe:color-contrast@nav",
+      "keyboard:skip-link-first"
+    ],
+    "rtl-ar/desktop/light": [
+      "axe:color-contrast@main",
+      "axe:color-contrast@nav",
+      "keyboard:skip-link-first"
+    ],
+    "rtl-ar/mobile/dark": [
+      "axe:color-contrast@nav",
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ],
+    "rtl-ar/mobile/light": [
+      "axe:color-contrast@main",
+      "axe:color-contrast@nav",
+      "axe:link-name@header",
+      "keyboard:skip-link-first",
+      "overflow"
+    ]
+  }
+}

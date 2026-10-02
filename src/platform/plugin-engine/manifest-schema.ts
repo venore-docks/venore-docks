@@ -64,6 +64,10 @@ export const pluginManifestSchema = z
     contentTypes: z.array(pluginContentTypeSchema).optional(),
     blocks: z.array(pluginBlockSchema).optional(),
     seeds: z.array(pluginSeedSchema).optional(),
+    // Intenção serializável dos outlets que o plugin contribui (spec v8 §2.8) — só diagnóstico
+    // (/admin/plugins lista os que o tema ativo não renderiza, W7). Sem isto o schema não-estrito
+    // descartaria o campo.
+    outlets: z.array(z.object({ key: z.string().min(1), outlet: z.string().min(1) })).optional(),
     // Onde ficam as migrations próprias do plugin (docs/venore-docks.md — "Schema e migrations").
     // Ausente == plugin sem schema próprio (settings-only, ex: donations) — instalar não roda
     // nenhuma migration. Presente == platform/plugin-engine/run-plugin-migrations.ts aplica essa
