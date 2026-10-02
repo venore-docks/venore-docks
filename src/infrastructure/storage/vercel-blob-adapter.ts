@@ -2,6 +2,7 @@ import { del, get, head, list, put } from "@vercel/blob";
 import { generateClientTokenFromReadWriteToken } from "@vercel/blob/client";
 import type {
   ByteRange,
+  DirectUploadKind,
   RemoteObjectSummary,
   StoredObjectBody,
   StoredObjectInfo,
@@ -57,6 +58,10 @@ export class VercelBlobAdapter implements StoragePort {
       token,
       expiresAt: new Date(Date.now() + UPLOAD_TICKET_TTL_SECONDS * 1000),
     };
+  }
+
+  directUploadKind(): DirectUploadKind {
+    return "vercel-blob";
   }
 
   async stat(key: string): Promise<StoredObjectInfo | null> {

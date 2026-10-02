@@ -15,7 +15,7 @@ const VISIBILITY_OPTIONS: { value: MediaVisibility; label: string; explanation: 
     value: "restricted",
     label: "Restrito",
     explanation:
-      'Pensado pra uso só no contexto onde foi enviado — hoje é um rótulo administrativo, o bloqueio de uso fora do contexto de origem ainda não existe (Known Gap).',
+      "Arquivo sensível de um plugin (ex: currículo): só o superadmin e quem tem a permissão do plugin abrem — administradores de mídia não. Só o superadmin muda a visibilidade dele.",
   },
   { value: "private", label: "Privado", explanation: "Só você e administradores de mídia podem ver este arquivo." },
 ];
@@ -37,7 +37,8 @@ export function VisibilityToggle({ id, visibility }: { id: string; visibility: M
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          {VISIBILITY_OPTIONS.map((option) => (
+          {/* "Restrito" não é escolhível aqui: só vem de plugin, com a permission do plugin. */}
+          {VISIBILITY_OPTIONS.filter((option) => option.value !== "restricted").map((option) => (
             <SelectItem key={option.value} value={option.value}>
               {option.label}
             </SelectItem>

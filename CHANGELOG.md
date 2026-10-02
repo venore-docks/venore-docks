@@ -37,6 +37,18 @@ convertida sozinha (lida das chaves 7.x) até a primeira publicação.
   tokens, contraste por região, orçamento, harness SSR e Playwright com axe a 390/1280 px).
   Os 12 pacotes 7.x continuam funcionando sem mudança.
 
+- **Mídia restrita de verdade** (migration `0054`, coluna `media.assets.access_permission`). Um
+  plugin declara em `manifest.restrictedUploadCategories` quais das suas categorias guardam dado
+  sensível e qual permission dá acesso (ex: currículos do `vagas` → `vagas.applications.review`).
+  Esses arquivos só são lidos pelo superadmin, pelo dono e por quem tem a permission — **quem só
+  tem `media.manage` não vê, não lista e não muda a visibilidade** (antes um admin do site abria
+  currículo pela biblioteca de mídia). A regra vale também para os arquivos já enviados: o
+  `prebuild` e o `db:update` aplicam a restrição retroativamente.
+- **Driver de storage `s3`** (`MEDIA_STORAGE_DRIVER=s3`): Amazon S3 ou compatível (MinIO, R2),
+  com credencial por chave ou pelo role da AWS, bucket privado por padrão e upload de arquivo
+  grande direto do browser por presigned POST (tamanho e tipo travados no próprio S3). Os
+  formulários de upload deixaram de depender do cliente do Vercel Blob. Configuração, CORS e IAM:
+  `docs/media/s3-storage.md`.
 - **Variantes de imagem no MMS** (`media.asset_variants`, `contexts/media/image-variants.ts`):
   todo upload de JPEG/PNG/WebP gera cópias WebP em 160/480/960/1920 px (nunca ampliando) e grava
   as dimensões reais do original. O original não muda. `getMediaAsset`/`listMediaAssets` trazem
@@ -61,6 +73,12 @@ convertida sozinha (lida das chaves 7.x) até a primeira publicação.
 
 ### Fixed
 
+- **Page-builder gravava o texto de um bloco em outro**: ao trocar de bloco com campo de rich
+  text de mesmo nome, o editor continuava mostrando o conteúdo do bloco anterior e a edição
+  seguinte o salvava no bloco novo. Texto legado (string) também abria vazio e era apagado na
+  primeira edição.
+- **Salvar a composição de uma página publicada não atualizava o site** por até 60 s (cache da
+  página e dos menus não era invalidado).
 - **Cor de borda dos utilitários Tailwind era ignorada no app inteiro.** O reset
   `* { border-color }` de `globals.css` ficava fora de `@layer` e vencia `border-transparent`,
   `border-destructive`, `border-ring` etc. — botões shadcn ganhavam borda visível e campo inválido

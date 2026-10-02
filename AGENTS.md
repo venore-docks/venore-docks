@@ -459,6 +459,9 @@ continua sendo a lista geral, derivada da leitura do código:
     do rascunho exige expor uma leitura sem autorização do context `themes` para `platform/`.
   - Testes de integração de `theme-config-lifecycle` e `entry-layout` só rodam no job
     `integration` do CI (`TEST_DATABASE_URL`).
+- **Feed de notícias entre sites (`contexts/content-feed`) não funciona ponta a ponta**: sem sync
+  automático, sem exibição no assinante, sem propagar despublicação, cursor no relógio do
+  assinante. Plano em `docs/content-feed-implementacao.md` (2026-10-01), não iniciado.
 - **Estratégia de teste por camada não documentada** além do que a seção 5/6 deste arquivo já
   descreve — o documento de arquitetura lista isso como não coberto.
 - **Plugin `birthdays` — escopo de `settings.manage`, impressão/identidade visual e importação

@@ -1,5 +1,6 @@
 import { execSync } from "node:child_process";
 import { ensureBaseRbacDataSeeded } from "@/contexts/rbac";
+import { applyRestrictedUploadCategories } from "@/platform/media-lifecycle/apply-restricted-upload-categories";
 import { registerPlugins } from "@/platform/plugin-engine/register-plugins";
 import { runPluginMigrations } from "@/platform/plugin-engine/run-plugin-migrations";
 import { PLUGIN_REGISTRY } from "@/plugins/registry";
@@ -52,6 +53,11 @@ async function main() {
       continue;
     }
     console.log(`      ✔ ${entry.key} em dia.`);
+  }
+
+  console.log("\n[+] Mídia restrita de plugin (manifest.restrictedUploadCategories)…");
+  for (const { key, restricted } of await applyRestrictedUploadCategories()) {
+    console.log(`      ✔ ${key}: ${restricted} arquivo(s) ajustado(s).`);
   }
 
   if (failed) {

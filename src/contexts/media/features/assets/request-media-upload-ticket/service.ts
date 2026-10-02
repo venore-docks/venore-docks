@@ -1,8 +1,9 @@
 import { MEDIA_ALLOWED_TYPES } from "@/contexts/media/contracts/types";
 import { resolveMediaStorageFolder } from "@/contexts/media/resolve-media-storage-folder";
+import { storagePort } from "@/infrastructure/storage";
 import { beginOperation, endOperation } from "@/observability";
 import type { OperationResult } from "@/shared/types";
-import type { MediaUploadTicket, RequestMediaUploadTicketCommand } from "./types";
+import type { MediaDirectUpload, MediaUploadTicket, RequestMediaUploadTicketCommand } from "./types";
 
 function sanitizeFilename(filename: string): string {
   return filename.replace(/[^a-zA-Z0-9.\-_]/g, "_");
@@ -86,9 +87,34 @@ export async function requestMediaUploadTicket(
   }
 
   const pathname = `${resolveMediaStorageFolder(command.contentType)}/${crypto.randomUUID()}-${sanitizeFilename(command.filename)}`;
+
+  let directUpload: MediaDirectUpload;
+  switch (storagePort.directUploadKind()) {
+    case "presigned-post": {
+      const ticket = await storagePort.createUploadTicket({
+        key: pathname,
+        contentType: command.contentType,
+        maxSizeBytes: validation.data.maxSizeBytes,
+      });
+      directUpload = { method: "presigned-post", url: ticket.uploadUrl, fields: ticket.fields ?? {} };
+      break;
+    }
+    case "vercel-blob":
+      directUpload = { method: "vercel-blob" };
+      break;
+    default: {
+      const error = {
+        code: "media.upload.direct_unsupported",
+        message: "Este storage não aceita upload direto de arquivos grandes — envie um arquivo menor.",
+      };
+      endOperation(handle, { success: false, error });
+      return { success: false, error };
+    }
+  }
+
   endOperation(handle, { success: true });
   return {
     success: true,
-    data: { pathname, contentType: command.contentType, maxSizeBytes: validation.data.maxSizeBytes },
+    data: { pathname, contentType: command.contentType, maxSizeBytes: validation.data.maxSizeBytes, directUpload },
   };
 }

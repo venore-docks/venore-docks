@@ -48,6 +48,11 @@ export const assets = mediaSchema.table(
     // dono + media.manage; avatar sempre nasce assim). Default "private" de propósito — nenhum
     // upload nasce público por omissão.
     visibility: text("visibility").notNull().default("private"),
+    // Só com visibility "restricted": permission que dá leitura ao arquivo (ex:
+    // "vagas.applications.review" nos currículos). Lê: superadmin, o dono, ou quem tem esta
+    // permission — media.manage sozinho NÃO lê (é a diferença pra "private"). Vem de
+    // manifest.restrictedUploadCategories do plugin dono da categoria (platform/media-lifecycle).
+    accessPermission: text("access_permission"),
     // Nullable — nem todo asset tem categoria. No máximo uma por asset (decisão de produto já
     // herdada de `files.categoryId`, não é tag N:N). onDelete "restrict": apagar uma categoria
     // com assets vinculados falha no banco, não só na aplicação.

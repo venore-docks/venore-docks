@@ -1,6 +1,6 @@
 "use client";
 
-import { upload } from "@vercel/blob/client";
+import { uploadFileDirect } from "@/lib/upload-file-direct";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -27,7 +27,7 @@ type UploadStatus = { step: "idle" } | { step: "uploading" } | { step: "error"; 
 
 export function UploadMediaForm() {
   const router = useRouter();
-  const [visibility, setVisibility] = useState<"private" | "restricted" | "public">("private");
+  const [visibility, setVisibility] = useState<"private" | "public">("private");
   const [status, setStatus] = useState<UploadStatus>({ step: "idle" });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -59,12 +59,7 @@ export function UploadMediaForm() {
         }
 
         const checksum = await computeFileChecksum(file);
-        const blob = await upload(ticket.data.pathname, file, {
-          access: "public",
-          handleUploadUrl: "/api/media/upload",
-          contentType: ticket.data.contentType,
-          clientPayload: JSON.stringify({ filename: file.name, contentType: ticket.data.contentType, size: file.size }),
-        });
+        const blob = await uploadFileDirect(ticket.data, file);
 
         const registered = await confirmMediaUploadAction({
           filename: file.name,
@@ -111,7 +106,6 @@ export function UploadMediaForm() {
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="private">Privado</SelectItem>
-          <SelectItem value="restricted">Restrito</SelectItem>
           <SelectItem value="public">Público</SelectItem>
         </SelectContent>
       </Select>

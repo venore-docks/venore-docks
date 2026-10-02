@@ -20,5 +20,11 @@ export type UploadReservedCategoryAssetInput = {
 };
 // actorId nullable — uploadReservedCategoryAssetPublicHandler (sem sessão) chama com null pra
 // envio anônimo de um plugin público (ex: currículo de candidatura em vagas).
-export type UploadReservedCategoryAssetCommand = UploadReservedCategoryAssetInput & { actorId: string | null };
+// restriction: só platform/ preenche (a partir de manifest.restrictedUploadCategories) — o asset
+// nasce "restricted" com essa accessPermission em vez de "private".
+export type UploadReservedCategoryRestriction = { accessPermission: string };
+export type UploadReservedCategoryAssetCommand = UploadReservedCategoryAssetInput & {
+  actorId: string | null;
+  restriction?: UploadReservedCategoryRestriction;
+};
 export type UploadReservedCategoryAssetResult = OperationResult<MediaAsset>;
