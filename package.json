@@ -56,6 +56,8 @@
     "@venore/plugin-disc": "git+https://github.com/venore-docks/venore-plugin-disc.git#v0.2.0",
     "@venore/plugin-photo-gallery": "git+https://github.com/venore-docks/venore-plugin-photo-gallery.git#v1.0.0",
     "@venore/plugin-vagas": "github:venore-docks/venore-plugin-vagas#v1.2.4",
+    "@venore/plugin-vagas": "github:venore-docks/venore-plugin-vagas#v1.2.4",
+    "@venore/plugin-novels": "github:venore-docks/venore-docks-plugin-novels",
     "@vercel/blob": "^2.6.1",
     "@vercel/functions": "^3.7.5",
     "class-variance-authority": "^0.7.1",
