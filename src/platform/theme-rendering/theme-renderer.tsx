@@ -121,8 +121,13 @@ export function ThemeRenderer({ model, nonce, children }: { model: ThemeRenderMo
   const outlet = (name: ThemeOutletName): ReactNode => (outlets[name] == null ? null : <ThemeOutlet name={name} nodes={outlets} />);
 
   const sidebarLeft = slotProps.sidebarLeft;
-  const railPresent = page.showRail && sidebarLeft.enabled;
-  const rail = page.showRail
+  // A rail é montada sempre que habilitada, mesmo com `page.showRail=false`: o (platform)/layout não
+  // re-renderiza na navegação soft, então quem decide se ela aparece (a partir de lg) é o
+  // page-layout.css, pelo marcador da página atual. Na carga inicial de uma página sem marcador, o
+  // wrapper `data-page-rail-initial` faz o mesmo papel. Abaixo de lg a rail é o drawer da navegação
+  // mobile e nunca some por preferência da página.
+  const railPresent = sidebarLeft.enabled;
+  const railNode = railPresent
     ? renderRegion(model, "rail", KitRail, {
         ...sidebarLeft,
         ...common,
@@ -135,6 +140,14 @@ export function ThemeRenderer({ model, nonce, children }: { model: ThemeRenderMo
         mobileNavMode: arrangement.mobileNav,
       })
     : null;
+  const rail =
+    railNode && !page.showRail ? (
+      <div className="contents" data-page-rail-initial="hidden">
+        {railNode}
+      </div>
+    ) : (
+      railNode
+    );
 
   const header = slotProps.header;
   const userMenu =
@@ -152,7 +165,7 @@ export function ThemeRenderer({ model, nonce, children }: { model: ThemeRenderMo
     ...header,
     ...common,
     sidebarCollapse:
-      arrangement.collapseControl === "header" && railPresent
+      arrangement.collapseControl === "header" && railPresent && page.showRail
         ? { collapsed: sidebarLeft.collapsed, onToggleCollapsed: sidebarLeft.onToggleCollapsed }
         : null,
     headerNavVisibleFrom: arrangement.headerNavVisibleFrom,

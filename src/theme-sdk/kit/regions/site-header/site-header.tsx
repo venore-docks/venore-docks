@@ -23,10 +23,13 @@ export type KitHeaderProps = HeaderSlotProps &
 
 // `headerNavVisibleFrom` (spec v8 §2.2): abaixo do breakpoint o menu do header some daqui e passa a
 // morar na navegação mobile (rail em drawer / tela cheia / folha "Mais"). "always" é o slime.
+// `min-w-0 overflow-x-auto` + `justify-center-safe`: com muitos links numa tela estreita o menu rola
+// na horizontal dentro do próprio <nav> (sem estourar a página a 390 px) e, quando transborda, se
+// alinha ao início em vez de cortar o primeiro link.
 const HEADER_NAV_CLASS: Record<HeaderRegionProps["headerNavVisibleFrom"], string> = {
-  always: "flex flex-1 items-center justify-center gap-1",
-  md: "hidden flex-1 items-center justify-center gap-1 md:flex",
-  lg: "hidden flex-1 items-center justify-center gap-1 lg:flex",
+  always: "flex min-w-0 flex-1 items-center justify-center-safe gap-1 overflow-x-auto whitespace-nowrap",
+  md: "hidden min-w-0 flex-1 items-center justify-center-safe gap-1 overflow-x-auto whitespace-nowrap md:flex",
+  lg: "hidden min-w-0 flex-1 items-center justify-center-safe gap-1 overflow-x-auto whitespace-nowrap lg:flex",
 };
 
 // Header compacto que se ELEVA ao rolar em vez de inverter de cor (refator premium: a inversão
@@ -91,8 +94,10 @@ export function HeaderSlot({
           // Alerta de notificação (mensagem não lida ou atividade avaliada) — link/texto já
           // resolvidos pelo registry (platform/notifications/notification-registry.ts). O
           // tema só renderiza o `label`.
+          // aria-label: abaixo de sm o texto some (só o ponto pulsante fica), e o link precisa de nome.
           <Link
             href={notificationAlert.href}
+            aria-label={notificationAlert.label}
             className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-muted-foreground ui-motion-base outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring sm:px-2.5"
           >
             <span className="relative flex size-2">

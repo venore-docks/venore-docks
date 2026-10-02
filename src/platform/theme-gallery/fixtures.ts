@@ -69,17 +69,16 @@ export const BASE_SLOT_FIXTURE: Omit<ThemeShellProps, "children"> = {
 
 export const FIXTURE_USER = { displayName: "Ana Lima", email: "ana@example.com", imageUrl: null };
 
-// Navegação "de verdade": header com 2 itens, rail com ícone, grupo e item externo, rodapé com
+// Navegação "de verdade": header com 3 itens, rail com ícone, grupo e item externo, rodapé com
 // mapa do site — o suficiente pra exercitar teclado, overflow a 390 px e rótulos de <nav>.
 const richSlots: Omit<ThemeShellProps, "children"> = {
   ...BASE_SLOT_FIXTURE,
   header: {
     ...BASE_SLOT_FIXTURE.header,
-    // Dois links, como o snapshot de paridade do slime: com 3+ o menu do header do kit (visível
-    // "always" no topbar) estoura 390 px — ver docs/themes/theme-system-v8.md (lacunas conhecidas).
     headerNavItems: [
       { key: "home", label: "Início", href: "/" },
       { key: "blog", label: "Blog", href: "/blog" },
+      { key: "sobre", label: "Sobre", href: "/sobre" },
     ],
   },
   footer: {

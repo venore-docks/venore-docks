@@ -157,8 +157,16 @@ describe("navegação mobile — três modos (cada um: um <nav> rotulado + aria-
     expect(doc.querySelector('nav[data-region="mobile-nav"]')).toBeNull();
   });
 
-  it("drawer sem rail (página com rail escondida): a região monta o próprio drawer", () => {
+  it("rail escondida pela página: continua montada (drawer abaixo de lg) e marcada pro page-layout.css", () => {
     const doc = parse(html(model({ page: { showRail: false } })));
+    expect(doc.querySelector('[data-page-rail-initial="hidden"] aside[data-region=rail]')).not.toBeNull();
+    // No modo drawer a própria rail é a navegação mobile (nenhuma camada extra).
+    expect(doc.querySelector('nav[data-region="mobile-nav"]')).toBeNull();
+  });
+
+  it("drawer sem rail (rail desabilitada): a região monta o próprio drawer", () => {
+    const m = model();
+    const doc = parse(html({ ...m, slotProps: { ...m.slotProps, sidebarLeft: { ...m.slotProps.sidebarLeft, enabled: false } } }));
     expect(doc.querySelector("aside[data-region=rail]")).toBeNull();
     const navs = mobileNav(doc);
     expect(navs).toHaveLength(1);

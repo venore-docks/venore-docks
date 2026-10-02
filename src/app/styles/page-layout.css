@@ -27,6 +27,13 @@
   :where(body):has([data-page-rail="hidden"]) [data-region="rail"] {
     display: none;
   }
+
+  /* Carga inicial de uma página que não emite marcador (ex.: rota de plugin numa seção com rail
+     oculta): vale o `page.showRail` do render-model, que o ThemeRenderer grava no wrapper da rail.
+     Qualquer marcador da página atual (navegação soft) tem precedência. */
+  :where(body):not(:has([data-page-rail])) [data-page-rail-initial="hidden"] [data-region="rail"] {
+    display: none;
+  }
 }
 
 /* Barra contextual desligada pela página. */

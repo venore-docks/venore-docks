@@ -94,7 +94,7 @@ function expectedOutlets(model: ThemeRenderModel): ThemeOutletName[] {
   return model.theme.outletsRendered.filter((name) => {
     if (PAGE_TEMPLATE_OUTLETS.includes(name)) return false; // só dentro de template
     if (name === "userMenu.items") return Boolean(model.slotProps.header.userbarEnabled && model.slotProps.header.user);
-    if (name.startsWith("rail.")) return model.page.showRail && model.slotProps.sidebarLeft.enabled;
+    if (name.startsWith("rail.")) return model.slotProps.sidebarLeft.enabled;
     if (name.startsWith("contextual.")) return model.contextual.source !== "none" && model.page.contextualPlacement !== "none";
     return true;
   });
@@ -162,7 +162,11 @@ function check(model: ThemeRenderModel, scenario: ThemeFixtureScenario, body: st
   }
 
   // Layout de página e RTL (só o kit v8 recebe page/strings; Shell 7.x é do pacote).
-  if (isV8Public && scenario.page?.showRail === false && doc.querySelector("[data-region='rail']")) fail("page:rail-dropped");
+  // Rail oculta pela página: continua montada (drawer abaixo de lg, navegação soft), mas marcada pro
+  // page-layout.css escondê-la a partir de lg.
+  if (isV8Public && scenario.page?.showRail === false && doc.querySelector("[data-region='rail']") && !doc.querySelector("[data-page-rail-initial='hidden'] [data-region='rail']")) {
+    fail("page:rail-hidden");
+  }
   if (isV8Public && scenario.dir === "rtl" && firstFocusable?.textContent === resolveThemeStrings(model.theme, "pt-BR")["skipLink.label"]) {
     fail("rtl:strings");
   }
