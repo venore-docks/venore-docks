@@ -118,7 +118,8 @@ function main() {
   }
 
   printBudgets(options.themes);
-  printA11y(options.themes);
+  // O resumo de a11y é da rodada do Playwright — sem navegador, ele seria de uma rodada antiga.
+  if (options.browser) printA11y(options.themes);
   console.log("\nArtefatos: test-results/themes-ssr/ (HTML), test-results/themes-screenshots/, src/themes/theme-report.generated.json");
 
   const failed = steps.filter((step) => !step.ok);
