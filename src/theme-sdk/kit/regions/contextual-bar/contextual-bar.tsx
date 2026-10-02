@@ -49,7 +49,7 @@ function ContextualMenuItem({ item }: { item: ContextualMenuItemView }) {
       )}
 
       {item.children.length > 0 && (
-        <div className="ml-3 space-y-1 border-l border-border pl-2">
+        <div className="ms-3 space-y-1 border-s border-border ps-2">
           {item.children.map((child) => (
             <ContextualMenuItem key={child.key} item={child} />
           ))}
