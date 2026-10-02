@@ -1,5 +1,6 @@
 // Catálogo pt-BR do kit — texto IDÊNTICO ao que as regiões do venore-slime tinham fixo antes da
-// v8 (spec §7.11). Dono: W8 (i18n/RTL), que acrescenta en/es/ar.
+// v8 (spec §7.11), incluindo as chaves que W3 (regiões) e W4 (templates) introduziram. Dono: W8.
+// en/es/ar ficam ao lado e são tipados contra estas chaves (catálogo incompleto não compila).
 export const KIT_MESSAGES_PT_BR = {
   "header.signIn": "Entrar",
   "mobileNav.open": "Abrir navegação",
@@ -25,5 +26,24 @@ export const KIT_MESSAGES_PT_BR = {
   "notFound.message": "O endereço pode ter mudado ou o conteúdo não está mais disponível.",
   "notFound.home": "Voltar ao início",
   "loading.label": "Carregando…",
+  // Regiões (W3): rótulos de <nav> e modos de navegação mobile.
+  "header.navLabel": "Menu do cabeçalho",
+  "rail.navLabel": "Navegação principal",
+  "rail.adminNavLabel": "Navegação do admin",
+  "mobileNav.label": "Navegação",
+  "mobileNav.more": "Mais",
+  "mobileNav.moreLabel": "Mais opções de navegação",
+  "contextual.mobileSummary": "Nesta seção",
+  // Templates e estados (W4).
+  "login.title": "Entrar",
+  "login.subtitle": "Acesse com uma das opções abaixo.",
+  "home.empty.title": "Nenhum conteúdo publicado ainda",
+  "home.empty.message": "O conteúdo aparece aqui assim que for publicado.",
+  "category.readMore": "Ler mais",
+  "category.newer": "Mais recentes",
+  "category.older": "Mais antigos",
+  "category.paginationLabel": "Paginação",
+  "maintenance.title": "Em manutenção",
+  "maintenance.message": "O site volta em instantes.",
 } as const satisfies Record<string, string>;
 export type KitMessageKey = keyof typeof KIT_MESSAGES_PT_BR;

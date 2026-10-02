@@ -5,3 +5,4 @@ export * from "./kit/exports/regions";
 export * from "./kit/exports/templates";
 export { t, KIT_STRINGS_PT_BR } from "./kit/i18n/t";
 export { KIT_MESSAGES_PT_BR } from "./kit/i18n/messages/pt-BR";
+export { KIT_MESSAGES, KIT_BASE_LOCALE, localeFallbackChain, mergeLocaleStrings } from "./kit/i18n/catalogs";

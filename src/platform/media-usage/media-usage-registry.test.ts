@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const findCmsMediaUsage = vi.fn();
 const findBrandMediaUsage = vi.fn();
 const findAcademyMediaUsage = vi.fn();
+const findThemeConfigMediaUsage = vi.fn();
 const registerPlugins = vi.fn();
 
 vi.mock("@/contexts/cms", () => ({
@@ -11,6 +12,10 @@ vi.mock("@/contexts/cms", () => ({
 
 vi.mock("../brand/find-brand-media-usage", () => ({
   findBrandMediaUsage: (...args: unknown[]) => findBrandMediaUsage(...args),
+}));
+
+vi.mock("./find-theme-config-media-usage", () => ({
+  findThemeConfigMediaUsage: (...args: unknown[]) => findThemeConfigMediaUsage(...args),
 }));
 
 // O resolver de uso de mídia do plugin vem de PLUGIN_CONTRIBUTIONS agora (campo mediaUsageResolver).
@@ -29,6 +34,7 @@ describe("collectMediaUsage", () => {
     findCmsMediaUsage.mockReset().mockResolvedValue([]);
     findBrandMediaUsage.mockReset().mockResolvedValue([]);
     findAcademyMediaUsage.mockReset().mockResolvedValue([]);
+    findThemeConfigMediaUsage.mockReset().mockResolvedValue([]);
     registerPlugins.mockReset();
   });
 
@@ -66,5 +72,15 @@ describe("collectMediaUsage", () => {
     const result = await collectMediaUsage("media-1");
 
     expect(result).toEqual([]);
+  });
+
+  it("includes theme config assets (OG image, icon) as a core provider", async () => {
+    registerPlugins.mockResolvedValue({ entries: [] });
+    findThemeConfigMediaUsage.mockResolvedValue([
+      { consumerKey: "themes", consumerLabel: "Tema", label: "Ícone do site (publicado)", href: "/admin/themes/customize" },
+    ]);
+    const { collectMediaUsage } = await import("./media-usage-registry");
+    expect((await collectMediaUsage("m-1")).map((ref) => ref.consumerKey)).toEqual(["themes"]);
+    expect(findThemeConfigMediaUsage).toHaveBeenCalledWith("m-1");
   });
 });
