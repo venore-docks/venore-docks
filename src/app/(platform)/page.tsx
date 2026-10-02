@@ -1,14 +1,21 @@
-import Link from "next/link";
-import { ArrowRight, BookOpen, Settings2 } from "lucide-react";
-import { getEntryBody, getEntryComposition, getPublishedEntryBySlug, recordEntryView } from "@/contexts/cms";
+import { extractEntryComposition, getEntryBody, getPublishedEntryBySlug, recordEntryView } from "@/contexts/cms";
 import { getCurrentUser } from "@/contexts/auth";
 import { getAdminPageData } from "@/platform/admin-shell/get-admin-page-data";
 import { getActivePluginKeys } from "@/platform/plugin-engine/get-active-plugin-keys";
 import { getBrandConfig } from "@/platform/brand/get-brand-config";
-import { PLUGIN_CONTRIBUTIONS } from "@/plugins/contributions";
-import { EmptyState } from "@/components/empty-state";
-import { Button } from "@/components/ui/button";
+import { getSiteOrigin } from "@/platform/seo/site-origin";
+import {
+  renderTemplate,
+  resolvePageOutlets,
+  resolveTemplateContext,
+  resolveTemplateVariant,
+  toOutletUser,
+} from "@/platform/theme-rendering/render-template";
+import { buildTemplateJsonLd } from "@/platform/theme-rendering/template-json-ld";
 import { BlockRenderer } from "@/components/page-builder/block-renderer";
+import type { HomeTemplateProps } from "@/contexts/themes/contracts/v8";
+import { CoreJsonLd } from "@/theme-sdk/kit/json-ld";
+import type { KitHomeTemplateExtras } from "@/theme-sdk/kit/templates/simple-templates";
 
 // force-dynamic: conteúdo (CMS) e tema ativo são runtime-configuráveis, sem rebuild
 // (docs/venore-docks.md — "Sobre temas").
@@ -17,96 +24,88 @@ export const dynamic = "force-dynamic";
 // Home é a entry reservada com categoryId null e slug "home".
 const HOME_SLUG = "home";
 
-// Painel de "/" quando NÃO há entry "home" no CMS. Plataforma aberta (pedido do dono, "site tem
-// que ficar aberto, só o admin precisa de login"): visitante sem sessão vê isto igual a qualquer
-// outro visitante — só os atalhos de admin abaixo ficam escondidos de quem não tem acesso ao
-// painel. Nome do site + a vitrine que um plugin ativo contribuir (publicHomeShowcase) + atalhos
-// de admin quando aplicável. Primeira vitrine não-nula vence.
-async function CoursesHome({ canAccessAdmin }: { canAccessAdmin: boolean }) {
-  const activePluginKeys = await getActivePluginKeys();
-  const [brand, showcases] = await Promise.all([
-    getBrandConfig(),
-    Promise.all(
-      Object.entries(PLUGIN_CONTRIBUTIONS)
-        .filter(([key]) => activePluginKeys.has(key))
-        .map(([, contributions]) => contributions.publicHomeShowcase?.() ?? null),
-    ),
-  ]);
-  const showcase = showcases.find((value) => value != null) ?? null;
-  // "Ver como aluno" só faz sentido em instâncias com a Academy ativa — numa instância sem o
-  // plugin, /academy nem existe (resolvePublicPluginRoute devolveria notFound).
-  const hasAcademy = activePluginKeys.has("academy");
-
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">{brand.siteName}</h1>
-        {hasAcademy && (
-          <Button asChild size="sm" variant="outline">
-            <Link href="/academy">
-              Ver como aluno <ArrowRight className="size-4" aria-hidden="true" />
-            </Link>
-          </Button>
-        )}
-      </div>
-
-      {showcase ?? (
-        <EmptyState
-          icon={<BookOpen className="size-8" strokeWidth={1.5} />}
-          title="Nenhum conteúdo publicado ainda"
-          description="O conteúdo aparece aqui assim que for publicado."
-        />
-      )}
-
-      {canAccessAdmin && (
-        <div className="flex flex-wrap gap-2 border-t border-border pt-4">
-          <Button asChild variant="ghost" size="sm">
-            <Link href="/admin" className="text-muted-foreground/56">
-              <Settings2 className="size-4" strokeWidth={1.5} /> Painel
-            </Link>
-          </Button>
-          <Button asChild variant="ghost" size="sm">
-            <Link href="/admin/cms/entries/new" className="text-muted-foreground/56">
-              Personalizar a home no CMS
-            </Link>
-          </Button>
-        </div>
-      )}
-    </div>
-  );
-}
-
+// "/" (spec v8 §2.7): o dado é resolvido aqui, o desenho é o template "home" do tema.
+//  - Plataforma aberta (pedido do dono, "site tem que ficar aberto, só o admin precisa de login"):
+//    qualquer visitante vê a entry "home" do CMS quando ela existe e é visível pra ele;
+//    "authenticated" (C7, mesma regra do catch-all) só aparece pra quem tem sessão.
+//  - Sem entry visível: o painel — nome do site, a vitrine de plugin (outlet home.showcase, que
+//    já carrega o publicHomeShowcase dos plugins ativos) e os atalhos de admin para quem tem
+//    acesso ao painel.
+// Uma consulta de entry só: a composição vem do `data` que a entry publicada já trouxe.
 export default async function HomePage() {
-  const currentUser = await getCurrentUser();
-  const isAuthenticated = currentUser.success && Boolean(currentUser.data);
-  const adminGate = await getAdminPageData();
+  const [currentUser, adminGate, context] = await Promise.all([getCurrentUser(), getAdminPageData(), resolveTemplateContext()]);
+  const user = currentUser.success && currentUser.data ? currentUser.data : null;
 
-  // Plataforma aberta (pedido do dono, "site tem que ficar aberto, só o admin precisa de login"):
-  // qualquer visitante — com ou sem sessão — vê a entry "home" do CMS quando ela existir e for
-  // visível pra ele. "authenticated" (C7, mesma regra do catch-all em [...slug]/page.tsx) só
-  // aparece pra quem tem sessão; sem entry ou sem visibilidade, cai no painel abaixo. O gate de
-  // admin em si não muda aqui — continua em getAdminPageData(), checado de novo em cada página
-  // administrativa.
   const result = await getPublishedEntryBySlug({ categoryId: null, slug: HOME_SLUG });
   const entry = result.success && result.data ? result.data : null;
-  const canViewEntry = entry != null && (entry.visibility === "public" || isAuthenticated);
+  const canViewEntry = entry != null && (entry.visibility === "public" || user != null);
+
+  const [brand, outlets, origin] = await Promise.all([
+    getBrandConfig(),
+    resolvePageOutlets(context, {
+      user: toOutletUser(user),
+      canAccessAdmin: adminGate.granted,
+    }),
+    getSiteOrigin(),
+  ]);
+  const jsonLd = buildTemplateJsonLd(context.theme, { kind: "home", siteName: brand.siteName, url: `${origin}/` });
+  const common = {
+    ...context.common,
+    jsonLd: <CoreJsonLd data={jsonLd} nonce={context.nonce} />,
+    outlets: { before: null, after: null },
+  };
 
   if (entry && canViewEntry) {
     recordEntryView(entry.id);
-    const compositionResult = await getEntryComposition({ id: entry.id });
-    const composition = compositionResult.success ? compositionResult.data : null;
-
-    return composition ? (
-      <div className="space-y-6">
-        <BlockRenderer blocks={composition} mode="published" />
-      </div>
-    ) : (
-      <article>
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground">{entry.title}</h1>
-        <p className="mt-2 text-muted-foreground">{getEntryBody(entry.data)}</p>
-      </article>
+    const composition = extractEntryComposition(entry.data);
+    return renderTemplate(
+      context.theme,
+      "home",
+      {
+        ...common,
+        entry: {
+          id: entry.id,
+          title: entry.title,
+          excerpt: null,
+          path: "/",
+          publishedAt: entry.publishedAt ? entry.publishedAt.toISOString() : null,
+          updatedAt: entry.updatedAt ? entry.updatedAt.toISOString() : null,
+          category: null,
+          cover: null,
+        },
+        content: composition ? (
+          <BlockRenderer blocks={composition} mode="published" />
+        ) : (
+          <article>
+            <h1 className="text-3xl font-semibold tracking-tight text-foreground">{entry.title}</h1>
+            <p className="mt-2 text-muted-foreground">{getEntryBody(entry.data)}</p>
+          </article>
+        ),
+        showcase: null,
+        adminShortcuts: [],
+      },
+      { variant: resolveTemplateVariant("home", { section: context.section, entryData: entry.data }) },
     );
   }
 
-  return <CoursesHome canAccessAdmin={adminGate.granted} />;
+  // "Ver como aluno" só faz sentido em instâncias com a Academy ativa — numa instância sem o
+  // plugin, /academy nem existe (resolvePublicPluginRoute devolveria notFound).
+  const hasAcademy = (await getActivePluginKeys()).has("academy");
+  // siteName/primaryAction/ícone do atalho: extensões que o kit lê e o contrato §2.7 ainda não
+  // declara (pedido em /home/user/v8/requests/w4.md) — passadas por variável, sem cast.
+  const panel: HomeTemplateProps & KitHomeTemplateExtras = {
+    ...common,
+    entry: null,
+    content: null,
+    showcase: outlets["home.showcase"] ?? null,
+    siteName: brand.siteName,
+    primaryAction: hasAcademy ? { href: "/academy", label: "Ver como aluno" } : null,
+    adminShortcuts: adminGate.granted
+      ? [
+          { href: "/admin", label: "Painel", icon: "settings" as const },
+          { href: "/admin/cms/entries/new", label: "Personalizar a home no CMS" },
+        ]
+      : [],
+  };
+  return renderTemplate(context.theme, "home", panel, { variant: resolveTemplateVariant("home", { section: context.section }) });
 }
