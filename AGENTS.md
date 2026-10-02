@@ -45,6 +45,9 @@ valida input → `authorizeActor("rbac.roles.assign")` → chama o `service` (ú
   `store.ts` — é como o adapter funciona, não deve ser "corrigido".
 - `useTheme()` do `next-themes` é a única exceção a "o tema nunca busca dado sozinho": o
   color-mode toggle (`src/components/color-mode-toggle.tsx`) lê/altera tema direto no client.
+  Os hooks/stores do kit de tema v8 (`src/theme-sdk/kit/hooks`, `kit/stores`: colapso da rail,
+  overlay/drawer, scroll lock, estado de scroll do header) são estado de UI no client, não busca
+  de dado — o dado continua chegando por prop, resolvido em `platform/theme-rendering`.
 
 ### 1.1 Rotas de plugin: `app/` não conhece nomes de plugin, tudo mora em `src/plugins/<nome>/routes/`
 
@@ -216,14 +219,33 @@ logBuffer.push({ message, level });
   `[data-theme="<tema>"].dark`. O `THEME_REGISTRY` (`src/themes/registry.ts`) hoje tem só o
   `venore-slime` hardcoded (fallback obrigatório, `src/themes/venore-slime/`); todo tema extra é
   um pacote `@venore/theme-*` descoberto a partir das deps do `package.json`
-  (`scripts/gen-theme-registry.ts` → `registry.generated.ts` + `theme-imports.generated.css`,
-  ambos gitignored). Cada tema redeclara o mesmo vocabulário sob o seu próprio
-  `[data-theme="..."]`, nunca por cima de outro. `venore-slime` (`src/themes/venore-slime/theme.css`)
-  é a referência: o único com o vocabulário completo garantido e o fallback imutável (ver abaixo).
-  Ver `docs/themes/temas-como-pacotes-plano.md`. Isso vale inclusive para o vocabulário
+  (`scripts/gen-theme-registry.ts` → `registry*.generated.ts`, `theme-imports.generated.css`,
+  `theme-lineage.generated.css`, `theme-tokens.generated.ts`, todos gitignored). Cada tema
+  redeclara o mesmo vocabulário sob o seu próprio `[data-theme="..."]`, nunca por cima de outro.
+  `venore-slime` (`src/themes/venore-slime/theme.css`) é a referência: o único com o vocabulário
+  completo garantido e o fallback imutável (ver abaixo). Isso vale inclusive para o vocabulário
   shadcn (`--background`, `--primary`, etc.) e para os multiplicadores de escala usados em
   `calc()` (ex: `--ui-radius-scale-lg: 2`, `--ui-button-padding-scale-xs: 0.5`) — o número da
   proporção é decisão de design tanto quanto a cor.
+- **Contrato de tema 8.0.0** (`docs/themes/theme-system-v8.md` — leitura obrigatória antes de
+  mexer em tema, kit ou `platform/theme-rendering`). O registro aceita contrato 7.x (Shell inteiro,
+  via `LegacyShellAdapter`) e 8.x (`defineTheme`, `@/theme-sdk/define`). O `venore-slime` **é o
+  kit** (`src/theme-sdk/kit/`: regiões, layouts `topbar`/`rail`, templates, estados, i18n): um tema
+  v8 declara manifesto, tokens e só as regiões/templates que diferem. O kit só importa contratos
+  de tema, `@/components/ui/**` e `src/shared/**`, e usa só propriedades lógicas (`ms-`/`ps-`/
+  `border-s`/`start-`; `logical-properties.test.ts` com baseline `{}`). Tokens por região
+  (`--region-*`, `--section-*`) têm defaults só com `var()` em `src/app/styles/region-tokens.css`;
+  o layout por página (`data-page-*` + `src/app/styles/page-layout.css`) idem. Texto de região e
+  template vem dos catálogos `kit/i18n/messages/*` via `t()`; data via `formatDate`
+  (`src/shared/format-date.ts`), nunca `"pt-BR"` fixo. Config de tema (tema, paleta, opções,
+  fontes, seções) é `theme.config` + rascunho/histórico em `themes.theme_config_revisions`,
+  editada em `/admin/themes/customize`. Admin nunca é tematizado.
+- Gate de tema: `npm run theme:check` (codegen estrito, contrato de tokens, contraste por região,
+  orçamento, harness SSR e Playwright a 390×844/1280×800). Dívida de pacote 7.x fica em baselines
+  catraca (`src/themes/a11y-baseline.json`, `src/themes/theme-ssr.baseline.json`,
+  `e2e-themes/a11y-baseline.json`); o `venore-slime` e todo tema v8 não podem ter dívida. Mudança
+  de markup do kit atualiza os snapshots de paridade (`src/themes/venore-slime/__parity__/`) no
+  mesmo commit.
 - Prova executável: `src/app/globals.no-design-values.test.ts` falha se um literal de design
   (hex, `oklch()`/`rgb()`/`color-mix()`, `cubic-bezier()`, gradiente, `px`/`rem`/`em`, duração)
   reaparecer em `globals.css`.
@@ -423,9 +445,20 @@ continua sendo a lista geral, derivada da leitura do código:
     `/api/cron/tick` de cada instância a cada 5 min (secret `CRON_TARGETS`); cada projeto na
     Vercel precisa da env `CRON_SECRET`. Sem isso, nada agendado roda em serverless.
   - `docs/themes/temas-como-pacotes-plano.md` (status "não iniciado", 7 temas) descreve estado
-    anterior ao atual — os temas extras já são pacotes `@venore/theme-*` (seção 3).
+    anterior ao atual — os temas extras já são pacotes `@venore/theme-*` e o contrato vigente é o
+    8.0.0 (`docs/themes/theme-system-v8.md`, seção 3).
   - `docs/melhorias-e-recursos.md` pede scrypt N=2^17; o implementado é N=2^15
     (`password-hashing.ts`, CHANGELOG 0.6.0).
+- **Temas v8 — lacunas conhecidas** (detalhe em `docs/themes/theme-system-v8.md`):
+  - Navegação soft não remonta o `(platform)/layout`: largura, rail (a partir de lg) e barra
+    contextual "none" seguem a página atual pelo CSS de marcadores, mas barra contextual `top` ×
+    `side`, troca de tema por seção e o botão de colapso no header só mudam num reload.
+  - Os Shells dos pacotes 7.x têm dívida de axe/teclado e, na maioria, estouram 390 px com 3+
+    links no header (`e2e-themes/a11y-baseline.json`) — some quando cada pacote migrar para 8.0.
+  - Sweep de mídia (cron, sem sessão) só protege a mídia referenciada na config **publicada**; a
+    do rascunho exige expor uma leitura sem autorização do context `themes` para `platform/`.
+  - Testes de integração de `theme-config-lifecycle` e `entry-layout` só rodam no job
+    `integration` do CI (`TEST_DATABASE_URL`).
 - **Estratégia de teste por camada não documentada** além do que a seção 5/6 deste arquivo já
   descreve — o documento de arquitetura lista isso como não coberto.
 - **Plugin `birthdays` — escopo de `settings.manage`, impressão/identidade visual e importação
