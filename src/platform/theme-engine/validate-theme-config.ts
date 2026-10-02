@@ -1,12 +1,8 @@
 import { isReservedSectionPrefix } from "@/contexts/themes";
 import {
-  FONT_IDS,
-  RESERVED_THEME_OPTION_KEYS,
-  THEME_COLOR_VALUE_PATTERN,
   type ResolvedThemeDefinition,
   type ThemeConfigByTheme,
   type ThemeConfigDocument,
-  type ThemeOptionField,
   type ThemeOptionValue,
   type ThemePaletteChoice,
   type ThemeSectionOverride,
@@ -15,6 +11,9 @@ import {
 import { resolveThemeDefinition } from "@/platform/theme-rendering/resolve-theme-definition";
 import { THEME_REGISTRY, type ThemeRegistryEntry } from "@/themes/registry";
 import { normalizePathPrefix } from "@/shared/normalize-path-prefix";
+// Validador único de valor de opção (zod, W2) — o mesmo que o render usa: o que a escrita aceita
+// é exatamente o que resolveThemeOptions aplica.
+import { isReservedThemeOptionKey, isValidOptionValue, isValidReservedOptionValue } from "./theme-options";
 
 export type ThemeConfigValidationContext = {
   registry?: Record<string, ThemeRegistryEntry>;
@@ -30,39 +29,6 @@ export type ThemeConfigValidation = {
   errors: ThemeConfigValidationError[];
 };
 
-const CONTEXTUAL_BAR_CHOICES = ["side", "top", "none"];
-
-// Validação de um valor de opção contra o campo declarado (spec §2.3). Inválido ⇒ descartado (o
-// render cai no default). W2 é dono do validador zod de opções do render; este é o espelho da
-// escrita, pra não deixar valor podre entrar no documento.
-export function isValidOptionValue(field: ThemeOptionField, value: ThemeOptionValue): boolean {
-  if (value === null) return true;
-  switch (field.type) {
-    case "boolean":
-      return typeof value === "boolean";
-    case "select":
-      return typeof value === "string" && field.choices.some((choice) => choice.value === value);
-    case "range":
-      return typeof value === "number" && Number.isFinite(value) && value >= field.min && value <= field.max;
-    case "color":
-      return typeof value === "string" && THEME_COLOR_VALUE_PATTERN.test(value);
-    case "font":
-      return typeof value === "string" && (FONT_IDS as readonly string[]).includes(value);
-    case "text":
-      return typeof value === "string" && value.length <= field.maxLength;
-    case "media":
-      return typeof value === "string" && value.length > 0 && value.length <= 64;
-  }
-}
-
-function isValidReservedOption(theme: ResolvedThemeDefinition, key: string, value: ThemeOptionValue): boolean {
-  if (value === null) return true;
-  if (key === "layout") return typeof value === "string" && (theme.layoutDecl.presetChoices as readonly string[]).includes(value);
-  if (key === "mobile-nav") return typeof value === "string" && (theme.responsive.mobileNavChoices as readonly string[]).includes(value);
-  if (key === "contextual-bar") return typeof value === "string" && CONTEXTUAL_BAR_CHOICES.includes(value);
-  return false;
-}
-
 function cleanOptions(
   theme: ResolvedThemeDefinition,
   options: Readonly<Record<string, ThemeOptionValue>>,
@@ -72,8 +38,8 @@ function cleanOptions(
   const fields = new Map(theme.options.map((field) => [field.key, field]));
   const cleaned: Record<string, ThemeOptionValue> = {};
   for (const [key, value] of Object.entries(options)) {
-    if (RESERVED_THEME_OPTION_KEYS.includes(key)) {
-      if (isValidReservedOption(theme, key, value)) cleaned[key] = value;
+    if (isReservedThemeOptionKey(key)) {
+      if (isValidReservedOptionValue(theme, key, value)) cleaned[key] = value;
       else warnings.push(`${where}: valor "${String(value)}" da opção "${key}" não é oferecido pelo tema ${theme.key} — descartado.`);
       continue;
     }
