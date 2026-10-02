@@ -11,7 +11,8 @@ import baseline from "./a11y-baseline.json";
 // valores vêm do theme.css parseado pelo codegen (theme-tokens.generated.ts), com a paleta padrão.
 //
 // Dívida existente fica em a11y-baseline.json ("tema": ["região/modo/par", …]) — catraca nos dois
-// sentidos: problema novo falha, e problema resolvido também (pra baseline só encolher). Depois de
+// sentidos: problema novo falha, e problema resolvido também (pra baseline só encolher; com
+// VENORE_THEME_KEYS — theme-check de um repositório de tema — resolvido só avisa). Depois de
 // melhorar um tema de propósito: UPDATE_A11Y_BASELINE=1 npx vitest run src/themes/theme-contrast.test.ts
 const BASELINE_PATH = fileURLToPath(new URL("./a11y-baseline.json", import.meta.url));
 const recorded = baseline as Record<string, string[]>;
@@ -49,7 +50,13 @@ describe("contraste por região — todo tema do registro", () => {
       const fresh = current.filter((problem) => !allowed.has(problem));
       const fixed = [...allowed].filter((problem) => !current.includes(problem));
       expect(fresh, `contraste novo abaixo do mínimo em ${key}`).toEqual([]);
-      expect(fixed, `${key} melhorou: rode UPDATE_A11Y_BASELINE=1 pra encolher o baseline`).toEqual([]);
+      // Dívida resolvida só reprova no CI do core (baseline sempre justo); no theme-check de um
+      // repositório de tema (VENORE_THEME_KEYS) uma versão melhor do pacote não pode reprovar.
+      if (process.env.VENORE_THEME_KEYS) {
+        if (fixed.length > 0) console.warn(`${key}: contraste melhorou (encolher a11y-baseline.json): ${fixed.join(", ")}`);
+      } else {
+        expect(fixed, `${key} melhorou: rode UPDATE_A11Y_BASELINE=1 pra encolher o baseline`).toEqual([]);
+      }
     });
   }
 

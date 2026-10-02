@@ -4,7 +4,6 @@ import { defaultThemeConfigDocument, type ThemeConfigDocument } from "@/contexts
 import type { ResolvedThemeDefinitionView } from "./types";
 
 vi.mock("../../actions", () => ({
-  getPalettePanelDataAction: vi.fn(async () => ({ data: null, error: null })),
   generateSeedPaletteAction: vi.fn(),
   checkPaletteContrastAction: vi.fn(),
 }));
@@ -12,7 +11,7 @@ vi.mock("../../actions", () => ({
 const { PalettePanel } = await import("./palette-panel");
 const { PaletteContrastSummary } = await import("../../_components/palette-contrast-summary");
 
-const theme = { key: "venore-slime" } as ResolvedThemeDefinitionView;
+const theme = { key: "venore-slime", colorPalettes: [], palette: undefined } as unknown as ResolvedThemeDefinitionView;
 const withChoice = (palette: ThemeConfigDocument["byTheme"][string]["palette"]): ThemeConfigDocument => ({
   ...defaultThemeConfigDocument("venore-slime"),
   byTheme: { "venore-slime": { palette, options: {}, fonts: {} } },

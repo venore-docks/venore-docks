@@ -5,7 +5,7 @@ vi.mock("@/contexts/rbac", () => ({ authorizeActor: (...args: unknown[]) => auth
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("@/contexts/settings", () => ({ getSetting: vi.fn(), setSetting: vi.fn() }));
 
-const { checkPaletteContrastAction, generateSeedPaletteAction, getPalettePanelDataAction } = await import("./actions");
+const { checkPaletteContrastAction, generateSeedPaletteAction } = await import("./actions");
 
 // Actions do painel de paleta (W1): só cálculo, mas exigem settings.manage.
 describe("actions do painel de paleta", () => {
@@ -13,7 +13,6 @@ describe("actions do painel de paleta", () => {
 
   it("sem settings.manage: recusa sem calcular nada", async () => {
     authorizeActor.mockResolvedValue({ authorized: false, error: { code: "rbac.forbidden", message: "Sem permissão." } });
-    expect(await getPalettePanelDataAction("venore-slime")).toEqual({ data: null, error: "Sem permissão." });
     expect(await generateSeedPaletteAction("venore-slime", "#3366cc")).toEqual({ data: null, error: "Sem permissão." });
     expect(await checkPaletteContrastAction("venore-slime", { mode: "default" })).toEqual({ data: null, error: "Sem permissão." });
     expect(authorizeActor).toHaveBeenCalledWith("settings.manage");
@@ -22,9 +21,8 @@ describe("actions do painel de paleta", () => {
   describe("com settings.manage", () => {
     beforeEach(() => authorizeActor.mockResolvedValue({ authorized: true, actor: { userId: "u1" } }));
 
-    it("dados do painel do tema pedido; tema desconhecido = erro (sem cair no slime calado)", async () => {
-      expect((await getPalettePanelDataAction("venore-slime")).data).toMatchObject({ themeKey: "venore-slime", allowCustom: true });
-      expect(await getPalettePanelDataAction("nao-existe")).toEqual({ data: null, error: expect.stringContaining("indisponível") });
+    it("tema desconhecido = erro (sem cair no slime calado)", async () => {
+      expect(await generateSeedPaletteAction("nao-existe", "#3366cc")).toEqual({ data: null, error: expect.stringContaining("indisponível") });
     });
 
     it("gera a escolha seed e valida a semente", async () => {

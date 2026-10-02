@@ -16,11 +16,9 @@ import { authorizeActor } from "@/contexts/rbac";
 import { themePaletteChoiceSchema, type ThemePaletteChoice } from "@/contexts/themes/contracts/v8";
 import { resolveThemeDefinition } from "@/platform/theme-rendering/resolve-theme-definition";
 import {
-  buildPalettePanelData,
   checkPaletteChoiceContrast,
   generateSeedChoice,
   type PaletteContrastView,
-  type PalettePanelData,
 } from "@/platform/theme-engine/palette/palette-admin";
 
 export type ThemesActionState = { error: string | null };
@@ -270,12 +268,6 @@ async function authorizedPaletteTheme(themeKey: unknown) {
   const { theme, fallback } = resolveThemeDefinition(String(themeKey ?? ""));
   if (fallback) return { theme: null, error: `Tema "${String(themeKey)}" indisponível.` };
   return { theme, error: null };
-}
-
-export async function getPalettePanelDataAction(themeKey: string): Promise<PaletteActionResult<PalettePanelData>> {
-  const { theme, error } = await authorizedPaletteTheme(themeKey);
-  if (!theme) return { data: null, error };
-  return { data: buildPalettePanelData(theme), error: null };
 }
 
 export async function generateSeedPaletteAction(

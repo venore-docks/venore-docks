@@ -12,5 +12,16 @@ export type DraftPanelProps<T = Partial<ThemeConfigDocument>> = {
 // Fatia serializável da definição resolvida que os painéis precisam (sem componentes/funções).
 export type ResolvedThemeDefinitionView = Pick<
   ResolvedThemeDefinition,
-  "key" | "chain" | "contract" | "manifest" | "options" | "fonts" | "fontChoices" | "palette" | "templateVariants" | "responsive" | "layoutDecl"
+  | "key"
+  | "chain"
+  | "contract"
+  | "manifest"
+  | "options"
+  | "fonts"
+  | "fontChoices"
+  | "palette"
+  | "colorPalettes"
+  | "templateVariants"
+  | "responsive"
+  | "layoutDecl"
 >;

@@ -22,17 +22,31 @@ import { ThemePanel } from "../_panels/theme-panel";
 import { NATIVE_FIELD_CLASS } from "./field-styles";
 import { buildPreviewMessage } from "./preview-message";
 
-// Mudanças que mexem na estrutura (tema, seções, assets, layout/mobileNav reservados) não dá pra
-// pré-visualizar no client: salvam o rascunho e recarregam o iframe (spec §7.2).
+// Mudanças que mexem na estrutura (tema, seções, assets, layout/mobileNav reservados, fontes — as
+// classes do next/font e o CSS --theme-font-* saem do servidor) não dá pra pré-visualizar no
+// client: salvam o rascunho e recarregam o iframe (spec §7.2).
 const STRUCTURAL_KEYS: readonly (keyof ThemeConfigDocument)[] = ["themeKey", "sections", "assets"];
 const RESERVED_OPTION_KEYS = ["layout", "mobile-nav", "contextual-bar"];
 
 function isStructural(previous: ThemeConfigDocument, patch: Partial<ThemeConfigDocument>): boolean {
   if (STRUCTURAL_KEYS.some((key) => key in patch)) return true;
   if (!patch.byTheme) return false;
-  const before = previous.byTheme[previous.themeKey]?.options ?? {};
-  const after = patch.byTheme[previous.themeKey]?.options ?? {};
+  const previousEntry = previous.byTheme[previous.themeKey];
+  // Patch sem o tema atual (merge raso) não mexe nele.
+  if (!(previous.themeKey in patch.byTheme)) return false;
+  const nextEntry = patch.byTheme[previous.themeKey];
+  if (JSON.stringify(previousEntry?.fonts ?? {}) !== JSON.stringify(nextEntry?.fonts ?? {})) return true;
+  const before = previousEntry?.options ?? {};
+  const after = nextEntry?.options ?? {};
   return RESERVED_OPTION_KEYS.some((key) => before[key] !== after[key]);
+}
+
+// Painéis devolvem `byTheme` com as entradas que mudaram: merge raso por tema, pra um patch nunca
+// apagar a entrada de outro tema.
+function applyPatch(previous: ThemeConfigDocument, patch: Partial<ThemeConfigDocument>): ThemeConfigDocument {
+  const next = { ...previous, ...patch };
+  if (patch.byTheme) next.byTheme = { ...previous.byTheme, ...patch.byTheme };
+  return next;
 }
 
 export function CustomizeWorkspace({
@@ -124,7 +138,7 @@ export function CustomizeWorkspace({
   const onChange = useCallback(
     (patch: Partial<ThemeConfigDocument>) => {
       const previous = documentRef.current;
-      const next = { ...previous, ...patch };
+      const next = applyPatch(previous, patch);
       documentRef.current = next;
       setDocument(next);
       if (isStructural(previous, patch)) {

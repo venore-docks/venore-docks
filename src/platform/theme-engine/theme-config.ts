@@ -189,7 +189,18 @@ export async function discardThemeConfigDraft(): Promise<OperationResult<{ disca
 // Personalizar precisam (customize/_panels/types.ts: ResolvedThemeDefinitionView).
 export type ThemeCustomizeThemeView = Pick<
   ResolvedThemeDefinition,
-  "key" | "chain" | "contract" | "manifest" | "options" | "fonts" | "fontChoices" | "palette" | "templateVariants" | "responsive" | "layoutDecl"
+  | "key"
+  | "chain"
+  | "contract"
+  | "manifest"
+  | "options"
+  | "fonts"
+  | "fontChoices"
+  | "palette"
+  | "colorPalettes"
+  | "templateVariants"
+  | "responsive"
+  | "layoutDecl"
 >;
 export type ThemeCustomizeChoice = { key: string; name: string; contract: 7 | 8; chain: readonly string[]; palettes: { id: string; name: string }[] };
 export type ThemeCustomizeData = {
@@ -202,9 +213,9 @@ export type ThemeCustomizeData = {
 };
 
 function toThemeView(theme: ResolvedThemeDefinition): ThemeCustomizeThemeView {
-  const { key, chain, contract, manifest, options, fonts, fontChoices, palette, templateVariants, responsive, layoutDecl } = theme;
+  const { key, chain, contract, manifest, options, fonts, fontChoices, palette, colorPalettes, templateVariants, responsive, layoutDecl } = theme;
   // JSON (não structuredClone): descarta qualquer valor não serializável que um manifesto traga.
-  return JSON.parse(JSON.stringify({ key, chain, contract, manifest, options, fonts, fontChoices, palette, templateVariants, responsive, layoutDecl }));
+  return JSON.parse(JSON.stringify({ key, chain, contract, manifest, options, fonts, fontChoices, palette, colorPalettes, templateVariants, responsive, layoutDecl }));
 }
 
 export async function loadThemeCustomizeData(): Promise<OperationResult<ThemeCustomizeData>> {

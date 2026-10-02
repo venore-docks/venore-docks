@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { ThemePaletteChoice } from "@/contexts/themes/contracts/v8";
-import type { PaletteContrastView, PalettePanelData } from "@/platform/theme-engine/palette/palette-admin";
-import { checkPaletteContrastAction, generateSeedPaletteAction, getPalettePanelDataAction } from "../../actions";
+import type { PaletteContrastView } from "@/platform/theme-engine/palette/palette-admin";
+import { buildPalettePanelData } from "@/platform/theme-engine/palette/palette-panel-data";
+import { checkPaletteContrastAction, generateSeedPaletteAction } from "../../actions";
 import {
   currentPaletteChoice,
   PALETTE_PANEL_TOKENS,
@@ -32,24 +33,14 @@ const REGION_LABELS = { header: "Header", rail: "Rail", contextual: "Barra conte
 const DEFAULT_SEED = "#3366cc";
 
 export function PalettePanel({ draft, theme, onChange }: DraftPanelProps) {
-  const [data, setData] = useState<PalettePanelData | null>(null);
+  // Presets, sementes e tons por região vêm da view do tema (colorPalettes/palette): sem ida ao
+  // servidor. Só gerar a paleta da semente e checar contraste usam actions (gerador + tokens).
+  const data = useMemo(() => buildPalettePanelData(theme), [theme]);
   const [error, setError] = useState<string | null>(null);
   const [problems, setProblems] = useState<PaletteContrastView[] | null>(null);
   const [pending, startTransition] = useTransition();
   const choice = currentPaletteChoice(draft, theme.key);
   const [seed, setSeed] = useState(choice.mode === "seed" ? (toPickerHex(choice.seed) ?? DEFAULT_SEED) : DEFAULT_SEED);
-
-  useEffect(() => {
-    let active = true;
-    void getPalettePanelDataAction(theme.key).then((result) => {
-      if (!active) return;
-      setData(result.data);
-      setError(result.error);
-    });
-    return () => {
-      active = false;
-    };
-  }, [theme.key]);
 
   const apply = (next: ThemePaletteChoice) => {
     setProblems(null);
@@ -72,7 +63,7 @@ export function PalettePanel({ draft, theme, onChange }: DraftPanelProps) {
       setProblems(result.data);
     });
 
-  const modes: PaletteMode[] = ["default", "preset", "seed", ...(data?.allowCustom === false ? [] : (["custom"] as const))];
+  const modes: PaletteMode[] = ["default", "preset", "seed", ...(data.allowCustom === false ? [] : (["custom"] as const))];
 
   return (
     <section aria-labelledby="palette-panel-title" className="space-y-4 rounded-panel border border-border bg-card ui-panel-padding-roomy">
@@ -94,10 +85,10 @@ export function PalettePanel({ draft, theme, onChange }: DraftPanelProps) {
               name="palette-mode"
               value={mode}
               checked={choice.mode === mode}
-              disabled={mode === "preset" && (data?.presets.length ?? 0) === 0}
+              disabled={mode === "preset" && data.presets.length === 0}
               onChange={() => {
                 if (mode === "default") apply({ mode: "default" });
-                else if (mode === "preset" && data?.presets[0]) apply({ mode: "preset", presetId: data.presets[0].id });
+                else if (mode === "preset" && data.presets[0]) apply({ mode: "preset", presetId: data.presets[0].id });
                 else if (mode === "seed") generate(seed);
                 else if (mode === "custom") apply(setCustomToken(choice, "light", "primary", toPickerHex(seed)));
               }}
@@ -107,7 +98,7 @@ export function PalettePanel({ draft, theme, onChange }: DraftPanelProps) {
         ))}
       </fieldset>
 
-      {choice.mode === "preset" && data && (
+      {choice.mode === "preset" && (
         <ul className="space-y-2">
           {data.presets.map((preset) => (
             <li key={preset.id} className="flex items-center justify-between gap-3 text-sm">
@@ -147,7 +138,7 @@ export function PalettePanel({ draft, theme, onChange }: DraftPanelProps) {
               Gerar paleta
             </Button>
           </div>
-          {data && data.seedPresets.length > 0 && (
+          {data.seedPresets.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {data.seedPresets.map((preset) => (
                 <Button
@@ -176,7 +167,7 @@ export function PalettePanel({ draft, theme, onChange }: DraftPanelProps) {
               <legend className="text-xs font-medium text-muted-foreground">{mode === "light" ? "Modo claro" : "Modo escuro"}</legend>
               {PALETTE_PANEL_TOKENS.map(({ token, label }) => {
                 const value = toPickerHex(choice[mode][token]);
-                const locked = data?.lockedTokens.some((name) => name.replace(/^--/, "") === token) ?? false;
+                const locked = data.lockedTokens.some((name) => name.replace(/^--/, "") === token);
                 return (
                   <div key={token} className="flex items-center justify-between gap-2 text-sm text-foreground">
                     <label htmlFor={`palette-${mode}-${token}`}>{label}</label>
@@ -205,7 +196,7 @@ export function PalettePanel({ draft, theme, onChange }: DraftPanelProps) {
         </div>
       )}
 
-      {data && data.regionTones.length > 0 && (
+      {data.regionTones.length > 0 && (
         <p className="text-xs text-muted-foreground">
           Tons por região definidos pelo tema:{" "}
           {data.regionTones.map((tone) => `${REGION_LABELS[tone.region]} ${TONE_LABELS[tone.tone]}`).join(", ")}.

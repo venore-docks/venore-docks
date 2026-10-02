@@ -1,6 +1,5 @@
 import type { ColorPalette, PaletteColorTokens } from "@/contexts/themes";
 import type {
-  RegionTone,
   ResolvedThemeDefinition,
   ThemePaletteChoice,
   ThemeTokenRegion,
@@ -8,7 +7,7 @@ import type {
 import { THEME_COLOR_VALUE_PATTERN } from "@/contexts/themes/contracts/v8";
 import type { OperationResult } from "@/shared/types";
 import { checkRegionContrast, describeRegionContrastProblem, type RegionContrastProblem } from "../contrast";
-import { effectiveTokens, getThemeTokenValues, THEME_TOKEN_REGIONS } from "../token-values";
+import { effectiveTokens, getThemeTokenValues } from "../token-values";
 import { generateThemePalette } from "./generate-theme-palette";
 
 // Composição pura do admin de paleta (spec v8 §9 — seção de /admin/themes e painel de
@@ -17,40 +16,9 @@ import { generateThemePalette } from "./generate-theme-palette";
 
 type PaletteTheme = Pick<ResolvedThemeDefinition, "key" | "colorPalettes" | "palette">;
 
-export type PalettePresetView = { id: string; name: string; swatches: string[] };
-export type PaletteRegionToneView = { region: ThemeTokenRegion; tone: RegionTone; minContrast: number | null };
-export type PalettePanelData = {
-  themeKey: string;
-  presets: PalettePresetView[]; // catálogo do tema (colorPalettes) → escolha "preset"
-  seedPresets: { id: string; name: string; seed: string }[]; // regras do tema (palette.presets) → escolha "seed"
-  allowCustom: boolean;
-  regionTones: PaletteRegionToneView[]; // só as regiões com tom ≠ inherit
-  lockedTokens: string[];
-};
+export { buildPalettePanelData, type PalettePanelData, type PalettePresetView, type PaletteRegionToneView } from "./palette-panel-data";
 
 export type PaletteContrastView = { region: ThemeTokenRegion; mode: "light" | "dark"; message: string };
-
-const SWATCH_TOKENS = ["primary", "accent", "sidebar-bg-start", "background"] as const;
-
-function swatches(palette: ColorPalette): string[] {
-  return SWATCH_TOKENS.map((token) => palette.light[token]).filter((value): value is string => Boolean(value));
-}
-
-export function buildPalettePanelData(theme: PaletteTheme): PalettePanelData {
-  const rules = theme.palette ?? {};
-  return {
-    themeKey: theme.key,
-    presets: theme.colorPalettes.map((palette) => ({ id: palette.id, name: palette.name, swatches: swatches(palette) })),
-    seedPresets: (rules.presets ?? []).map((preset) => ({ ...preset })),
-    allowCustom: rules.allowCustom !== false,
-    regionTones: THEME_TOKEN_REGIONS.flatMap((region) => {
-      const rule = rules.regions?.[region];
-      if (!rule || rule.tone === "inherit") return [];
-      return [{ region, tone: rule.tone, minContrast: rule.minContrast ?? null }];
-    }),
-    lockedTokens: [...(rules.lockedTokens ?? [])],
-  };
-}
 
 export function toContrastViews(problems: readonly RegionContrastProblem[]): PaletteContrastView[] {
   return problems.map((problem) => ({ region: problem.region, mode: problem.mode, message: describeRegionContrastProblem(problem) }));
