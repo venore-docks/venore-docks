@@ -21,8 +21,8 @@ export const RICH_TEXT_INLINE_CLASSES = cn(
   "[&_a]:text-primary [&_a]:underline",
   "[&_h1]:text-lg [&_h1]:font-semibold [&_h2]:text-base [&_h2]:font-semibold [&_h3]:text-sm [&_h3]:font-semibold",
   "[&_p]:leading-relaxed",
-  "[&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:leading-relaxed",
-  "[&_blockquote]:border-l-2 [&_blockquote]:border-current/30 [&_blockquote]:pl-3 [&_blockquote]:opacity-80",
+  "[&_ul]:list-disc [&_ul]:ps-5 [&_ol]:list-decimal [&_ol]:ps-5 [&_li]:leading-relaxed",
+  "[&_blockquote]:border-s-2 [&_blockquote]:border-current/30 [&_blockquote]:ps-3 [&_blockquote]:opacity-80",
 );
 
 export function hasRichTextContent(value: unknown): boolean {

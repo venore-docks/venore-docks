@@ -4,6 +4,7 @@ import type { Block, BlockDefinition, EditorField } from "@/contexts/cms";
 import type { JSONContent } from "@tiptap/core";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { IconPicker } from "@/components/icon-picker";
+import { PRESENTATION_VARIANT_FIELD, SECTION_STYLE_FIELD, withUnavailableOption } from "@/platform/page-builder/with-theme-presentation-fields";
 import { MediaField } from "./media-field";
 import { RichTextField } from "./rich-text-field";
 
@@ -32,6 +33,14 @@ function readNullableString(data: Block["data"], name: string): string | null {
 function readJSONContent(data: Block["data"], name: string): JSONContent | null {
   const value = data[name];
   return value && typeof value === "object" ? (value as JSONContent) : null;
+}
+
+// Campos de apresentação do tema (variante/estilo de seção): um valor guardado que o tema ativo
+// não oferece aparece rotulado "(indisponível neste tema)" — nunca some nem é reescrito sozinho.
+function selectOptions(field: EditorField, value: string): { value: string; label: string }[] {
+  const options = field.options ?? [];
+  if (field.name !== PRESENTATION_VARIANT_FIELD && field.name !== SECTION_STYLE_FIELD) return options;
+  return withUnavailableOption(options, value);
 }
 
 // Alguns defaultData guardam número (ex: row.columns: 2) mesmo com editorField "select" (cujas
@@ -158,7 +167,7 @@ function FieldControl({
               <SelectValue placeholder="selecione" />
             </SelectTrigger>
             <SelectContent>
-              {(field.options ?? []).map((option) => (
+              {selectOptions(field, readSelectValue(block.data, field.name)).map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
                 </SelectItem>
