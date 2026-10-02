@@ -75,6 +75,7 @@ export function CompositionBuilder({
   initialComposition,
   definitions,
   preview,
+  layoutPanel = null,
 }: {
   entryId: string;
   entryTitle: string;
@@ -82,6 +83,9 @@ export function CompositionBuilder({
   initialComposition: Composition;
   definitions: BlockDefinition[];
   preview: React.ReactNode;
+  // Layout da página (largura/rail/barra contextual/variante de template) — salvo à parte da
+  // composição (update-entry-layout), por isso vem pronto da página.
+  layoutPanel?: React.ReactNode;
 }) {
   const [composition, setComposition] = useState<Composition>(initialComposition);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -191,6 +195,8 @@ export function CompositionBuilder({
         </p>
       )}
       {saveError && !saveError.blockId && <p className="text-sm text-destructive">{saveError.message}</p>}
+
+      {layoutPanel}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[380px_1fr]">
         <div className="rounded-panel border border-border bg-card ui-panel-padding-roomy">
