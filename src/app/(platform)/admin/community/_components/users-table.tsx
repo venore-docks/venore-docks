@@ -8,6 +8,7 @@ import { PurgeUserDialog } from "./purge-user-dialog";
 import { RejectUserDialog } from "./reject-user-dialog";
 import { RemoveUserDialog } from "./remove-user-dialog";
 import { UnfreezeUserButton } from "./unfreeze-user-button";
+import { DEFAULT_DATE_LOCALE, formatDate } from "@/shared/format-date";
 
 export const USER_STATUS_LABEL: Record<UserRegistrationStatus, string> = {
   pending: "Pendente",
@@ -64,10 +65,10 @@ export function UsersTable({
                 </Badge>
               </TableCell>
               <TableCell className="hidden text-muted-foreground md:table-cell">
-                {user.createdAt.toLocaleDateString("pt-BR")}
+                {formatDate(user.createdAt, DEFAULT_DATE_LOCALE, "short")}
               </TableCell>
               <TableCell className="hidden text-muted-foreground md:table-cell">
-                {user.lastLoginAt ? user.lastLoginAt.toLocaleString("pt-BR") : "—"}
+                {formatDate(user.lastLoginAt, DEFAULT_DATE_LOCALE, "dateTimeSeconds") ?? "—"}
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1">

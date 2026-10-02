@@ -4,8 +4,7 @@ import { loadThemeConfigHistory } from "@/platform/theme-engine/theme-config";
 import { ThemesTabs } from "../_layout/themes-tabs";
 import { ThemesAccessDenied, ThemesTabPlaceholder } from "../_layout/themes-access-denied";
 import { RollbackButton } from "./_components/rollback-button";
-
-const DATE_FORMAT = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" });
+import { DEFAULT_DATE_LOCALE, formatDate } from "@/shared/format-date";
 
 // /admin/themes/history (spec v8 §7.2): as últimas 20 publicações da aparência, com autor, data e
 // restauração (rollback = nova publicação, com confirmação).
@@ -37,7 +36,7 @@ export default async function ThemesHistoryPage() {
         <section className="rounded-panel border border-border bg-card ui-panel-padding-roomy">
           <ul className="divide-y divide-border">
             {history.data.items.map((item) => {
-              const when = item.publishedAt ? DATE_FORMAT.format(new Date(item.publishedAt)) : "—";
+              const when = formatDate(item.publishedAt, DEFAULT_DATE_LOCALE, "dateTime") ?? "—";
               return (
                 <li key={item.id} className="flex flex-col gap-2 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex flex-col gap-0.5">

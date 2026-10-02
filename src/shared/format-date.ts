@@ -12,6 +12,8 @@ export const DATE_PRESETS = {
   short: { dateStyle: "short" },
   // "15/03/2026, 14:30".
   dateTime: { dateStyle: "short", timeStyle: "short" },
+  // "15/03/2026, 14:30:45" — o mesmo que toLocaleString("pt-BR"); logs/auditoria do admin.
+  dateTimeSeconds: { dateStyle: "short", timeStyle: "medium" },
 } as const satisfies Record<string, Intl.DateTimeFormatOptions>;
 
 export type DatePreset = keyof typeof DATE_PRESETS;

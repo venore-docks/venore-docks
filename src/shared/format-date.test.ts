@@ -10,6 +10,11 @@ describe("formatDate", () => {
     expect(formatDate(new Date(iso), "pt-BR", { timeZone: "UTC", dateStyle: "short" })).toBe("15/03/2026");
   });
 
+  it("dateTimeSeconds = toLocaleString do mesmo locale (admin)", () => {
+    const date = new Date(iso);
+    expect(formatDate(date, "pt-BR", "dateTimeSeconds")).toBe(date.toLocaleString("pt-BR"));
+  });
+
   it("locale inválido ou ausente cai no pt-BR", () => {
     expect(formatDate(iso, "@@invalid", "long")).toBe("15 de março de 2026");
     expect(formatDate(iso, null, "long")).toBe("15 de março de 2026");

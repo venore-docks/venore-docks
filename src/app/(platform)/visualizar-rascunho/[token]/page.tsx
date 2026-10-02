@@ -4,6 +4,7 @@ import { Eye } from "lucide-react";
 import { extractEntryComposition, getEntry, getEntryBody } from "@/contexts/cms";
 import { verifyPreviewToken } from "@/platform/cms-preview/preview-token";
 import { BlockRenderer } from "@/components/page-builder/block-renderer";
+import { DEFAULT_DATE_LOCALE, formatDate } from "@/shared/format-date";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +27,7 @@ export default async function DraftPreviewPage({ params }: { params: Promise<{ t
       <p role="note" className="flex items-center gap-2 rounded-md border border-border bg-muted px-3 py-2 text-xs text-muted-foreground">
         <Eye className="size-3.5" aria-hidden="true" />
         Pré-visualização{entry.status === "published" ? "" : " — este conteúdo ainda não está publicado"}. Link válido até{" "}
-        {verified.expiresAt.toLocaleString("pt-BR")}.
+        {formatDate(verified.expiresAt, DEFAULT_DATE_LOCALE, "dateTimeSeconds")}.
       </p>
       <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">{entry.title}</h1>
       {composition ? <BlockRenderer blocks={composition} mode="published" /> : <p className="text-muted-foreground">{getEntryBody(entry.data)}</p>}

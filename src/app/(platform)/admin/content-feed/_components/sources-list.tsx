@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useActionToast } from "@/hooks/use-action-toast";
 import type { SourceView } from "@/contexts/content-feed";
 import { deleteSourceAction, syncSourceAction, type ContentFeedActionState } from "../actions";
+import { DEFAULT_DATE_LOCALE, formatDate } from "@/shared/format-date";
 
 const initialState: ContentFeedActionState = { error: null };
 
@@ -42,7 +43,7 @@ function SourceRow({ source }: { source: SourceView }) {
         {source.lastSyncError ? (
           <p className="text-xs text-destructive">Última sincronização falhou: {source.lastSyncError}</p>
         ) : source.lastSyncedAt ? (
-          <p className="text-xs text-muted-foreground">Sincronizado em {source.lastSyncedAt.toLocaleString("pt-BR")}</p>
+          <p className="text-xs text-muted-foreground">Sincronizado em {formatDate(source.lastSyncedAt, DEFAULT_DATE_LOCALE, "dateTimeSeconds")}</p>
         ) : (
           <p className="text-xs text-muted-foreground">Ainda não sincronizado.</p>
         )}

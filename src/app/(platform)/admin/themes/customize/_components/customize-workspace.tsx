@@ -21,6 +21,7 @@ import { SectionsPanel } from "../_panels/sections-panel";
 import { ThemePanel } from "../_panels/theme-panel";
 import { NATIVE_FIELD_CLASS } from "./field-styles";
 import { buildPreviewMessage } from "./preview-message";
+import { DEFAULT_DATE_LOCALE, formatDate } from "@/shared/format-date";
 
 // Mudanças que mexem na estrutura (tema, seções, assets, layout/mobileNav reservados, fontes — as
 // classes do next/font e o CSS --theme-font-* saem do servidor) não dá pra pré-visualizar no
@@ -202,7 +203,7 @@ export function CustomizeWorkspace({
             : dirty
               ? "Alterações ainda não salvas no rascunho (a pré-visualização já mostra cores e opções)."
               : draft
-                ? `Rascunho salvo em ${new Date(draft.createdAt).toLocaleString("pt-BR")}.`
+                ? `Rascunho salvo em ${formatDate(draft.createdAt, DEFAULT_DATE_LOCALE, "dateTimeSeconds")}.`
                 : "Sem rascunho: a primeira alteração estrutural cria um."}
         </p>
         {status.error && (

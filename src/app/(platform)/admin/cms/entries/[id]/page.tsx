@@ -14,8 +14,7 @@ import { EditEntryForm } from "./_components/edit-entry-form";
 import { PublishButton } from "./_components/publish-button";
 import { RevisionHistory, type RevisionHistoryItem } from "./_components/revision-history";
 import { PreviewLink } from "./_components/preview-link";
-
-const DATE_FORMAT = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" });
+import { DEFAULT_DATE_LOCALE, formatDate } from "@/shared/format-date";
 
 export default async function EditEntryPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -73,7 +72,7 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
     kind: revision.kind,
     status: revision.status,
     title: revision.title,
-    createdAt: DATE_FORMAT.format(revision.createdAt),
+    createdAt: formatDate(revision.createdAt, DEFAULT_DATE_LOCALE, "dateTime") ?? "",
     authorLabel: revision.createdBy === gate.actor.id ? "você" : "outra pessoa da equipe",
     isOwnProposal: revision.createdBy === gate.actor.id,
   }));
