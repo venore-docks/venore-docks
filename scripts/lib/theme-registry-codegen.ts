@@ -2,6 +2,7 @@
 // isto; src/themes/theme-registry-codegen.test.ts testa sem disco. Dono: Fase F (W9 pluga a
 // lineage em `lineageCss`, W1 o parser de tokens em `tokensModule`).
 import semver from "semver";
+import { buildThemeLineage } from "../theme-lineage";
 import { buildThemeTokensModule } from "../theme-tokens";
 
 export type ThemePackageInput = {
@@ -183,8 +184,14 @@ export function buildThemeRegistry(
     included.map(({ input }) => `@import "${input.dep}/theme.css";\n@source "${input.sourceDir}";`).join("\n") +
     (included.length ? "\n" : "");
 
-  // W9 preenche (reescrita :is() dos ancestrais). Vazio na Fase F.
-  const lineageCss = CSS_HEADER;
+  // W9 (scripts/theme-lineage.ts, spec §3.1): CSS de cada ancestral reescrito pra
+  // `:is([data-theme="pai"],[data-theme="filho"])`, raiz primeiro; avisos de dark incompleto.
+  const lineage = buildThemeLineage(
+    included.map(({ key, lineage: chain, input }) => ({ key, lineage: chain, css: input.themeCss })),
+    options.slimeCss !== undefined ? { [RESERVED_KEY]: options.slimeCss } : {},
+  );
+  issues.push(...lineage.issues);
+  const lineageCss = CSS_HEADER + lineage.css;
   // W1: valores light/dark parseados por tema efetivo (scripts/theme-tokens.ts), slime incluído.
   const tokensModule = buildThemeTokensModule(
     [
