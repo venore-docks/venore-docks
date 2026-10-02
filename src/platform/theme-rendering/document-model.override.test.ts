@@ -26,10 +26,7 @@ vi.mock("next/headers", () => ({
   headers: async () => new Headers({ "x-breadcrumb-pathname": pathname }),
   cookies: async () => ({ get: (name: string) => (jar.has(name) ? { name, value: jar.get(name) } : undefined) }),
 }));
-vi.mock("next/font/google", () => {
-  const font = () => ({ className: "f", variable: "--f", style: { fontFamily: "f" } });
-  return { Geist: font, Geist_Mono: font };
-});
+vi.mock("next/font/google", async () => (await import("@/test-support/themes/next-font-google-mock")).nextFontGoogleMock());
 vi.mock("@/contexts/themes", async (importOriginal) => {
   const rules = await importOriginal<typeof import("@/contexts/themes")>();
   return {

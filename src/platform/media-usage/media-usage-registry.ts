@@ -2,6 +2,7 @@ import { findCmsMediaUsage } from "@/contexts/cms";
 import { PLUGIN_CONTRIBUTIONS } from "@/plugins/contributions";
 import { registerPlugins } from "../plugin-engine/register-plugins";
 import { findBrandMediaUsage } from "../brand/find-brand-media-usage";
+import { findThemeConfigMediaUsage } from "./find-theme-config-media-usage";
 import type { MediaUsageProvider, MediaUsageReference } from "./types";
 
 // Providers de contexts do core: sempre ativos, não têm estado enabled/disabled (mesmo raciocínio
@@ -9,6 +10,8 @@ import type { MediaUsageProvider, MediaUsageReference } from "./types";
 const CORE_PROVIDERS: Record<string, MediaUsageProvider> = {
   cms: findCmsMediaUsage,
   brand: findBrandMediaUsage,
+  // Config do tema (spec v8 §7.6): assets (OG/ícone) e opções de mídia, publicado + rascunho.
+  themes: findThemeConfigMediaUsage,
 };
 
 // Providers de plugin: vêm de src/plugins/*/contributions.ts (campo `mediaUsageResolver`),
