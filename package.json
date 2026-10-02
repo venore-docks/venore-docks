@@ -58,7 +58,6 @@
     "@venore/plugin-disc": "git+https://github.com/venore-docks/venore-plugin-disc.git#v0.2.0",
     "@venore/plugin-photo-gallery": "git+https://github.com/venore-docks/venore-plugin-photo-gallery.git#v1.0.0",
     "@venore/plugin-vagas": "github:venore-docks/venore-plugin-vagas#v1.2.4",
-    "@venore/plugin-broadcast": "git+https://github.com/venore-docks/venore-plugin-broadcast.git#4eba7ff",
     "@venore/plugin-erasto-league": "github:venore-docks/venore-plugin-erasto-league#7b1e3246dc113c55a288e67aa0e2a5c176662ed3",
     "@vercel/blob": "^2.6.1",
     "@vercel/functions": "^3.7.5",
