@@ -3,7 +3,7 @@
 // core com o pacote do tema instalado (é o que o workflow reutilizável
 // .github/workflows/theme-check.yml faz no repositório do tema, antes de criar a tag).
 //
-//   npx tsx scripts/theme-check.ts                       # todo tema do registro
+//   npm run theme:check                                  # todo tema do registro (= npx tsx scripts/theme-check.ts)
 //   npx tsx scripts/theme-check.ts --theme aurora        # só o tema (+ o fallback venore-slime)
 //   npx tsx scripts/theme-check.ts --theme aurora --no-browser   # sem Playwright
 //

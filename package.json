@@ -26,6 +26,7 @@
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:plugins": "vitest run --config vitest.plugins.config.ts",
     "test:e2e": "playwright test",
+    "theme:check": "tsx scripts/theme-check.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:migrate:plugins": "tsx --env-file-if-exists=.env scripts/migrate-installed-plugins.ts",

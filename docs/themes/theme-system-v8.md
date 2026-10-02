@@ -35,7 +35,7 @@ A área (`public` ou `admin`) é decidida **só pelo caminho**, nunca pelo `navM
 - **L6, page builder.**
   - Variantes de bloco: a escolha fica gravada em `data.presentationVariant`. O editor lista as variantes do tema ativo, e uma variante desconhecida cai no renderer do core.
   - Estilos de seção: `default`, `muted`, `brand`, `inverted`, `accent`, e o tema pode acrescentar outros.
-  - Layout por página: a largura, o rail e a posição da barra contextual ficam em `entries.data.layout`, sem migration.
+  - Layout por página: a largura, o rail e a posição da barra contextual ficam em `entries.data.layout`, sem migration. Como o `(platform)/layout` não re-renderiza na navegação soft, a página emite um marcador oculto (`data-page-*`) e `src/app/styles/page-layout.css` aplica largura, rail e barra contextual por `:has()`. Por isso a rail é sempre montada quando habilitada: o CSS a esconde a partir de lg, e abaixo disso ela continua sendo o drawer da navegação mobile. Lacuna conhecida: barra contextual `top` × `side` só muda num reload.
 
 ## 4. Como escrever um tema
 
@@ -66,6 +66,8 @@ Regras práticas:
 - **Paletas:** a união das paletas do pai e do filho.
 
 Um pai 7.x só serve de base de tokens e paletas para o filho.
+
+Lacuna conhecida: um `url()` **relativo** dentro de uma regra escopada de um ancestral resolveria a partir de `src/themes/` na cópia da linhagem. Nenhum tema instalado usa (só `data:`); `@font-face` e `@import` não são copiados, porque já vêm do import do ancestral.
 
 ## 6. Rascunho, preview, histórico e rollback
 
@@ -147,7 +149,10 @@ Um único gerador (`generateThemePalette`) respeita as regras do tema. Por exemp
   - o harness SSR de cada tema em vários cenários.
 
   O harness verifica landmarks, a presença de outlets e o escape de JSON-LD.
-- **Job `themes`.** Não usa banco nem build. Roda Playwright com `setContent` a 390 px e a 1280 px, nos modos claro e escuro. Verifica que não há overflow horizontal, que o Tab alcança a navegação e que o axe passa contra o baseline. Os screenshots são publicados como artefatos e não servem como gate de pixel.
+- **Job `themes`.** Não usa banco nem build. Roda o harness SSR (`vitest.themes.config.ts`) e o Playwright (`playwright.themes.config.ts`) com `setContent` nas viewports 390×844 e 1280×800, nos modos claro e escuro. Verifica que não há overflow horizontal, que o Tab alcança a navegação e que o axe passa contra o baseline. Os screenshots são publicados como artefatos e não servem como gate de pixel.
+- **Baselines (catraca).** A dívida dos Shells 7.x fica em `e2e-themes/a11y-baseline.json` (Playwright: axe, teclado, overflow) e em `src/themes/theme-ssr.baseline.json` (harness SSR); a do contraste por região, em `src/themes/a11y-baseline.json`. Problema novo reprova. Problema resolvido também reprova no CI do core, para o baseline só encolher; no `theme:check` de um repositório de tema (`VENORE_THEME_KEYS` definido) ele só gera aviso. O overflow horizontal é gate duro só no kit v8: o Venore Slime e todo tema v8 não podem ter dívida.
+- **Atualizar um baseline** depois de uma mudança intencional: `UPDATE_THEME_A11Y_BASELINE=1 npx playwright test -c playwright.themes.config.ts`, `UPDATE_THEME_SSR_BASELINE=1 npx vitest run -c vitest.themes.config.ts src/themes/theme-ssr.harness.test.tsx` e `UPDATE_A11Y_BASELINE=1 npx vitest run src/themes/theme-contrast.test.ts`.
+- **`npm run theme:check`** (`-- --theme <chave>` para um tema só, `--no-browser` sem Playwright) roda o mesmo conjunto: codegen estrito, contrato de tokens, contraste, orçamento, harness SSR e Playwright.
 - **Workflow reutilizável `theme-check.yml`.** Os repositórios de tema o rodam antes de criar uma tag.
 
 ## 20. Operação e falhas
