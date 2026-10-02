@@ -63,7 +63,7 @@ export const resolveDocumentModel = cache(async (): Promise<DocumentModel> => {
   // 8 opções (W2) — 9 paleta (W1) — 10 CSS/atributos de opção (W2) — 11 fontes (W8) — 12 locale (W8)
   const options = resolveThemeOptions(theme, stored?.options, section?.options);
   const paletteCss = buildPaletteCss(theme, section?.palette ?? stored?.palette);
-  const optionsOutput = buildOptionsCssAndAttrs(theme.options, options, { themeKey: theme.key });
+  const optionsOutput = buildOptionsCssAndAttrs(theme.options, options, { themeKey: theme.key, area });
   const fonts = resolveDocumentFonts(theme, stored?.fonts, options, area);
   const { locale, dir } = await resolveDocumentLocale();
 
