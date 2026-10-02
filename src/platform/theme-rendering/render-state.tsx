@@ -13,7 +13,7 @@ export function renderState(theme: ResolvedThemeDefinition, kind: ThemeServerSta
   return <State {...props} />;
 }
 
-// O layout (congelado) chama renderState("maintenance") sem mensagem: a mensagem configurada em
+// O (platform)/layout chama renderState("maintenance") com `message: null`: a mensagem configurada em
 // /admin/settings (ou o texto padrão do kit) entra aqui.
 async function MaintenanceState({ State, props }: { State: ComponentType<PageStateProps>; props: PageStateProps }) {
   const setting = await readMaintenanceSetting();

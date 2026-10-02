@@ -1,4 +1,4 @@
-import { extractEntryComposition, getEntryBody, getPublishedEntryBySlug, recordEntryView } from "@/contexts/cms";
+import { extractEntryComposition, getCachedPublishedEntryBySlug, getEntryBody, recordEntryView } from "@/contexts/cms";
 import { getCurrentUser } from "@/contexts/auth";
 import { getAdminPageData } from "@/platform/admin-shell/get-admin-page-data";
 import { getActivePluginKeys } from "@/platform/plugin-engine/get-active-plugin-keys";
@@ -15,7 +15,7 @@ import { buildTemplateJsonLd } from "@/platform/theme-rendering/template-json-ld
 import { BlockRenderer } from "@/components/page-builder/block-renderer";
 import type { HomeTemplateProps } from "@/contexts/themes/contracts/v8";
 import { CoreJsonLd } from "@/theme-sdk/kit/json-ld";
-import type { KitHomeTemplateExtras } from "@/theme-sdk/kit/templates/simple-templates";
+import { PageLayoutMarker } from "@/platform/page-builder/page-layout-marker";
 
 // force-dynamic: conteúdo (CMS) e tema ativo são runtime-configuráveis, sem rebuild
 // (docs/venore-docks.md — "Sobre temas").
@@ -31,12 +31,13 @@ const HOME_SLUG = "home";
 //  - Sem entry visível: o painel — nome do site, a vitrine de plugin (outlet home.showcase, que
 //    já carrega o publicHomeShowcase dos plugins ativos) e os atalhos de admin para quem tem
 //    acesso ao painel.
-// Uma consulta de entry só: a composição vem do `data` que a entry publicada já trouxe.
+// Uma consulta de entry só: a composição vem do `data` que a entry publicada já trouxe, e o getter
+// cache() é o mesmo que resolvePageLayout usa pro layout da home (nenhuma query a mais no request).
 export default async function HomePage() {
   const [currentUser, adminGate, context] = await Promise.all([getCurrentUser(), getAdminPageData(), resolveTemplateContext()]);
   const user = currentUser.success && currentUser.data ? currentUser.data : null;
 
-  const result = await getPublishedEntryBySlug({ categoryId: null, slug: HOME_SLUG });
+  const result = await getCachedPublishedEntryBySlug(null, HOME_SLUG);
   const entry = result.success && result.data ? result.data : null;
   const canViewEntry = entry != null && (entry.visibility === "public" || user != null);
 
@@ -77,6 +78,8 @@ export default async function HomePage() {
           <BlockRenderer blocks={composition} mode="published" />
         ) : (
           <article>
+            {/* Sem composição não há BlockRenderer: o marcador do layout da página sai daqui. */}
+            <PageLayoutMarker />
             <h1 className="text-3xl font-semibold tracking-tight text-foreground">{entry.title}</h1>
             <p className="mt-2 text-muted-foreground">{getEntryBody(entry.data)}</p>
           </article>
@@ -91,9 +94,7 @@ export default async function HomePage() {
   // "Ver como aluno" só faz sentido em instâncias com a Academy ativa — numa instância sem o
   // plugin, /academy nem existe (resolvePublicPluginRoute devolveria notFound).
   const hasAcademy = (await getActivePluginKeys()).has("academy");
-  // siteName/primaryAction/ícone do atalho: extensões que o kit lê e o contrato §2.7 ainda não
-  // declara (pedido em /home/user/v8/requests/w4.md) — passadas por variável, sem cast.
-  const panel: HomeTemplateProps & KitHomeTemplateExtras = {
+  const panel: HomeTemplateProps = {
     ...common,
     entry: null,
     content: null,

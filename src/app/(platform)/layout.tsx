@@ -8,6 +8,7 @@ import { LegacyShellAdapter } from "@/platform/theme-rendering/legacy-shell-adap
 import { ThemeRenderer } from "@/platform/theme-rendering/theme-renderer";
 import { toKitAdminDefinition } from "@/platform/theme-rendering/resolve-theme-definition";
 import { renderState } from "@/platform/theme-rendering/render-state";
+import { templateText } from "@/theme-sdk/kit/templates/template-strings";
 import { PreviewBanner } from "@/platform/theme-rendering/preview-banner";
 import { signOutAction } from "@/app/(auth)/actions";
 
@@ -40,7 +41,9 @@ export default async function PlatformLayout({
 
   const content = model.maintenance
     ? renderState(model.theme, "maintenance", {
-        title: "Em manutenção",
+        title: templateText(model.strings, "maintenance.title"),
+        // null de propósito: renderState lê a mensagem configurada em /admin/settings (ou o texto
+        // padrão do kit) num componente async, sem atrasar o resto do layout.
         message: null,
         action: null,
         strings: model.strings,

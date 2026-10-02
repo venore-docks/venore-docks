@@ -4,7 +4,6 @@ import { getMediaAsset } from "@/contexts/media";
 import type { AccountTemplateProps } from "@/contexts/themes/contracts/v8";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { renderTemplate, resolveTemplateContext, resolveTemplateVariant } from "@/platform/theme-rendering/render-template";
-import type { KitAccountTemplateExtras } from "@/theme-sdk/kit/templates/simple-templates";
 import { AvatarForm } from "./_components/avatar-form";
 import { NameForm } from "./_components/name-form";
 import { ChangePasswordForm, RevokeSessionsForm } from "./_components/security-forms";
@@ -43,8 +42,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
       : null;
 
   const context = await resolveTemplateContext();
-  // subtitle: extensão que o kit lê e o contrato §2.7 ainda não declara (requests/w4.md).
-  const props: AccountTemplateProps & KitAccountTemplateExtras = {
+  const props: AccountTemplateProps = {
     ...context.common,
     title: "Minha conta",
     subtitle: user.name ?? user.email,

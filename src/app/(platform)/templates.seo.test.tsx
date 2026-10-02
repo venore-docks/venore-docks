@@ -48,6 +48,8 @@ vi.mock("@/platform/theme-rendering/document-model", () => ({
     dir: "ltr",
   }),
 }));
+// Marcador do layout da página (async, lê o document-model): aqui só a posição dele no markup.
+vi.mock("@/platform/page-builder/page-layout-marker", () => ({ PageLayoutMarker: () => <span hidden data-page-layout="" /> }));
 vi.mock("@/contexts/cms", () => ({
   extractEntryComposition: (data: { composition?: unknown[] } | null) => data?.composition ?? null,
   getEntryBody: (data: { body?: string } | null) => data?.body ?? "",
@@ -55,8 +57,9 @@ vi.mock("@/contexts/cms", () => ({
     success: true,
     data: state.category && state.category.slug === slug ? state.category : null,
   }),
-  getCachedPublishedEntryBySlug: async () => ({ success: true, data: state.entry }),
-  getPublishedEntryBySlug: async () => {
+  // A home ("/") lê a entry reservada pelo mesmo getter cache() do catch-all.
+  getCachedPublishedEntryBySlug: async (categoryId: string | null, slug: string) => {
+    if (categoryId !== null || slug !== "home") return { success: true, data: state.entry };
     state.calls.publishedBySlug += 1;
     return { success: true, data: state.homeEntry };
   },

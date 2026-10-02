@@ -14,19 +14,10 @@ import { KitEmptyState } from "../states/empty-state";
 import { KitLoadingState } from "../states/page-state";
 import { templateText } from "./template-strings";
 
-// Campos que o core já passa e o contrato §2.7 ainda não declara (pedido ao orquestrador em
-// /home/user/v8/requests/w4.md). Opcionais: um tema que não os conhece continua válido.
-export type KitHomeTemplateExtras = {
-  siteName?: string;
-  primaryAction?: { href: string; label: string } | null;
-  adminShortcuts: { href: string; label: string; icon?: "settings" }[];
-};
-export type KitAccountTemplateExtras = { subtitle?: string | null };
-
 // Home do kit (spec §2.7). Com entry "home" visível: o conteúdo dela (composição ou corpo). Sem:
 // o painel de antes da v8 — nome do site, ação principal (ex: "Ver como aluno"), a vitrine de
 // plugin (outlet home.showcase) ou o estado vazio, e os atalhos de admin.
-export function KitHomeTemplate(props: HomeTemplateProps & Partial<KitHomeTemplateExtras>) {
+export function KitHomeTemplate(props: HomeTemplateProps) {
   const { entry, content, showcase, adminShortcuts, jsonLd, outlets, strings } = props;
   if (entry && content) {
     return (
@@ -64,7 +55,7 @@ export function KitHomeTemplate(props: HomeTemplateProps & Partial<KitHomeTempla
 
       {adminShortcuts.length > 0 && (
         <div className="flex flex-wrap gap-2 border-t border-border pt-4">
-          {(adminShortcuts as KitHomeTemplateExtras["adminShortcuts"]).map((shortcut) => (
+          {adminShortcuts.map((shortcut) => (
             <Button key={shortcut.href} asChild variant="ghost" size="sm">
               <Link href={shortcut.href} className="text-muted-foreground/56">
                 {shortcut.icon === "settings" && <Settings2 className="size-4" strokeWidth={1.5} />}
@@ -80,7 +71,7 @@ export function KitHomeTemplate(props: HomeTemplateProps & Partial<KitHomeTempla
   );
 }
 
-export function KitAccountTemplate({ title, sections, outlets, subtitle }: AccountTemplateProps & KitAccountTemplateExtras) {
+export function KitAccountTemplate({ title, sections, outlets, subtitle }: AccountTemplateProps) {
   return (
     <div className="space-y-8">
       <div>

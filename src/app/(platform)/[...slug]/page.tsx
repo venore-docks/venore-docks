@@ -15,6 +15,7 @@ import { getMediaAssetUrls } from "@/contexts/media";
 import { resolvePublicPluginRoute } from "@/platform/plugin-routing/resolve-public-route";
 import type { ThemeEntryView } from "@/contexts/themes/contracts/v8";
 import { BlockRenderer } from "@/components/page-builder/block-renderer";
+import { PageLayoutMarker } from "@/platform/page-builder/page-layout-marker";
 import { getAdminPageData } from "@/platform/admin-shell/get-admin-page-data";
 import { extractExcerpt } from "@/platform/seo/entry-excerpt";
 import { getSiteOrigin } from "@/platform/seo/site-origin";
@@ -355,7 +356,11 @@ export default async function CatchAllPage({ params, searchParams }: CatchAllPro
       content: composition ? (
         <BlockRenderer blocks={composition} mode="published" />
       ) : (
-        <p className="text-muted-foreground">{getEntryBody(entry.data)}</p>
+        <>
+          {/* Sem composição não há BlockRenderer: o marcador do layout da página sai daqui. */}
+          <PageLayoutMarker />
+          <p className="text-muted-foreground">{getEntryBody(entry.data)}</p>
+        </>
       ),
       backLink: { href: backHref, label: backLabel },
       firstBlockIsHero: composition?.[0]?.key === HERO_BLOCK_KEY,

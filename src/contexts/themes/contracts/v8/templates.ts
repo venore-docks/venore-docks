@@ -22,7 +22,10 @@ export type HomeTemplateProps = TemplateCommon & {
   entry: ThemeEntryView | null;
   content: ReactNode | null;
   showcase: ReactNode | null;
-  adminShortcuts: { href: string; label: string }[];
+  adminShortcuts: { href: string; label: string; icon?: "settings" }[];
+  // Painel sem entry "home": nome do site e ação principal (ex.: "Ver como aluno"). Opcionais.
+  siteName?: string;
+  primaryAction?: { href: string; label: string } | null;
 };
 export type EntryTemplateProps = TemplateCommon & {
   entry: ThemeEntryView;
@@ -37,7 +40,7 @@ export type CategoryTemplateProps = TemplateCommon & {
   sort: { current: "recent" | "oldest"; options: { value: "recent" | "oldest"; label: string; href: string }[] };
   empty: ReactNode;
 };
-export type AccountTemplateProps = TemplateCommon & { title: string; sections: ReactNode };
+export type AccountTemplateProps = TemplateCommon & { title: string; subtitle?: string | null; sections: ReactNode };
 export type LoginTemplateProps = TemplateCommon & { brand: HeaderBrand; form: ReactNode; footer: ReactNode };
 export type NotFoundTemplateProps = TemplateCommon & { homeHref: string };
 export type TemplatePropsByKey = {
