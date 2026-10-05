@@ -72,8 +72,10 @@ export function resolveArrangement(model: ThemeRenderModel): ResolvedArrangement
     if (typeof presetOption === "string" && (theme.layoutDecl.presetChoices as readonly string[]).includes(presetOption)) {
       preset = presetOption as ThemeLayoutPreset;
     }
-    if (model.section?.layoutPreset) preset = model.section.layoutPreset;
   }
+  // Seção (§7) troca o arranjo também de um tema com layout próprio (componente): o preset do kit
+  // pedido pela seção vence o componente.
+  if (model.section?.layoutPreset) preset = model.section.layoutPreset;
 
   const mobileOption = options["mobile-nav"];
   const mobileNav: ThemeMobileNavMode =
