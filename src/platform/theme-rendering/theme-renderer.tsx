@@ -1,4 +1,4 @@
-import { Suspense, type ComponentType, type ReactNode } from "react";
+import { type ComponentType, type ReactNode } from "react";
 import type { MainNavItem } from "@/contexts/themes/contracts/types";
 import type {
   HeaderRegionProps,
@@ -27,13 +27,42 @@ import { KitNavModeSwitch } from "@/theme-sdk/kit/regions/rail/rail";
 import { MobileNavToggleButton } from "@/theme-sdk/kit/regions/site-header/mobile-nav-toggle-button";
 
 // Renderer v8 (spec §6). Dono: W3 (layouts/regiões do kit).
-// Cada região é a do kit, ou o override do tema embrulhado em boundary (client) + Suspense (SSR),
-// ambos com a região do kit como fallback — um override que lança nunca derruba a página: no SSR
-// o erro dentro do <Suspense> vira o fallback (região do kit) e o client re-renderiza; um erro no
-// client é pego pelo RegionBoundary, que mostra a mesma região do kit.
+// Cada região é a do kit, ou o override do tema embrulhado em RegionBoundary (client) com a região
+// do kit como fallback — um override que lança nunca derruba a página.
+//
+// Sem <Suspense> em volta do override: com ele, o React "terceiriza" (outlining) a fronteira quando
+// o HTML passa do progressiveChunkSize (~12,8 KB), e o documento sai com a região do kit visível e o
+// override escondido, trocados por script — robô de busca e visitante sem JS viam as duas. No SSR,
+// o override de servidor (função comum, o caso dos temas) é chamado aqui dentro de try/catch: se
+// lançar, sai a região do kit. Componente client (referência "use client") e componente async não
+// podem ser chamados assim e são renderizados direto — o RegionBoundary cobre o erro no client, e o
+// harness SSR do theme:check garante que o override renderiza no servidor.
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyProps = any;
+
+const CLIENT_REFERENCE = Symbol.for("react.client.reference");
+
+function isPromise(value: unknown): value is Promise<unknown> {
+  return typeof value === "object" && value !== null && typeof (value as Promise<unknown>).then === "function";
+}
+
+function renderOverride(Override: ComponentType<AnyProps>, props: AnyProps, kitNode: ReactNode): ReactNode {
+  const element = <Override {...props} />;
+  const isClientReference = (Override as unknown as { $$typeof?: symbol }).$$typeof === CLIENT_REFERENCE;
+  const isClass = Boolean((Override as { prototype?: { isReactComponent?: unknown } }).prototype?.isReactComponent);
+  if (typeof Override !== "function" || isClientReference || isClass) return element;
+  try {
+    const output = (Override as (p: AnyProps) => ReactNode | Promise<ReactNode>)(props);
+    if (isPromise(output)) {
+      output.catch(() => {}); // a promessa chamada aqui é descartada; o React chama de novo via `element`
+      return element;
+    }
+    return output;
+  } catch {
+    return kitNode;
+  }
+}
 
 function renderRegion(model: ThemeRenderModel, key: ThemeRegionKey, Kit: ComponentType<AnyProps>, props: AnyProps): ReactNode {
   const kitNode = <Kit {...props} />;
@@ -41,9 +70,7 @@ function renderRegion(model: ThemeRenderModel, key: ThemeRegionKey, Kit: Compone
   const Override = model.theme.regions[key] as ComponentType<AnyProps>;
   return (
     <RegionBoundary fallback={kitNode} region={key}>
-      <Suspense fallback={kitNode}>
-        <Override {...props} Default={Kit} />
-      </Suspense>
+      {renderOverride(Override, { ...props, Default: Kit }, kitNode)}
     </RegionBoundary>
   );
 }

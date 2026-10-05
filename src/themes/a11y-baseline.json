@@ -8,10 +8,7 @@
     "footer/light/accent/background",
     "header/dark/accent/background",
     "header/light/accent/background",
-    "rail/dark/accent/background",
-    "rail/light/foreground/background",
-    "rail/light/muted-foreground/background",
-    "rail/light/ring/background"
+    "rail/dark/accent/background"
   ],
   "druids": [
     "content/dark/accent/background",
@@ -31,20 +28,6 @@
     "footer/light/accent/background",
     "header/light/accent/background",
     "rail/light/accent/background"
-  ],
-  "halo": [
-    "content/dark/accent/background",
-    "content/light/accent/background",
-    "contextual/dark/accent/background",
-    "contextual/light/accent/background",
-    "footer/dark/accent/background",
-    "footer/light/accent/background",
-    "header/dark/accent/background",
-    "header/light/accent/background",
-    "rail/dark/accent/background",
-    "rail/light/foreground/background",
-    "rail/light/muted-foreground/background",
-    "rail/light/ring/background"
   ],
   "harbor": [
     "content/dark/accent/background",
@@ -72,32 +55,7 @@
     "rail/dark/accent/background",
     "rail/light/accent/background"
   ],
-  "nebula": [
-    "content/dark/accent/background",
-    "content/light/accent/background",
-    "contextual/dark/accent/background",
-    "contextual/light/accent/background",
-    "footer/dark/accent/background",
-    "footer/light/accent/background",
-    "header/dark/accent/background",
-    "header/light/accent/background",
-    "rail/dark/accent/background",
-    "rail/light/foreground/background",
-    "rail/light/muted-foreground/background"
-  ],
   "nestpro": [
-    "content/dark/accent/background",
-    "content/light/accent/background",
-    "contextual/dark/accent/background",
-    "contextual/light/accent/background",
-    "footer/dark/accent/background",
-    "footer/light/accent/background",
-    "header/dark/accent/background",
-    "header/light/accent/background",
-    "rail/dark/accent/background",
-    "rail/light/accent/background"
-  ],
-  "nimbus": [
     "content/dark/accent/background",
     "content/light/accent/background",
     "contextual/dark/accent/background",
@@ -122,18 +80,6 @@
     "rail/light/foreground/background",
     "rail/light/muted-foreground/background"
   ],
-  "paladins": [
-    "content/dark/accent/background",
-    "content/light/accent/background",
-    "contextual/dark/accent/background",
-    "contextual/light/accent/background",
-    "footer/dark/accent/background",
-    "footer/light/accent/background",
-    "header/dark/accent/background",
-    "header/light/accent/background",
-    "rail/dark/accent/background",
-    "rail/light/accent/background"
-  ],
   "sorcerers": [
     "content/dark/accent/background",
     "content/light/accent/background",
@@ -145,19 +91,6 @@
     "header/light/accent/background",
     "rail/dark/accent/background",
     "rail/light/accent/background"
-  ],
-  "vega": [
-    "content/dark/accent/background",
-    "content/light/accent/background",
-    "contextual/dark/accent/background",
-    "contextual/light/accent/background",
-    "footer/dark/accent/background",
-    "footer/light/accent/background",
-    "header/dark/accent/background",
-    "header/light/accent/background",
-    "rail/dark/accent/background",
-    "rail/light/foreground/background",
-    "rail/light/muted-foreground/background"
   ],
   "venore-slime": [
     "content/dark/accent/background",

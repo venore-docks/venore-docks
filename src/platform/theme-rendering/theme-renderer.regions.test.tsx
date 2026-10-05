@@ -105,19 +105,32 @@ describe("regiões substituíveis", () => {
     expect(Object.keys(props.slots as object).sort()).toEqual(["breadcrumbs", "mobileNavToggle", "outletEnd", "outletStart", "userMenu"]);
   });
 
-  it("override que lança no SSR renderiza a região do kit (fallback do Suspense)", async () => {
+  it("override que lança no SSR renderiza a região do kit, sem fronteira de Suspense", async () => {
     const Boom: AnyOverride = () => {
       throw new Error("tema quebrado");
     };
     const kit = html(model());
     expect(html(model({ definition: { regions: { footer: Boom } } }))).toBe(kit);
 
-    const stream = await renderToReadableStream(<ThemeRenderer model={model({ definition: { regions: { header: Boom } } })}>{content}</ThemeRenderer>, {
-      onError: () => {},
-    });
+    const stream = await renderToReadableStream(<ThemeRenderer model={model({ definition: { regions: { header: Boom } } })}>{content}</ThemeRenderer>);
     const streamed = await new Response(stream).text();
-    expect(streamed).toContain("<!--$!-->"); // client retenta; se lançar de novo, o RegionBoundary segura
+    expect(streamed).not.toContain("<!--$");
     expect(streamed).toContain('id="site-header"');
+  });
+
+  it("override grande sai no lugar, sem a região do kit escondida trocada por script", async () => {
+    const Header: AnyOverride = () => (
+      <header id="cabecalho-tema">
+        <p>{"x".repeat(40_000)}</p>
+      </header>
+    );
+    const stream = await renderToReadableStream(<ThemeRenderer model={model({ definition: { regions: { header: Header } } })}>{content}</ThemeRenderer>);
+    const streamed = await new Response(stream).text();
+    expect(streamed).not.toContain("<!--$");
+    expect(streamed).not.toContain('id="site-header"');
+    const doc = parse(streamed);
+    expect(doc.querySelectorAll("header")).toHaveLength(1);
+    expect(doc.querySelector("#cabecalho-tema")).not.toBeNull();
   });
 
   it("userMenu substituível dentro do header", () => {
