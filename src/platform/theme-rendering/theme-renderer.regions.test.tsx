@@ -199,6 +199,14 @@ describe("navegação mobile — três modos (cada um: um <nav> rotulado + aria-
     expect(resolveArrangement(model({ ...base, options: { "mobile-nav": "bottom-bar" }, section: { mobileNav: "fullscreen" } })).mobileNav).toBe("fullscreen");
   });
 
+  it("layout próprio do tema (componente): preset de seção vence; sem seção, fica o componente", () => {
+    const Custom = () => null;
+    const custom = { manifest: { layout: { preset: "custom" as const } }, definition: { layout: Custom } };
+    expect(resolveArrangement(model(custom)).preset).toBeNull();
+    expect(resolveArrangement(model({ ...custom, options: { layout: "rail" } })).preset).toBeNull();
+    expect(resolveArrangement(model({ ...custom, section: { layoutPreset: "rail" } })).preset).toBe("rail");
+  });
+
   it("admin: sempre topbar + drawer, sem opção nem seção", () => {
     const arrangement = resolveArrangement(
       model({ area: "admin", manifest: { layout: { preset: "rail" } }, definition: { layout: "rail" }, options: { "mobile-nav": "bottom-bar" } }),

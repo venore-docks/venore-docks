@@ -45,7 +45,12 @@ const themeKeys = selectedThemeKeys(Object.keys(THEME_REGISTRY));
 
 async function renderBody(model: ThemeRenderModel): Promise<string> {
   const errors: unknown[] = [];
+  // progressiveChunkSize sem limite: sem ele o React "terceiriza" (outlining) as fronteiras de
+  // <Suspense> que terminam depois de ~12,8 KB de shell — o HTML traz o fallback (região do kit)
+  // visível + o override num <div hidden> trocado por script. O navegador vê só o override; o
+  // JSDOM daqui veria os dois (dois <header>/<footer>). O harness confere o documento final.
   const stream = await renderToReadableStream(<FixtureShell model={model}>{fixturePageContent()}</FixtureShell>, {
+    progressiveChunkSize: Number.MAX_SAFE_INTEGER,
     onError: (error) => {
       errors.push(error);
     },
