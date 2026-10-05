@@ -28,7 +28,15 @@ function problemsOf(themeKey: string): string[] {
 const themeKeys = Object.keys(THEME_REGISTRY).sort();
 
 if (process.env.UPDATE_A11Y_BASELINE === "1") {
-  const next = Object.fromEntries(themeKeys.map((key) => [key, problemsOf(key)]).filter(([, list]) => list.length > 0));
+  // Entradas de pacotes ausentes neste branch ficam como estão (a catraca delas vale onde o pacote
+  // está instalado); só os temas do registro são regravados.
+  const merged: Record<string, string[]> = { ...recorded };
+  for (const key of themeKeys) {
+    const list = problemsOf(key);
+    if (list.length > 0) merged[key] = list;
+    else delete merged[key];
+  }
+  const next = Object.fromEntries(Object.entries(merged).sort(([a], [b]) => a.localeCompare(b)));
   writeFileSync(BASELINE_PATH, JSON.stringify(next, null, 2) + "\n");
 }
 
@@ -38,8 +46,12 @@ describe("contraste por região — todo tema do registro", () => {
     expect(themeKeys.filter((key) => !THEME_TOKEN_VALUES[key])).toEqual([]);
   });
 
-  it("baseline só cita temas do registro", () => {
-    expect(Object.keys(recorded).filter((key) => !THEME_REGISTRY[key])).toEqual([]);
+  // O baseline é compartilhado entre branches de instância com conjuntos diferentes de pacotes:
+  // entrada de tema ausente do registro é ignorada (não falha); a catraca vale para os presentes.
+  it("baseline bem-formado (região/modo/par), mesmo para temas ausentes do registro", () => {
+    for (const [key, list] of Object.entries(recorded)) {
+      for (const entry of list) expect(entry, key).toMatch(/^[a-z-]+\/(light|dark)\/[a-z-]+\/[a-z-]+$/);
+    }
   });
 
   for (const key of themeKeys) {

@@ -5,6 +5,11 @@ import type { Block } from "@/contexts/cms";
 import type { ThemeBlockRendererProps } from "@/contexts/themes/contracts/v8";
 
 vi.mock("server-only", () => ({}));
+// Independente dos @venore/plugin-* instalados no branch (só o core/tema está em teste aqui).
+vi.mock("@/plugins/registry.generated", () => ({ PLUGIN_REGISTRY: [] }));
+vi.mock("@/plugins/contributions.generated", () => ({ PLUGIN_CONTRIBUTIONS: {} }));
+vi.mock("@/plugins/route-registry.generated", () => ({ PLUGIN_ROUTE_TABLES: {} }));
+vi.mock("@/plugins/plugin-barrels.generated", () => ({ PLUGIN_BARRELS: {} }));
 vi.mock("@/contexts/media", () => ({ getMediaAsset: async () => ({ success: false, error: { code: "t", message: "t" } }) }));
 vi.mock("@/contexts/cms", async () => ({
   isBlockConfigured: (await import("@/contexts/cms/contracts/block-config")).isBlockConfigured,

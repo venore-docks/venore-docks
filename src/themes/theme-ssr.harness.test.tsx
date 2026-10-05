@@ -220,10 +220,12 @@ afterAll(() => {
 });
 
 describe("harness SSR — todo tema do registro × cenários de fixture", () => {
-  it("cobre o registro inteiro (ou VENORE_THEME_KEYS) e o baseline só cita temas do registro", () => {
+  it("cobre o registro inteiro (ou VENORE_THEME_KEYS) e o baseline não cita tema v8 do registro", () => {
     expect(themeKeys.length).toBeGreaterThan(0);
     expect(themeKeys.filter((key) => !THEME_REGISTRY[key])).toEqual([]);
-    expect(Object.keys(recorded).filter((key) => !THEME_REGISTRY[key])).toEqual([]);
+    // Entradas de pacotes ausentes neste branch são ignoradas (o baseline é compartilhado entre
+    // branches de instância); o venore-slime e todo tema v8 presente não podem ter dívida.
+    expect(Object.keys(recorded).filter((key) => THEME_REGISTRY[key]?.contract === 8)).toEqual([]);
   });
 
   for (const key of themeKeys) {

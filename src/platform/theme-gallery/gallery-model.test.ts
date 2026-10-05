@@ -3,13 +3,23 @@ import { CANONICAL_SECTION_STYLES } from "@/contexts/themes/contracts/v8";
 import { resolveThemeDefinition } from "@/platform/theme-rendering/resolve-theme-definition";
 import { buildGalleryBlockSamples, buildGalleryModel, gallerySearch, GALLERY_SCOPE, parseGallerySelection } from "./gallery-model";
 
+// Temas além do venore-slime vêm das fixtures do repo (v8 pai/filho e um 7.x), não dos pacotes
+// @venore/theme-* instalados no branch.
+vi.mock("@/themes/registry.generated", async () => ({
+  GENERATED_THEME_REGISTRY: (await import("@/test-support/themes/fixture-registry")).FIXTURE_THEME_REGISTRY,
+}));
+vi.mock("@/themes/theme-tokens.generated", async (importOriginal) => {
+  const real = await importOriginal<typeof import("@/themes/theme-tokens.generated")>();
+  const { withFixtureThemeTokens } = await import("@/test-support/themes/fixture-tokens");
+  return { ...real, THEME_TOKEN_VALUES: withFixtureThemeTokens(real.THEME_TOKEN_VALUES) };
+});
 vi.mock("next/font/google", async () => (await import("@/test-support/themes/next-font-google-mock")).nextFontGoogleMock());
 
 describe("parseGallerySelection", () => {
   it("tema fora do registro cai no ativo; sem ativo, no venore-slime", () => {
-    expect(parseGallerySelection({ theme: "nao-existe" }, "aurora").themeKey).toBe("aurora");
+    expect(parseGallerySelection({ theme: "nao-existe" }, "fixture-parent").themeKey).toBe("fixture-parent");
     expect(parseGallerySelection({}, null).themeKey).toBe("venore-slime");
-    expect(parseGallerySelection({ theme: ["nite", "aurora"] }, null).themeKey).toBe("nite");
+    expect(parseGallerySelection({ theme: ["fixture-legacy", "fixture-parent"] }, null).themeKey).toBe("fixture-legacy");
   });
 
   it("modo só entre os colorModes do tema; locale só dos catálogos; dir segue o idioma", () => {
@@ -28,9 +38,9 @@ describe("parseGallerySelection", () => {
 
 describe("buildGalleryModel", () => {
   it("raiz com data-theme do tema pedido e CSS de runtime só com o escopo da galeria", () => {
-    const model = buildGalleryModel({ selection: { themeKey: "aurora", mode: "dark", locale: "pt-BR", dir: "ltr" } });
-    expect(model.theme.key).toBe("aurora");
-    expect(model.rootAttributes).toMatchObject({ "data-gallery-root": "", "data-theme": "aurora", dir: "ltr", lang: "pt-BR" });
+    const model = buildGalleryModel({ selection: { themeKey: "fixture-parent", mode: "dark", locale: "pt-BR", dir: "ltr" } });
+    expect(model.theme.key).toBe("fixture-parent");
+    expect(model.rootAttributes).toMatchObject({ "data-gallery-root": "", "data-theme": "fixture-parent", dir: "ltr", lang: "pt-BR" });
     expect(model.rootClassName.split(" ")).toContain("dark");
     expect(model.scopedCss).not.toContain("html[");
     if (model.scopedCss) expect(model.scopedCss).toContain(GALLERY_SCOPE);
@@ -39,9 +49,9 @@ describe("buildGalleryModel", () => {
   });
 
   it("tema desabilitado ⇒ fallback com diagnóstico", () => {
-    const model = buildGalleryModel({ selection: { themeKey: "nite", mode: "light", locale: "pt-BR", dir: "ltr" }, isEnabled: () => false });
+    const model = buildGalleryModel({ selection: { themeKey: "fixture-legacy", mode: "light", locale: "pt-BR", dir: "ltr" }, isEnabled: () => false });
     expect(model.theme.key).toBe("venore-slime");
-    expect(model.fallback).toEqual({ reason: "disabled", requestedKey: "nite" });
+    expect(model.fallback).toEqual({ reason: "disabled", requestedKey: "fixture-legacy" });
   });
 });
 

@@ -2,6 +2,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { BlockRendererProps } from "./block-renderers";
 
 vi.mock("server-only", () => ({}));
+// Independente dos @venore/plugin-* instalados no branch (só o core/tema está em teste aqui).
+vi.mock("@/plugins/registry.generated", () => ({ PLUGIN_REGISTRY: [] }));
+vi.mock("@/plugins/contributions.generated", () => ({ PLUGIN_CONTRIBUTIONS: {} }));
+vi.mock("@/plugins/route-registry.generated", () => ({ PLUGIN_ROUTE_TABLES: {} }));
+vi.mock("@/plugins/plugin-barrels.generated", () => ({ PLUGIN_BARRELS: {} }));
 vi.mock("@/contexts/media", () => ({ getMediaAsset: async () => ({ success: false, error: { code: "t", message: "t" } }) }));
 
 // Dois temas no MESMO processo, cada um com loader preguiçoso contado.
