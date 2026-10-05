@@ -1,0 +1,9 @@
+{
+  "plugins": [
+    "broadcast",
+    "scoreboard"
+  ],
+  "themes": [
+    "fearless"
+  ]
+}

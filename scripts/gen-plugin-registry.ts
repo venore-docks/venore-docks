@@ -16,6 +16,7 @@
 import { createRequire } from "node:module";
 import { writeFileSync } from "node:fs";
 import path from "node:path";
+import { resolveInstancePackages } from "./lib/instance-packages";
 
 const require = createRequire(import.meta.url);
 const ROOT = process.cwd();
@@ -35,13 +36,11 @@ function canResolve(spec: string): boolean {
   }
 }
 
-// package.json do venore-docks -> deps @venore/plugin-* (menos o SDK). Só as que resolvem de fato
-// (npm install já rodou / pacote presente).
-const hostPkg = require(path.join(ROOT, "package.json")) as { dependencies?: Record<string, string> };
-const pluginPackages = Object.keys(hostPkg.dependencies ?? {})
-  .filter((dep) => dep.startsWith("@venore/plugin-") && dep !== "@venore/plugin-sdk")
-  .filter((dep) => canResolve(`${dep}/manifest`))
-  .sort();
+// package.json do venore-docks -> deps @venore/plugin-* (menos o SDK), filtradas pela instância
+// (VENORE_INSTANCE + instances/<nome>.json; vazio = todas, scripts/lib/instance-packages.ts). Só
+// as que resolvem de fato (npm install já rodou / pacote presente).
+const { instance, packages: instancePackages } = resolveInstancePackages(ROOT, "plugin");
+const pluginPackages = instancePackages.filter((dep) => canResolve(`${dep}/manifest`));
 
 const keys = pluginPackages.map((dep) => dep.slice("@venore/plugin-".length));
 const pkgFor = (key: string) => `@venore/plugin-${key}`;
@@ -122,7 +121,7 @@ writeFileSync(path.join(PLUGINS_DIR, "plugin-barrels.generated.ts"), pluginBarre
 writeFileSync(path.join(PLUGINS_DIR, "plugin-sources.generated.css"), pluginSourcesCss);
 
 console.log(
-  `gen-plugin-registry: ${keys.length} plugin(s) [${keys.join(", ")}]; ` +
+  `gen-plugin-registry [${instance}]: ${keys.length} plugin(s) [${keys.join(", ")}]; ` +
     `${routeKeys.length} com route-table; ${contributionKeys.length} com contributions; ` +
     `${clientContributionKeys.length} com contributions-client`,
 );

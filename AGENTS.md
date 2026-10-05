@@ -218,7 +218,8 @@ logBuffer.push({ message, level });
   `src/themes/<tema>/theme.css`, sob os seletores `[data-theme="<tema>"]` /
   `[data-theme="<tema>"].dark`. O `THEME_REGISTRY` (`src/themes/registry.ts`) hoje tem só o
   `venore-slime` hardcoded (fallback obrigatório, `src/themes/venore-slime/`); todo tema extra é
-  um pacote `@venore/theme-*` descoberto a partir das deps do `package.json`
+  um pacote `@venore/theme-*` descoberto a partir das deps do `package.json` (filtradas por
+  `VENORE_INSTANCE`, seção 8)
   (`scripts/gen-theme-registry.ts` → `registry*.generated.ts`, `theme-imports.generated.css`,
   `theme-lineage.generated.css`, `theme-tokens.generated.ts`, todos gitignored). Cada tema
   redeclara o mesmo vocabulário sob o seu próprio `[data-theme="..."]`, nunca por cima de outro.
@@ -328,11 +329,12 @@ logBuffer.push({ message, level });
 | `npm run db:migrate:plugins` | Migrations pendentes de cada plugin **já instalado** (`scripts/migrate-installed-plugins.ts`). Roda no `prebuild` depois das do core (mesmas exceções de preview) — bump de tag de plugin com migration nova se aplica sozinho no deploy da Vercel, sem `db:update`. Falha de migration derruba o build (o deploy anterior continua no ar). A **primeira** migration de um plugin continua rodando no install (`/admin/plugins` → `platform/plugin-engine/run-plugin-migrations.ts`); plugin nunca instalado é pulado |
 | `npm run db:update` | **Rodar depois de todo `git merge upstream/main`.** Consolida migrations do core + `ensureBaseRbacDataSeeded` (papéis/permissions base do "admin", cobre qualquer chave nova em `contracts/base-role-permissions.ts` sem precisar de script próprio) + `registerPlugins` + migrations de cada plugin com schema já resolvido no registro. Idempotente — seguro rodar mesmo sem nada novo pra aplicar (`scripts/update-instance.ts`). Substituiu os antigos `db:seed:<permission>` pontuais (removidos) — uma permission nova só precisa entrar em `contracts/base-role-permissions.ts`, nunca de um script novo. |
 | `npm run db:bootstrap-superadmin` | Promove usuário existente a `superadmin` (alternativa ao `/setup` com `SETUP_TOKEN`) |
-| `npm run test:plugins` | Testes dos plugins instalados no branch (`vitest.plugins.config.ts`, procura em `../venore-plugin-<nome>`) |
+| `npm run test:plugins` | Testes dos plugins da instância (`VENORE_INSTANCE`; vazio = todos) (`vitest.plugins.config.ts`, procura em `../venore-plugin-<nome>`) |
 | `npm run test:e2e` | Playwright (`e2e/`) — setup + login num banco vazio; exige build, `DATABASE_URL`, `AUTH_SECRET`, `SETUP_TOKEN` |
 
-O CI (`.github/workflows/ci.yml`) roda em todo branch (inclusive os de instância) e em PR. O job
-`check` roda `lint` → `typecheck` → `test`, sem banco; `plugins` roda `test:plugins` com os pacotes
+O CI (`.github/workflows/ci.yml`) roda em todo branch e em PR, no "venore vanilla" (seção 8). O job
+`check` roda `lint` → `typecheck` → `test`, sem banco; `instances` roda codegen estrito + typecheck de
+cada `instances/*.json`; `plugins` roda `test:plugins` com os pacotes
 de `node_modules/@venore/plugin-*`; `integration` sobe um Postgres e roda `test:integration`;
 `smoke` e `e2e` fazem o build e sobem o app. Nenhum substitui o `check`.
 
@@ -347,8 +349,8 @@ de verdade (login, cadastro, setup) entra na lista `PUBLIC_ACTIONS` do teste, co
   com mensagem clara em vez de rodar contra o banco de desenvolvimento.
 - `vitest.integration.config.ts` aplica, via `globalSetup` (`src/test-support/integration/global-
   setup.ts`), o core (`drizzle/`) e depois a árvore `migrations/` de **cada plugin do
-  `PLUGIN_REGISTRY` que declara `migrationsPath` no manifesto** (em `main` o registro é vazio —
-  os plugins entram pelos branches de instância, seção 8) — a lista é derivada do registro, não
+  `PLUGIN_REGISTRY` que declara `migrationsPath` no manifesto** (no CI, o registro "vanilla" com
+  todos os plugins do `package.json`, seção 8) — a lista é derivada do registro, não
   hardcode. Troca `DATABASE_URL` para `TEST_DATABASE_URL` só dentro do processo de teste
   (`setup-env.ts`) —
   `infrastructure/database/client.ts` não muda.
@@ -434,8 +436,8 @@ continua sendo a lista geral, derivada da leitura do código:
 - **Docs com trechos anteriores à saída dos plugins do core (2026-09-02) e à 0.6.0** (levantado
   em 2026-09-30, conferido contra o código):
   - `docs/implementation-roadmap.md` e `docs/issues.md` descrevem plugins (academy, birthdays,
-    broadcast…) como se morassem em `src/plugins/`; em `main` não há plugin nenhum — o código
-    deles está nos repositórios `venore-plugin-*`. Fase 7 (Academy) e IE2 do roadmap pertencem
+    broadcast…) como se morassem em `src/plugins/`; o código deles está nos repositórios
+    `venore-plugin-*`, instalados como pacote (seção 8). Fase 7 (Academy) e IE2 do roadmap pertencem
     a esses repositórios, não ao core.
   - Roadmap: agendamento/flush descritos com `setInterval` em processo — hoje é
     `/api/cron/tick` + `platform/scheduled-jobs` (o `setInterval` só sobra em self-host, via
@@ -470,31 +472,47 @@ continua sendo a lista geral, derivada da leitura do código:
   plugin mora hoje em repositório próprio; detalhado com contexto e dependências em
   `docs/issues.md`.
 
-## 8. Branches: `main` (core) vs branches de instância
+## 8. Instâncias: um branch só (`main`) + `instances/<nome>.json`
 
-`main` é o branch canônico do **core** do Venore Docks — toda atualização de core (contexts,
-platform, themes/registry padrão, `AGENTS.md`/docs) entra por `main` primeiro, nunca direto num
-branch de instância. Uma feature ou fix só nasce fora de `main` quando é genuinamente específico
-de uma instância (ver abaixo); qualquer coisa que faria sentido em qualquer deploy do Venore Docks
-é core e vai pra `main`.
+Não existe branch por instância. `main` é o único branch de deploy: todo projeto da Vercel
+(uma instância = um projeto + um banco) faz deploy de `main` e escolhe o que entra no build pela
+env **`VENORE_INSTANCE`**:
 
-Um branch de instância (`broadcast-fem`, `aprenda-musica`, `erasto-league`, `nestpro`, etc.)
-diverge de `main` **só** no conjunto de pacotes `@venore/plugin-*`/`@venore/theme-*` que declara em
-`package.json` (`git+https://...#vX.Y.Z`) — nunca em código de `src/`. `broadcast-fem`, por
-exemplo, existe só porque instala `@venore/plugin-broadcast`, `@venore/plugin-scoreboard` e
-`@venore/theme-fearless`; todo o resto do branch é `main`. Um commit de instância legítimo é
-sempre um bump de versão desses pacotes (`chore(<plugin>): bump @venore/plugin-<nome> para
-vX.Y.Z`) — nunca um `.ts`/`.tsx` de `src/` fora de `package.json`/`package-lock.json`.
+- `package.json` declara a **união** dos pacotes `@venore/plugin-*`/`@venore/theme-*` de todas as
+  instâncias, com **uma versão por pacote** (`git+https://...#vX.Y.Z`), válida para todas. Um
+  único `package-lock.json`, `npm ci` determinístico.
+- `instances/<nome>.json` lista as chaves que aquela instância usa —
+  `{ "plugins": ["disc"], "themes": ["nestpro", "academy"] }` (chave sem o prefixo do pacote).
+- `scripts/lib/instance-packages.ts` filtra as deps pela instância; `gen-plugin-registry.ts`,
+  `gen-theme-registry.ts` e `vitest.plugins.config.ts` só enxergam o subconjunto. Só o registro
+  gerado decide bundle, rotas, contribuições e migrations — pacote instalado fora da instância
+  não entra no build nem roda migration.
+- **`VENORE_INSTANCE` vazio ou ausente = "venore vanilla"**: todos os pacotes juntos. É o que
+  roda no CI (`check`, `plugins`, `integration`, `smoke`, `e2e`) e no desenvolvimento local por
+  padrão. Localmente, `VENORE_INSTANCE` no `.env` também vale (env do shell tem precedência).
+- Instância inexistente, JSON inválido ou pacote listado que não está no `package.json` derruba
+  o codegen (mesmo sem `--strict`) — nunca sobe em silêncio com o conjunto de outra instância.
+  `src/plugins/instance-packages.test.ts` confere todo `instances/*.json` contra o `package.json`;
+  o job `instances` do CI roda codegen estrito + typecheck de cada instância.
 
-**Direção do merge é sempre `main` → instância, nunca instância → `main`.** Um fix ou feature de
-core encontrado enquanto o checkout está num branch de instância não é commitado ali: troca pra
-`main`, commita/push lá, e só depois faz `git merge main` de volta no branch de instância pra
-propagar. Nunca faz o caminho inverso (commit na instância + merge/cherry-pick pra `main`) — isso
-inverteria a direção de propagação e faria `main` depender do histórico de uma instância
-específica. Se um fix de core acabar commitado por engano direto num branch de instância (antes de
-notar o erro), a correção é: cherry-pick o commit pra `main`, dar `git revert` dele na instância, e
-então `git merge main` na instância — igual ao fluxo normal, só com um passo a mais pra desfazer o
-commit fora de lugar.
+Fluxos:
+
+- **Atualização de core**: commit em `main`. Todas as instâncias recebem no próximo deploy —
+  não há merge para propagar.
+- **Nova instância**: criar `instances/<nome>.json`, adicionar ao `package.json` (e
+  `npm install`) os pacotes que ainda não estão lá, e no projeto da Vercel definir
+  `VENORE_INSTANCE=<nome>` com branch de produção `main`.
+- **Bump de plugin/tema**: muda a versão no `package.json` + lock (`chore(<plugin>): bump
+  @venore/plugin-<nome> para vX.Y.Z`) e vale para **toda** instância que lista o pacote. O
+  updater de tema do admin (`platform/theme-engine/apply-theme-update.ts`) comita em
+  `SITE_GITHUB_BRANCH`/`VERCEL_GIT_COMMIT_REF`, ou seja, também em `main`, com o mesmo efeito.
+- **Ligar/desligar pacote numa instância**: editar só o `instances/<nome>.json`.
+- Trocar o `VENORE_INSTANCE` de um projeto exige novo deploy (o registro é gerado no build).
+
+Arquivos genuinamente de uma instância e inofensivos para as outras (ex: header CSP de
+`/ext/erasto-league/*` em `vercel.json`, `scripts/migrate-nestpro-data.ts`) moram em `main` também.
+Código de `src/` continua sendo core: nada de `if (VENORE_INSTANCE === "x")` no app — o que varia
+por instância é só o conjunto de pacotes.
 
 ## Preferências de UI: nav-mode (cookie) vs color-mode (localStorage) — assimetria intencional
 `nav-mode` (`src/platform/nav-mode`) continua em cookie porque o servidor precisa saber qual

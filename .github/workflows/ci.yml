@@ -1,9 +1,10 @@
 name: CI
 
 on:
-  # Todo branch — inclusive os de instância (broadcast-fem, portal-colaborador...), que só diferem de
-  # main nos pacotes @venore/plugin-*/theme-*: um bump de plugin passa a rodar lint/typecheck/testes
-  # e os testes do próprio plugin (job `plugins`) antes do deploy. Branches claude/** rodam via PR.
+  # Todo branch. As instâncias não têm branch próprio: `main` declara a união dos pacotes
+  # @venore/plugin-*/theme-* e cada instância escolhe um subconjunto (instances/<nome>.json,
+  # VENORE_INSTANCE na Vercel). Os jobs abaixo rodam no "venore vanilla" (tudo junto); o job
+  # `instances` confere o codegen estrito + typecheck de cada instância. Branches claude/** via PR.
   push:
     branches: ["**", "!claude/**"]
   pull_request:
@@ -30,10 +31,35 @@ jobs:
       - name: Test
         run: npm run test
 
+  instances:
+    # Cada instances/<nome>.json gera um registro diferente (subconjunto de plugins/temas): o
+    # codegen estrito pega instância inválida, pacote fora do package.json ou tema v8 sem o pai, e
+    # o typecheck pega código do core que só compila com um plugin específico presente.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Codegen + typecheck por instância
+        run: |
+          for file in instances/*.json; do
+            name="$(basename "$file" .json)"
+            echo "::group::$name"
+            VENORE_INSTANCE="$name" npm run gen:registries:strict
+            VENORE_INSTANCE="$name" npx tsc --noEmit
+            echo "::endgroup::"
+          done
+
   plugins:
-    # Testes unitários dos plugins instalados neste branch (vitest.plugins.config.ts procura em
+    # Testes unitários de todos os plugins do package.json (vitest.plugins.config.ts procura em
     # ../venore-plugin-<nome>). Os pacotes vêm do npm ci em node_modules/@venore/plugin-*; o link
-    # simbólico coloca cada um onde a config espera. Em main (sem plugin) não roda nada.
+    # simbólico coloca cada um onde a config espera.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

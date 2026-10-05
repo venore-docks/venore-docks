@@ -1,7 +1,7 @@
 name: Backup do banco
 
-# Backup diário (pg_dump) das instâncias. Os branches de instância vivem neste mesmo repo e o
-# `schedule` do GitHub só roda no branch padrão — por isso um secret único lista todos os bancos:
+# Backup diário (pg_dump) das instâncias. Todas saem do mesmo repo/branch (instances/<nome>.json)
+# e cada uma tem seu próprio banco — por isso um secret único lista todos os bancos:
 #   BACKUP_TARGETS = {"broadcast-fem": "postgres://...", "portal-colaborador": "postgres://..."}
 #   BACKUP_PASSPHRASE = frase longa usada pra cifrar (GPG AES256) — guarde fora do GitHub também.
 # O repositório é público: o dump é cifrado ANTES de virar artifact. Sem os secrets, o job só avisa

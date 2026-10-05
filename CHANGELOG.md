@@ -8,9 +8,9 @@ compatibilidade de plugin) nem com o "Version do documento" no cabeçalho de
 `docs/venore-docks.md` (revisão da doc, não do código).
 
 Cada entrada linka o(s) branch(es)/instância(s) que já receberam o fix quando isso não é óbvio —
-o core evolui em `main` e se propaga pras instâncias (branches deste repo, ou forks) por merge;
-uma instância só tem o fix depois que a própria instância faz esse merge (ver seção "Modelo de
-atualização" em `VENORE-DOCKS.md`).
+o core evolui em `main`. Desde a entrada "Instâncias sem branch" abaixo, toda instância deste repo
+faz deploy de `main` (`VENORE_INSTANCE`, AGENTS.md §8) e recebe o fix no próximo deploy; forks
+continuam propagando por merge.
 
 ## [Unreleased]
 
@@ -24,6 +24,17 @@ o site renderiza normal e só o rascunho/histórico ficam indisponíveis. A conf
 convertida sozinha (lida das chaves 7.x) até a primeira publicação.
 
 ### Added
+
+- **Instâncias sem branch** (AGENTS.md §8): `main` é o único branch de deploy. O `package.json`
+  declara a união dos pacotes `@venore/plugin-*`/`@venore/theme-*` (uma versão por pacote) e cada
+  instância escolhe um subconjunto em `instances/<nome>.json`, selecionado pela env
+  `VENORE_INSTANCE` (vazia = "venore vanilla", tudo junto). Codegen de plugins/temas e
+  `test:plugins` filtram pela instância (`scripts/lib/instance-packages.ts`); job `instances` no
+  CI. Instâncias migradas: `broadcast-fem`, `erasto-league`, `graphic-novels`, `nestpro`,
+  `portal-colaborador`. **Na Vercel:** branch de produção `main` + `VENORE_INSTANCE=<nome>` em
+  cada projeto. Versões unificadas: `nestpro` sobe `@venore/plugin-disc` 0.1.1 → 0.2.0 e
+  `@venore/theme-nestpro` para v0.2.1; temas cujos repositórios foram apagados (halo, nebula,
+  nimbus, paladins, vega) saem de `graphic-novels`/`nestpro`/`portal-colaborador`.
 
 - **Contrato de tema 8.0.0** (`docs/themes/theme-system-v8.md`). O `venore-slime` virou o kit
   (`src/theme-sdk/kit`): regiões substituíveis com fallback, layouts `topbar`/`rail`, navegação

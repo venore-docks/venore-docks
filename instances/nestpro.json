@@ -1,0 +1,14 @@
+{
+  "plugins": [
+    "disc"
+  ],
+  "themes": [
+    "academy",
+    "druids",
+    "fearless",
+    "knights",
+    "nestpro",
+    "nite",
+    "sorcerers"
+  ]
+}

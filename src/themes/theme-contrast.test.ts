@@ -46,7 +46,7 @@ describe("contraste por região — todo tema do registro", () => {
     expect(themeKeys.filter((key) => !THEME_TOKEN_VALUES[key])).toEqual([]);
   });
 
-  // O baseline é compartilhado entre branches de instância com conjuntos diferentes de pacotes:
+  // O baseline é compartilhado entre instâncias (VENORE_INSTANCE) com conjuntos diferentes de pacotes:
   // entrada de tema ausente do registro é ignorada (não falha); a catraca vale para os presentes.
   it("baseline bem-formado (região/modo/par), mesmo para temas ausentes do registro", () => {
     for (const [key, list] of Object.entries(recorded)) {

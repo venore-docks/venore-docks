@@ -21,6 +21,7 @@
 import { createRequire } from "node:module";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { resolveInstancePackages } from "./lib/instance-packages";
 import { buildThemeRegistry, type ThemePackageInput } from "./lib/theme-registry-codegen";
 
 const require = createRequire(import.meta.url);
@@ -54,31 +55,30 @@ function readPackageJson(entryFile: string): ThemePackageInput["packageJson"] & 
   return {};
 }
 
-const hostPkg = require(path.join(ROOT, "package.json")) as { dependencies?: Record<string, string> };
-const inputs: ThemePackageInput[] = Object.keys(hostPkg.dependencies ?? {})
-  .filter((dep) => dep.startsWith("@venore/theme-") && dep !== "@venore/theme-sdk")
-  .flatMap((dep) => {
-    const manifestFile = resolveOrNull(`${dep}/manifest`);
-    const themeFile = resolveOrNull(`${dep}/theme`);
-    const anchor = manifestFile ?? themeFile;
-    if (!anchor) return [];
-    return [
-      {
-        dep,
-        packageJson: readPackageJson(anchor),
-        resolvable: {
-          manifest: Boolean(manifestFile),
-          theme: Boolean(themeFile),
-          colorPalettes: Boolean(resolveOrNull(`${dep}/color-palettes`)),
-          themeClient: Boolean(resolveOrNull(`${dep}/theme-client`)),
-        },
-        // W1: parser de tokens (scripts/theme-tokens.ts) — valores light/dark por tema.
-        themeCss: readOrUndefined(resolveOrNull(`${dep}/theme.css`)),
-        // Caminho via require.resolve, relativo a src/themes (onde o CSS gerado mora) — sobrevive a hoisting.
-        sourceDir: path.relative(THEMES_DIR, path.dirname(anchor)).split(path.sep).join("/"),
+// Deps @venore/theme-* filtradas pela instância (VENORE_INSTANCE; vazio = todas).
+const { instance, packages: themePackages } = resolveInstancePackages(ROOT, "theme");
+const inputs: ThemePackageInput[] = themePackages.flatMap((dep) => {
+  const manifestFile = resolveOrNull(`${dep}/manifest`);
+  const themeFile = resolveOrNull(`${dep}/theme`);
+  const anchor = manifestFile ?? themeFile;
+  if (!anchor) return [];
+  return [
+    {
+      dep,
+      packageJson: readPackageJson(anchor),
+      resolvable: {
+        manifest: Boolean(manifestFile),
+        theme: Boolean(themeFile),
+        colorPalettes: Boolean(resolveOrNull(`${dep}/color-palettes`)),
+        themeClient: Boolean(resolveOrNull(`${dep}/theme-client`)),
       },
-    ];
-  });
+      // W1: parser de tokens (scripts/theme-tokens.ts) — valores light/dark por tema.
+      themeCss: readOrUndefined(resolveOrNull(`${dep}/theme.css`)),
+      // Caminho via require.resolve, relativo a src/themes (onde o CSS gerado mora) — sobrevive a hoisting.
+      sourceDir: path.relative(THEMES_DIR, path.dirname(anchor)).split(path.sep).join("/"),
+    },
+  ];
+});
 
 const output = buildThemeRegistry(inputs, {
   strict,
@@ -96,4 +96,4 @@ for (const issue of output.report.issues) {
   console.warn(`gen-theme-registry: ${issue.level} [${issue.themeKey}] ${issue.code}: ${issue.message}`);
 }
 const keys = output.report.themes.map((theme) => `${theme.key}@${theme.packageVersion}${theme.contract === 8 ? " (v8)" : ""}`);
-console.log(`gen-theme-registry${strict ? " --strict" : ""}: ${keys.length} tema(s) [${keys.join(", ") || "nenhum"}]`);
+console.log(`gen-theme-registry${strict ? " --strict" : ""} [${instance}]: ${keys.length} tema(s) [${keys.join(", ") || "nenhum"}]`);
