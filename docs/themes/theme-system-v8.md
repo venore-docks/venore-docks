@@ -15,7 +15,7 @@
 |---|---|
 | Remodelar todo o layout e o design do site público: tokens, opções, arranjo, regiões, templates, estados, variantes de bloco, estilos de seção | Buscar dados, criar rotas, mudar permissões, importar internals de contexts, plugins ou `platform` |
 | Estilizar páginas de plugin via tokens, e colocar conteúdo em volta delas via outlets e regiões | Alterar o markup interno de páginas de plugin (ele pertence ao plugin) |
-| Dar cor e marca ao admin | Mudar a estrutura, as fontes ou as opções do admin (`/admin/**` usa sempre o layout `topbar` do kit) |
+| Dar cor e marca ao admin; o admin usa o preset do kit que o tema declara (`rail` ou `topbar`) | Mudar as fontes ou as opções do admin, ou usar nele um layout próprio (`/admin/**` com layout componente cai no `topbar`; navegação mobile sempre drawer) |
 | Adicionar variantes de apresentação a blocos | Alterar o schema de conteúdo dos blocos (ele pertence ao core e aos plugins) |
 
 A área (`public` ou `admin`) é decidida **só pelo caminho**, nunca pelo `navMode`.

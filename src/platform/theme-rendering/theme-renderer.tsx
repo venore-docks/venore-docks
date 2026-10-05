@@ -87,11 +87,22 @@ export type ResolvedArrangement = {
 
 export function resolveArrangement(model: ThemeRenderModel): ResolvedArrangement {
   const { theme } = model;
+  const declared = theme.manifest.layout;
+  // Admin (invariante §0.5): sem opções nem seção, navegação mobile sempre drawer. Mantém o preset
+  // do kit que o tema declara (Aurora segue com a rail no admin); layout próprio (componente) não
+  // vale no admin e cai no topbar.
   if (model.area === "admin") {
-    return { preset: "topbar", mobileNav: "drawer", collapseControl: "rail", headerNavVisibleFrom: "always" };
+    const preset: ThemeLayoutPreset = typeof theme.layout === "string" ? theme.layout : "topbar";
+    const isRail = preset === "rail";
+    return {
+      preset,
+      mobileNav: "drawer",
+      collapseControl: declared?.collapseControl !== undefined ? theme.layoutDecl.collapseControl : isRail ? "header" : "rail",
+      headerNavVisibleFrom:
+        declared?.headerNavVisibleFrom !== undefined ? theme.layoutDecl.headerNavVisibleFrom : isRail ? "lg" : "always",
+    };
   }
   const options = model.options.values;
-  const declared = theme.manifest.layout;
 
   let preset: ThemeLayoutPreset | null = typeof theme.layout === "string" ? theme.layout : null;
   const presetOption = options["layout"];

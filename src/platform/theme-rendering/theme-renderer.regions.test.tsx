@@ -220,11 +220,24 @@ describe("navegação mobile — três modos (cada um: um <nav> rotulado + aria-
     expect(resolveArrangement(model({ ...custom, section: { layoutPreset: "rail" } })).preset).toBe("rail");
   });
 
-  it("admin: sempre topbar + drawer, sem opção nem seção", () => {
+  it("admin: preset do kit declarado pelo tema, sempre drawer, sem opção nem seção", () => {
     const arrangement = resolveArrangement(
-      model({ area: "admin", manifest: { layout: { preset: "rail" } }, definition: { layout: "rail" }, options: { "mobile-nav": "bottom-bar" } }),
+      model({
+        area: "admin",
+        manifest: { layout: { preset: "rail", presetChoices: ["rail", "topbar"] } },
+        definition: { layout: "rail" },
+        options: { layout: "topbar", "mobile-nav": "bottom-bar" },
+        section: { layoutPreset: "topbar" },
+      }),
     );
-    expect(arrangement).toEqual({ preset: "topbar", mobileNav: "drawer", collapseControl: "rail", headerNavVisibleFrom: "always" });
+    expect(arrangement).toEqual({ preset: "rail", mobileNav: "drawer", collapseControl: "header", headerNavVisibleFrom: "lg" });
+  });
+
+  it("admin: tema com layout próprio (componente) cai no topbar do kit", () => {
+    const Custom: AnyOverride = ({ children }: { children: ReactNode }) => <div>{children}</div>;
+    const arrangement = resolveArrangement(model({ area: "admin", definition: { layout: Custom } }));
+    expect(arrangement.preset).toBe("topbar");
+    expect(arrangement.mobileNav).toBe("drawer");
   });
 
   it("navMode admin: a camada mobile recebe os grupos como agregadores", () => {
