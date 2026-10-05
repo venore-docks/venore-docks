@@ -58,6 +58,6 @@ describe("registro inteiro renderiza pela v8", () => {
     expect(html).toMatch(/<header/);
     expect(html).not.toContain("</script></script>");
     expect(html).toContain("\\u003c/script\\u003e");
-    expect(m.theme.contract).toBe(key === "venore-slime" ? 8 : 7);
+    expect(m.theme.contract).toBe(THEME_REGISTRY[key].contract);
   });
 });

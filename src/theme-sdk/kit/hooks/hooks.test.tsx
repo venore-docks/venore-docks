@@ -242,6 +242,35 @@ describe("store de colapso compartilhado", () => {
   });
 });
 
+describe("scrim da navegação mobile", () => {
+  it("rail em drawer e painel sem rail expõem data-scrim só enquanto abertos (gancho do theme.css)", () => {
+    render(
+      <>
+        <MobileNavToggleButton />
+        <SidebarLeftSlot
+          enabled
+          navMode="main"
+          navItems={[{ key: "home", label: "Home", href: "/", icon: "home" }]}
+          navGroups={[]}
+          canToggleAdminNav={false}
+          onToggleNavMode={async () => {}}
+          collapsed={false}
+          onToggleCollapsed={async () => {}}
+        />
+        <MobileNavOverlay variant="drawer">
+          <a href="#a">A</a>
+        </MobileNavOverlay>
+      </>,
+    );
+    expect(container.querySelectorAll('[data-scrim="mobile-nav"]')).toHaveLength(0);
+    act(() => container.querySelector<HTMLButtonElement>('button[aria-label="Abrir navegação"]')!.click());
+    const scrims = container.querySelectorAll<HTMLButtonElement>('button[data-scrim="mobile-nav"]');
+    expect(scrims).toHaveLength(2);
+    act(() => scrims[0].click());
+    expect(container.querySelectorAll('[data-scrim="mobile-nav"]')).toHaveLength(0);
+  });
+});
+
 describe("useHeaderScrollState", () => {
   it("escreve data-scrolled no #site-header a partir das sentinelas (histerese)", () => {
     const observers: { cb: IntersectionObserverCallback; target?: Element }[] = [];

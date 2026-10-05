@@ -72,6 +72,7 @@ export function MobileNavOverlay({
           type="button"
           aria-label={t(strings, "mobileNav.close")}
           onClick={closeMobileNav}
+          data-scrim="mobile-nav"
           className="fixed inset-0 z-40 bg-popover/80 lg:hidden"
         />
       )}
