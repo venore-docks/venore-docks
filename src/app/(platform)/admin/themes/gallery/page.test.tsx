@@ -21,6 +21,11 @@ vi.mock("next/navigation", () => ({
 }));
 vi.mock("server-only", () => ({}));
 vi.mock("next/headers", () => ({ headers: async () => new Headers(), cookies: async () => ({ get: () => undefined }) }));
+// Temas além do venore-slime vêm das fixtures do repo (v8 pai/filho e um 7.x), não dos pacotes
+// @venore/theme-* instalados no branch.
+vi.mock("@/themes/registry.generated", async () => ({
+  GENERATED_THEME_REGISTRY: (await import("@/test-support/themes/fixture-registry")).FIXTURE_THEME_REGISTRY,
+}));
 vi.mock("next/font/google", async () => (await import("@/test-support/themes/next-font-google-mock")).nextFontGoogleMock());
 vi.mock("@/platform/admin-shell/get-settings-page-data", () => ({
   getSettingsPageData: async () => (gate.granted ? { granted: true, actor: { userId: "u1" } } : { granted: false }),
@@ -29,7 +34,7 @@ vi.mock("@/platform/theme-engine/list-theme-states", () => ({
   listThemeStates: async () =>
     Object.values(THEME_REGISTRY).map(({ manifest }) => ({
       manifest,
-      enabled: manifest.key !== "volt",
+      enabled: manifest.key !== "fixture-child",
       isActive: manifest.key === "venore-slime",
       canDisable: false,
       disableBlockedReason: null,
@@ -61,17 +66,17 @@ beforeEach(() => {
 describe("/admin/themes/gallery", () => {
   it("exige settings.manage", async () => {
     gate.granted = false;
-    const doc = await renderPage({ theme: "aurora" });
+    const doc = await renderPage({ theme: "fixture-parent" });
     expect(doc.body.textContent).toContain("Acesso negado");
     expect(doc.querySelector("[data-gallery-root]")).toBeNull();
   });
 
   it("renderiza ?theme= (não ativo) sem ativá-lo, com raiz e CSS com escopo", async () => {
-    const doc = await renderPage({ theme: "aurora", mode: "dark" });
+    const doc = await renderPage({ theme: "fixture-parent", mode: "dark" });
     const roots = [...doc.querySelectorAll("[data-gallery-root]")];
     expect(roots.length).toBeGreaterThan(0);
     for (const root of roots) {
-      expect(root.getAttribute("data-theme")).toBe("aurora");
+      expect(root.getAttribute("data-theme")).toBe("fixture-parent");
       expect(root.classList.contains("dark")).toBe(true);
       expect(root.hasAttribute("hidden")).toBe(true);
     }
@@ -110,13 +115,13 @@ describe("/admin/themes/gallery", () => {
   });
 
   it("tema desabilitado cai no fallback com aviso (como o render faria)", async () => {
-    const doc = await renderPage({ theme: "volt" });
+    const doc = await renderPage({ theme: "fixture-child" });
     expect(doc.body.textContent).toContain("está desabilitado");
     expect(doc.querySelector("[data-gallery-root]")?.getAttribute("data-theme")).toBe("venore-slime");
   });
 
   it("tema 7.x mostra o Shell do pacote nas molduras", async () => {
-    const doc = await renderPage({ theme: "nite" });
+    const doc = await renderPage({ theme: "fixture-legacy" });
     const captions = [...doc.querySelectorAll("figcaption")].map((caption) => caption.textContent ?? "");
     expect(captions.some((caption) => caption.startsWith("Shell 7.x do pacote"))).toBe(true);
     expect(captions.some((caption) => caption.startsWith("Preset rail"))).toBe(false);
@@ -126,8 +131,8 @@ describe("/admin/themes/gallery", () => {
 describe("/admin/themes/preview", () => {
   it("redireciona pra galeria preservando tema e modo", async () => {
     const { default: Preview } = await import("../preview/page");
-    await expect(Preview({ searchParams: Promise.resolve({ theme: "aurora", dark: "1" }) })).rejects.toMatchObject({
-      url: "/admin/themes/gallery?theme=aurora&mode=dark",
+    await expect(Preview({ searchParams: Promise.resolve({ theme: "fixture-parent", dark: "1" }) })).rejects.toMatchObject({
+      url: "/admin/themes/gallery?theme=fixture-parent&mode=dark",
     });
     await expect(Preview({ searchParams: Promise.resolve({}) })).rejects.toMatchObject({ url: "/admin/themes/gallery" });
   });

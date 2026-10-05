@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { loadEnv } from "vite";
 import { configDefaults, defineConfig } from "vitest/config";
@@ -22,7 +22,13 @@ function pluginTestIncludes(): string[] {
   const pluginNames = Object.keys(pkg.dependencies ?? {})
     .filter((name) => name.startsWith("@venore/plugin-"))
     .map((name) => name.replace("@venore/plugin-", ""));
-  return pluginNames.map((name) => `../venore-plugin-${name}/**/*.{test,spec}.{ts,tsx}`);
+  // Repo-irmão em disco (desenvolvimento do plugin) tem prioridade; sem ele (CI, checkout só do
+  // core), roda os testes que o próprio pacote instalado em node_modules publica.
+  return pluginNames.map((name) =>
+    existsSync(fileURLToPath(new URL(`../venore-plugin-${name}`, import.meta.url)))
+      ? `../venore-plugin-${name}/**/*.{test,spec}.{ts,tsx}`
+      : `node_modules/@venore/plugin-${name}/**/*.{test,spec}.{ts,tsx}`,
+  );
 }
 
 export default defineConfig({
@@ -32,6 +38,10 @@ export default defineConfig({
       { find: /^@venore\/plugin-sdk\/(.*)$/, replacement: fileURLToPath(new URL("./src/sdk/", import.meta.url)) + "$1.ts" },
       { find: /^@venore\/theme-sdk$/, replacement: fileURLToPath(new URL("./src/theme-sdk/index.ts", import.meta.url)) },
       { find: /^@venore\/theme-sdk\/(.*)$/, replacement: fileURLToPath(new URL("./src/theme-sdk/", import.meta.url)) + "$1.ts" },
+      {
+        find: /^server-only$/,
+        replacement: fileURLToPath(new URL("./src/test-support/stubs/server-only.ts", import.meta.url)),
+      },
       {
         find: /^next-auth$/,
         replacement: fileURLToPath(new URL("./src/test-support/stubs/next-auth.ts", import.meta.url)),
@@ -50,6 +60,7 @@ export default defineConfig({
       ...configDefaults.exclude.filter((p) => p !== "**/node_modules/**"),
       "**/node_modules/**/node_modules/**",
       "../venore-plugin-*/**/*.integration.test.{ts,tsx}",
+      "node_modules/@venore/plugin-*/**/*.integration.test.{ts,tsx}",
     ],
     passWithNoTests: true,
     env: loadEnv("", process.cwd(), ""),

@@ -55,6 +55,7 @@ Regras práticas:
 - Use `t(strings, chave)`.
 - Use propriedades lógicas: `ms-`, `pe-`, `start-`.
 - Não importe `@/` nem plugins.
+- Ganchos estáveis de CSS do kit para o `theme.css`: `[data-region="…"]` (e os tokens `--region-*`), `[data-layout]`, `[data-nav-mode]`, `[data-section-style]`, `[data-block]`/`[data-block-variant]` e `[data-scrim]` (fundo atrás do drawer ou do painel mobile, só presente com eles abertos). Prefira tokens; seletores por classe utilitária do kit não são contrato.
 
 ## 5. Herança
 

@@ -28,6 +28,9 @@ function isOffCanvasViewport() {
 // `arrangement="rail"` (Aurora 0.1.13): a partir de lg a coluna é sticky na altura da tela (o menu
 // rola dentro do <nav>, nunca some ao rolar a página), e o scrim ganha um leve desfoque.
 //
+// `data-scrim` é o gancho estável do fundo atrás do drawer pro theme.css (ex.: a Aurora escurece a
+// página em vez do véu claro de `bg-popover/80`). Só existe com o drawer aberto — fora do SSR.
+//
 // O `isOpen` vive no store (mobile-nav-store.ts), não resetado por navegação client-side. Link de
 // dentro do drawer só navega (não sabe do drawer) — por isso useOverlay fecha em troca de rota;
 // sem isso o scrim (fixed inset-0 z-40) ficava montado engolindo todo clique da página seguinte.
@@ -67,6 +70,7 @@ export function MobileNavDrawer({
           type="button"
           aria-label={t(strings, "mobileNav.close")}
           onClick={closeMobileNav}
+          data-scrim="mobile-nav"
           className={cn("fixed inset-0 z-40 bg-popover/80 lg:hidden", isRail && "backdrop-blur-xs")}
         />
       )}

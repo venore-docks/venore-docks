@@ -59,64 +59,6 @@
       "keyboard:skip-link-first"
     ]
   },
-  "aurora": {
-    "admin/desktop/dark": [
-      "keyboard:skip-link-first"
-    ],
-    "admin/desktop/light": [
-      "keyboard:skip-link-first"
-    ],
-    "admin/mobile/dark": [
-      "axe:link-name@header",
-      "keyboard:skip-link-first"
-    ],
-    "admin/mobile/light": [
-      "axe:link-name@header",
-      "keyboard:skip-link-first"
-    ],
-    "collapsed/desktop/dark": [
-      "keyboard:skip-link-first"
-    ],
-    "collapsed/desktop/light": [
-      "keyboard:skip-link-first"
-    ],
-    "collapsed/mobile/dark": [
-      "keyboard:skip-link-first"
-    ],
-    "collapsed/mobile/light": [
-      "keyboard:skip-link-first"
-    ],
-    "logged-in/desktop/dark": [
-      "keyboard:skip-link-first"
-    ],
-    "logged-in/desktop/light": [
-      "keyboard:skip-link-first"
-    ],
-    "logged-in/mobile/dark": [
-      "axe:link-name@header",
-      "keyboard:skip-link-first"
-    ],
-    "logged-in/mobile/light": [
-      "axe:link-name@header",
-      "keyboard:skip-link-first"
-    ],
-    "rtl-ar/desktop/dark": [
-      "keyboard:skip-link-first",
-      "overflow"
-    ],
-    "rtl-ar/desktop/light": [
-      "keyboard:skip-link-first",
-      "overflow"
-    ],
-    "rtl-ar/mobile/dark": [
-      "axe:link-name@header",
-      "keyboard:skip-link-first"
-    ],
-    "rtl-ar/mobile/light": [
-      "axe:link-name@header",
-      "keyboard:skip-link-first"
-    ]
-  },
   "druids": {
     "admin/desktop/dark": [
       "keyboard:skip-link-first"

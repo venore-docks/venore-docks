@@ -16,6 +16,10 @@ export default defineConfig({
       // do bundler do Next. Qualquer teste UNITÁRIO de plugin que importa o barrel do SDK esbarra
       // nisso; nenhum exercita next-auth de verdade. Mesmo stub e racional do config de integração.
       {
+        find: /^server-only$/,
+        replacement: fileURLToPath(new URL("./src/test-support/stubs/server-only.ts", import.meta.url)),
+      },
+      {
         find: /^next-auth$/,
         replacement: fileURLToPath(new URL("./src/test-support/stubs/next-auth.ts", import.meta.url)),
       },

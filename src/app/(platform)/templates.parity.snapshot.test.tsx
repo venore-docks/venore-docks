@@ -103,6 +103,12 @@ vi.mock("@/platform/registration/registration-settings", () => ({ isSelfRegistra
 vi.mock("@/platform/theme-rendering/resolve-brand-aesthetics", () => ({
   resolveBrandAesthetics: async () => ({ mode: "svg", size: 100, scrolledSize: 92, position: "left", color: "#1f5d43" }),
 }));
+// Independente dos @venore/plugin-* instalados no branch: o markup do core/kit não depende deles,
+// e o grafo de cada plugin puxaria módulos que os mocks abaixo não cobrem.
+vi.mock("@/plugins/registry.generated", () => ({ PLUGIN_REGISTRY: [] }));
+vi.mock("@/plugins/contributions.generated", () => ({ PLUGIN_CONTRIBUTIONS: {} }));
+vi.mock("@/plugins/route-registry.generated", () => ({ PLUGIN_ROUTE_TABLES: {} }));
+vi.mock("@/plugins/plugin-barrels.generated", () => ({ PLUGIN_BARRELS: {} }));
 vi.mock("@/platform/brand/get-brand-config", () => ({
   getBrandConfig: async () => ({ siteName: "Venore Docks", logoUrl: "/brand/brand-logo.svg" }),
 }));
