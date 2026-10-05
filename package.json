@@ -58,7 +58,7 @@
     "@venore/plugin-photo-gallery": "git+https://github.com/venore-docks/venore-plugin-photo-gallery.git#v1.0.0",
     "@venore/plugin-vagas": "github:venore-docks/venore-plugin-vagas#v1.2.4",
     "@venore/plugin-vagas": "github:venore-docks/venore-plugin-vagas#v1.2.4",
-    "@venore/plugin-novels": "github:venore-docks/venore-plugin-novels#0.1.1",
+    "@venore/plugin-novels": "github:venore-docks/venore-plugin-novels#v0.1.1",
 
     "@venore/theme-aurora": "github:venore-docks/venore-theme-aurora#v0.1.13",
     "@venore/theme-volt": "github:venore-docks/venore-theme-volt#v0.1.2",
