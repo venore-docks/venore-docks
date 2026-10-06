@@ -1,7 +1,7 @@
 import { PLUGIN_CONTRIBUTIONS } from "@/plugins/contributions";
 import { beginOperation, endOperation } from "@/observability";
 import type { NavItem } from "@/contexts/themes";
-import { registerPlugins } from "../plugin-engine/register-plugins";
+import { getPluginRegistrationReport } from "../plugin-engine/register-plugins";
 
 // Itens que os plugins ativos contribuem pro MENU DO USUÁRIO (user-nav), não pro admin-nav. Vêm
 // de src/plugins/*/contributions.ts (campo `userNavItems`), agregados em PLUGIN_CONTRIBUTIONS pelo
@@ -12,7 +12,7 @@ import { registerPlugins } from "../plugin-engine/register-plugins";
 // manifesto mas ainda sem migration aplicada não pode travar o shell inteiro. Falha de um
 // provider vira log e é ignorada.
 export async function collectUserNavItems(): Promise<NavItem[]> {
-  const pluginReport = await registerPlugins();
+  const pluginReport = await getPluginRegistrationReport();
   const activePluginKeys = new Set(
     pluginReport.entries.filter((entry) => entry.status === "active").map((entry) => entry.key),
   );

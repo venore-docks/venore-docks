@@ -27,6 +27,7 @@ vi.mock("@/plugins/contributions", () => ({
 
 vi.mock("../plugin-engine/register-plugins", () => ({
   registerPlugins: (...args: unknown[]) => registerPlugins(...args),
+  getPluginRegistrationReport: (...args: unknown[]) => registerPlugins(...args),
 }));
 
 describe("collectMediaUsage", () => {

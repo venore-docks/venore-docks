@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useFormStatus } from "react-dom";
-import { ChevronLeft, ChevronRight, Globe2, Loader2, ShieldCheck, type LucideIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, Globe2, ShieldCheck, type LucideIcon } from "lucide-react";
 import type { NavItem, SidebarLeftSlotProps } from "@/contexts/themes/contracts/types";
 import type { HeaderRegionProps, RailRegionProps, RegionCommon, ThemeMobileNavMode, ThemeStrings } from "@/contexts/themes/contracts/v8";
 import { t } from "../../i18n/t";
@@ -242,13 +242,7 @@ function SidebarSurfaceSwitch({
         action={onToggleNavMode}
         className={cn("relative grid grid-cols-2 gap-1 rounded-xl border border-border bg-muted p-1", collapsed && "lg:hidden")}
       >
-      <span
-        aria-hidden="true"
-        className={cn(
-          "pointer-events-none absolute inset-y-1 z-0 w-[calc(50%-0.125rem)] rounded-lg border border-ring bg-card shadow-panel ui-motion-base",
-          isAdmin ? "start-[calc(50%+0.125rem)]" : "start-1",
-        )}
-      />
+      <NavModeIndicator isAdmin={isAdmin} />
       <NavModeSegmentButton isActive={!isAdmin} icon={Globe2} text={t(strings, "rail.site")} />
       <NavModeSegmentButton isActive={isAdmin} icon={ShieldCheck} text={t(strings, "rail.admin")} />
       </form>
@@ -257,14 +251,27 @@ function SidebarSurfaceSwitch({
 }
 
 // A troca de navMode depende de um round-trip de Server Action (cookie só é lido no próximo
-// render do RootLayout — get-nav-mode.ts — então, ao contrário do colapso, não dá pra flipar a
-// navegação otimisticamente no client: navItems/navGroups vêm do servidor já filtrados pelo modo
-// atual). useFormStatus() (react-dom) dá o pending do <form> mais próximo de graça, sem estado
-// extra — troca o ícone do botão alvo (o clicável) por um spinner e trava a interação até o
-// refresh da rota devolver os dados do novo modo, pra latência de rede (notada em instâncias
-// Vercel) parecer carregamento em vez de UI travada.
+// render do RootLayout — get-nav-mode.ts): navItems/navGroups vêm do servidor já filtrados pelo
+// modo. O controle em si é otimista: com o <form> pendente (useFormStatus), o indicador desliza e
+// o ícone troca na hora para o modo de destino, e a interação trava até o refresh da rota chegar —
+// sem spinner, a troca parece imediata (era assim no Aurora 0.1.x).
+function NavModeIndicator({ isAdmin }: { isAdmin: boolean }) {
+  const { pending } = useFormStatus();
+  const showAdmin = pending ? !isAdmin : isAdmin;
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        "pointer-events-none absolute inset-y-1 z-0 w-[calc(50%-0.125rem)] rounded-lg border border-ring bg-card shadow-panel ui-motion-base",
+        showAdmin ? "start-[calc(50%+0.125rem)]" : "start-1",
+      )}
+    />
+  );
+}
+
 function NavModeIconButton({ isAdmin, label }: { isAdmin: boolean; label: string }) {
   const { pending } = useFormStatus();
+  const showAdmin = pending ? !isAdmin : isAdmin;
 
   return (
     <button
@@ -277,13 +284,7 @@ function NavModeIconButton({ isAdmin, label }: { isAdmin: boolean; label: string
         !pending && "cursor-pointer",
       )}
     >
-      {pending ? (
-        <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-      ) : isAdmin ? (
-        <ShieldCheck className="size-4" aria-hidden="true" />
-      ) : (
-        <Globe2 className="size-4" aria-hidden="true" />
-      )}
+      {showAdmin ? <ShieldCheck className="size-4" aria-hidden="true" /> : <Globe2 className="size-4" aria-hidden="true" />}
       <span className={cn("max-w-0 overflow-hidden whitespace-nowrap opacity-0", SIDEBAR_COLLAPSE_TOOLTIP_COLLAPSED_CLASSES)}>
         {label}
       </span>
@@ -293,9 +294,10 @@ function NavModeIconButton({ isAdmin, label }: { isAdmin: boolean; label: string
 
 function NavModeSegmentButton({ isActive, icon: Icon, text }: { isActive: boolean; icon: LucideIcon; text: string }) {
   const { pending } = useFormStatus();
-  // O segmento inativo é o alvo do clique (o toggle sempre inverte o modo atual) — só ele vira
-  // spinner; o já-ativo permanece com o próprio ícone porque não é ele que está "carregando".
+  // O segmento inativo é o alvo do clique (o toggle sempre inverte o modo atual); pendente, ele já
+  // aparece ativo (otimista) enquanto o servidor devolve a navegação do novo modo.
   const isTarget = !isActive;
+  const looksActive = pending ? isTarget : isActive;
 
   return (
     <button
@@ -305,11 +307,11 @@ function NavModeSegmentButton({ isActive, icon: Icon, text }: { isActive: boolea
       aria-busy={isTarget && pending ? true : undefined}
       className={cn(
         "relative z-10 flex h-9 items-center justify-center gap-2 rounded-lg text-xs font-semibold uppercase tracking-caps ui-motion-base outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default",
-        isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground",
+        looksActive ? "text-foreground" : "text-muted-foreground hover:text-foreground",
         isTarget && !pending && "cursor-pointer",
       )}
     >
-      {isTarget && pending ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Icon className="size-4" aria-hidden="true" />}
+      <Icon className="size-4" aria-hidden="true" />
       {text}
     </button>
   );

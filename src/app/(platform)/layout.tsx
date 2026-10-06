@@ -31,13 +31,17 @@ export default async function PlatformLayout({
   // (resolve-contextual-bar.ts decide pela rota), só renderizado quando a decisão é "plugin".
   sidebarContextual: React.ReactNode;
 }) {
-  const registrationStatus = await getCurrentUserRegistrationStatus();
+  // Status de cadastro, modelo de render e nonce em paralelo (antes: três awaits em série — o
+  // modelo só começava depois da leitura do status). Conta pendente descarta o modelo e redireciona.
+  const modelPromise = resolveThemeRenderModel({ contextualSlot: sidebarContextual, onSignOut: signOutAction });
+  modelPromise.catch(() => undefined); // sem rejeição solta se o Promise.all abaixo falhar antes; o await ainda lança
+  const [registrationStatus, requestHeaders] = await Promise.all([getCurrentUserRegistrationStatus(), headers()]);
   if (registrationStatus.success && registrationStatus.data === "pending") {
     redirect("/pending-approval");
   }
 
-  const model = await resolveThemeRenderModel({ contextualSlot: sidebarContextual, onSignOut: signOutAction });
-  const nonce = (await headers()).get("x-nonce") ?? undefined;
+  const model = await modelPromise;
+  const nonce = requestHeaders.get("x-nonce") ?? undefined;
 
   const content = model.maintenance
     ? renderState(model.theme, "maintenance", {
