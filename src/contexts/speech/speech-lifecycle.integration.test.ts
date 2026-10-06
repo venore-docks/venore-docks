@@ -12,7 +12,7 @@ const synthesize = vi.fn(async ({ text }: { text: string }) => ({
   billedCharacters: [...text].length,
 }));
 
-vi.mock("@/infrastructure/speech", () => ({ speechPort: { model: "fake", isEnabled: () => true, synthesize } }));
+vi.mock("@/infrastructure/speech", () => ({ speechPort: { kind: "inline", model: "fake", voices: [{ key: "Kore", label: "Kore" }], defaultVoice: "Kore", isEnabled: () => true, synthesize } }));
 vi.mock("./shared/speech-settings", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./shared/speech-settings")>()),
   readSpeechSettings: async () => settings,

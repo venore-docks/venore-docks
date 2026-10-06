@@ -12,4 +12,16 @@ describe("createSpeechPort", () => {
     expect(port.isEnabled()).toBe(true);
     expect(port.model).toBe("google-chirp3-hd");
   });
+
+  it("SPEECH_DRIVER=worker usa o worker externo, e só com CRON_SECRET", () => {
+    const port = createSpeechPort({ SPEECH_DRIVER: "worker", CRON_SECRET: "s" });
+    expect(port.kind).toBe("worker");
+    expect(port.voices.map((voice) => voice.key)).toEqual(["female", "male"]);
+    expect(createSpeechPort({ SPEECH_DRIVER: "worker" }).isEnabled()).toBe(false);
+  });
+
+  it("SPEECH_DRIVER=google sem chave fica desligado; driver desconhecido também", () => {
+    expect(createSpeechPort({ SPEECH_DRIVER: "google" }).isEnabled()).toBe(false);
+    expect(createSpeechPort({ SPEECH_DRIVER: "azure", GOOGLE_TTS_API_KEY: "k" }).isEnabled()).toBe(false);
+  });
 });

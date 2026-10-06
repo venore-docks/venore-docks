@@ -1,4 +1,4 @@
-import { and, asc, eq, gt, inArray, isNull, ne } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, ne, sql } from "drizzle-orm";
 import { db } from "@/infrastructure/database/client";
 import { entries } from "../../../database/schema";
 
@@ -8,7 +8,13 @@ export async function findReadableEntriesUpdatedAfter(updatedAfter: Date | null,
   return db
     .select({ id: entries.id, title: entries.title, data: entries.data, updatedAt: entries.updatedAt })
     .from(entries)
-    .where(updatedAfter ? and(readable, gt(entries.updatedAt, updatedAfter)) : readable)
+    // Cursor vem de um Date do JS (milissegundos) e o Postgres guarda microssegundos: sem truncar,
+    // a última entry sincronizada seria "mais nova" que o cursor para sempre.
+    .where(
+      updatedAfter
+        ? and(readable, sql`date_trunc('milliseconds', ${entries.updatedAt}) > ${updatedAfter.toISOString()}::timestamptz`)
+        : readable,
+    )
     .orderBy(asc(entries.updatedAt), asc(entries.id))
     .limit(limit);
 }

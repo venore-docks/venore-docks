@@ -19,24 +19,6 @@ export function speechLanguageCode(locale: string): string | null {
   return region ? `${language.toLowerCase()}-${region.toUpperCase()}` : base;
 }
 
-// Vozes Chirp 3 HD oferecidas na setting (o Google tem 30; estas cobrem os dois timbres).
-export const SPEECH_VOICES = [
-  { key: "Kore", label: "Kore (feminina)" },
-  { key: "Aoede", label: "Aoede (feminina)" },
-  { key: "Leda", label: "Leda (feminina)" },
-  { key: "Zephyr", label: "Zephyr (feminina)" },
-  { key: "Charon", label: "Charon (masculina)" },
-  { key: "Fenrir", label: "Fenrir (masculina)" },
-  { key: "Orus", label: "Orus (masculina)" },
-  { key: "Puck", label: "Puck (masculina)" },
-] as const;
-
-export const DEFAULT_SPEECH_VOICE = "Kore";
-
-export function isSpeechVoice(value: string): boolean {
-  return SPEECH_VOICES.some((voice) => voice.key === value);
-}
-
 // Normaliza espaços para que reformatar o texto (quebra de linha a mais) não gere áudio de novo.
 export function normalizeSpeechText(text: string): string {
   return text

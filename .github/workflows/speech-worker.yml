@@ -1,0 +1,84 @@
+name: Leitura em voz alta (worker)
+
+# Gera o áudio da leitura em voz alta das instâncias com SPEECH_DRIVER=worker, de graça, com
+# modelos abertos (Kokoro e Piper — scripts/speech-worker). Usa o mesmo secret CRON_TARGETS do
+# cron.yml ({"nome": {"url": ..., "secret": <CRON_SECRET>}}). A cada 15 min confere a fila de cada
+# instância e só instala os modelos se houver trabalho. Repositório público = minutos sem custo.
+#
+# Push que mexe no worker gera amostras de todas as vozes (artifact "amostras-de-voz") — prova que
+# os modelos ainda carregam e serve para ouvir as vozes antes de escolher em /admin/settings.
+on:
+  schedule:
+    - cron: "7,22,37,52 * * * *"
+  workflow_dispatch:
+    inputs:
+      samples:
+        description: "Só gerar amostras das vozes (não toca nas instâncias)"
+        type: boolean
+        default: false
+  push:
+    paths:
+      - "scripts/speech-worker/**"
+      - ".github/workflows/speech-worker.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: speech-worker-${{ github.event_name == 'push' && github.ref || 'queue' }}
+  cancel-in-progress: false
+
+jobs:
+  speech:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    env:
+      CRON_TARGETS: ${{ secrets.CRON_TARGETS }}
+      SAMPLES: ${{ github.event_name == 'push' || inputs.samples == true }}
+      HF_HUB_DISABLE_TELEMETRY: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Há fila?
+        id: check
+        run: |
+          if [ "$SAMPLES" = "true" ]; then echo "has_work=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          pip install -q "requests<3"
+          python scripts/speech-worker/worker.py --check | tee /tmp/check.txt
+          grep '^has_work=' /tmp/check.txt >> "$GITHUB_OUTPUT"
+
+      - name: Cache de pip e modelos
+        if: steps.check.outputs.has_work == 'true'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.cache/huggingface
+            ~/.cache/piper-voices
+          key: speech-worker-${{ hashFiles('scripts/speech-worker/requirements.txt', 'scripts/speech-worker/voices.json') }}
+          restore-keys: speech-worker-
+
+      - name: Instalar Kokoro e Piper
+        if: steps.check.outputs.has_work == 'true'
+        run: |
+          pip install -q torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -q -r scripts/speech-worker/requirements.txt
+
+      - name: Amostras das vozes
+        if: steps.check.outputs.has_work == 'true' && env.SAMPLES == 'true'
+        run: python scripts/speech-worker/worker.py --samples amostras
+
+      - uses: actions/upload-artifact@v4
+        if: steps.check.outputs.has_work == 'true' && env.SAMPLES == 'true'
+        with:
+          name: amostras-de-voz
+          path: amostras/
+          retention-days: 14
+
+      - name: Gerar o áudio da fila
+        if: steps.check.outputs.has_work == 'true' && env.SAMPLES != 'true'
+        run: python scripts/speech-worker/worker.py --budget-minutes 40

@@ -15,7 +15,7 @@ const settings = { enabled: true, voice: "Kore", monthlyCharacterLimit: 100 };
 
 vi.mock("../../shared/store", () => store);
 vi.mock("@/contexts/media", () => media);
-vi.mock("@/infrastructure/speech", () => ({ speechPort: { model: "m", isEnabled: () => true, synthesize: (...a: unknown[]) => synthesize(...a) } }));
+vi.mock("@/infrastructure/speech", () => ({ speechPort: { kind: "inline", model: "m", isEnabled: () => true, synthesize: (...a: unknown[]) => synthesize(...a) } }));
 vi.mock("../../shared/speech-settings", () => ({ readSpeechSettings: async () => settings }));
 vi.mock("@/observability", () => ({ beginOperation: () => ({}), endOperation: () => {} }));
 vi.mock("@vercel/functions", () => ({ waitUntil: () => {} }));

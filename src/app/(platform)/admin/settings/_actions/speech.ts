@@ -13,7 +13,7 @@ import {
 
 export type SpeechSettingsActionState = { error: string | null };
 
-// Leitura em voz alta (docs/speech/google-cloud-tts.md). settings.manage é checado aqui (antes
+// Leitura em voz alta (docs/speech/leitura-em-voz-alta.md). settings.manage é checado aqui (antes
 // de ler o formulário) e de novo por setSetting.
 export async function updateSpeechSettingsAction(
   _prevState: SpeechSettingsActionState,

@@ -1,0 +1,31 @@
+{
+  "_comment": "Voz do Venore (setting speech.voice: female/male) -> motor e voz por idioma. Kokoro: hexgrad/Kokoro-82M (Apache-2.0). Piper: rhasspy/piper-voices. Trocar aqui não regera o áudio que já existe; só o que for publicado ou alterado depois.",
+  "pt-BR": {
+    "female": { "engine": "kokoro", "voice": "pf_dora" },
+    "male": { "engine": "piper", "voice": "pt_BR-faber-medium" }
+  },
+  "en-US": {
+    "female": { "engine": "kokoro", "voice": "af_heart" },
+    "male": { "engine": "kokoro", "voice": "am_michael" }
+  },
+  "es-ES": {
+    "female": { "engine": "kokoro", "voice": "ef_dora" },
+    "male": { "engine": "kokoro", "voice": "em_alex" }
+  },
+  "fr-FR": {
+    "female": { "engine": "kokoro", "voice": "ff_siwis" },
+    "male": { "engine": "piper", "voice": "fr_FR-tom-medium" }
+  },
+  "it-IT": {
+    "female": { "engine": "kokoro", "voice": "if_sara" },
+    "male": { "engine": "kokoro", "voice": "im_nicola" }
+  },
+  "de-DE": {
+    "female": { "engine": "piper", "voice": "de_DE-kerstin-low" },
+    "male": { "engine": "piper", "voice": "de_DE-thorsten-medium" }
+  },
+  "ja-JP": {
+    "female": { "engine": "kokoro", "voice": "jf_alpha" },
+    "male": { "engine": "kokoro", "voice": "jm_kumo" }
+  }
+}

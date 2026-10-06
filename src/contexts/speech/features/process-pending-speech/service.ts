@@ -67,7 +67,7 @@ async function processClip(clip: StoredClip, limit: number): Promise<Outcome> {
   return "synthesized";
 }
 
-// Esvazia a fila em lotes paralelos até acabar, estourar o tempo ou bater no teto do mês (aí o
+// Driver "inline" (Google): esvazia a fila em lotes paralelos até acabar, estourar o tempo ou bater no teto do mês (aí o
 // resto espera o mês seguinte). Roda no job do cron e logo depois de uma publicação.
 export async function processPendingSpeech(options: ProcessPendingSpeechOptions = {}): Promise<ProcessPendingSpeechResult> {
   const maxItems = options.maxItems ?? 60;
@@ -76,7 +76,8 @@ export async function processPendingSpeech(options: ProcessPendingSpeechOptions 
   const counts = { synthesized: 0, failed: 0, skippedByLimit: 0 };
 
   const settings = await readSpeechSettings();
-  if (!settings.enabled || !speechPort.isEnabled()) {
+  // No modo worker quem sintetiza é o processo de fora (features/worker); aqui não há o que fazer.
+  if (!settings.enabled || speechPort.kind !== "inline") {
     return { success: true, data: { ...counts, remaining: (await countClipsByStatus()).pending } };
   }
 
@@ -103,6 +104,6 @@ export async function processPendingSpeech(options: ProcessPendingSpeechOptions 
 // Depois de enfileirar, gera já na Vercel (waitUntil mantém a função viva depois da resposta);
 // o que não couber fica para o job do cron. Fora da Vercel, só o cron.
 export function scheduleSpeechProcessing(): void {
-  if (!process.env.VERCEL) return;
+  if (!process.env.VERCEL || speechPort.kind !== "inline") return;
   waitUntil(processPendingSpeech({ maxItems: 12, timeBudgetMs: 25_000 }).catch(() => undefined));
 }

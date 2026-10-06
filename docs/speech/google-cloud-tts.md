@@ -1,4 +1,8 @@
-# Leitura em voz alta (Google Cloud Text-to-Speech)
+# Leitura em voz alta pelo Google Cloud Text-to-Speech (`SPEECH_DRIVER=google`)
+
+Alternativa ao worker gratuito — regras gerais em [leitura-em-voz-alta.md](leitura-em-voz-alta.md).
+**Conta de faturamento nova no Brasil exige pré-pagamento de R$ 200** (vira saldo, reembolsável ao
+encerrar a conta) antes de liberar a API, mesmo dentro da cota grátis.
 
 O áudio de um texto é gerado **uma vez**, depois da publicação, pela API do Google Cloud
 Text-to-Speech (vozes **Chirp 3 HD**), e gravado como MP3 no storage de mídia da instância. Quem lê
@@ -45,36 +49,12 @@ Referência de volume: uma cena de graphic novel tem de 100 a 600 caracteres; um
 
 | Onde | O quê |
 | --- | --- |
-| Vercel → projeto → **Environment Variables** | `GOOGLE_TTS_API_KEY` = a chave do passo 4 (Production; Preview só se quiser áudio nos previews). Redeploy depois. |
+| Vercel → projeto → **Environment Variables** | `SPEECH_DRIVER=google` e `GOOGLE_TTS_API_KEY` = a chave do passo 4 (Production; Preview só se quiser áudio nos previews). Redeploy depois. |
 | `/admin/settings` → **Leitura em voz alta** | Ligar a geração, escolher a voz e o teto mensal de caracteres. |
 
 Sem `GOOGLE_TTS_API_KEY`, ou com a leitura desligada, nada é gerado e nenhum botão de ouvir
 aparece. `GOOGLE_TTS_ENDPOINT` (opcional) só troca o endereço da API — servidor falso em teste
 local ou proxy.
 
-## Quando o áudio é gerado (e quando é apagado)
-
-| Conteúdo | Gera | Apaga |
-| --- | --- | --- |
-| Entry do CMS **publicada e pública** | Job `speech.sync-cms-entries` (cron): toda entry publicada que mudou desde a última passada. Ligar a leitura pela primeira vez enfileira as entries que já estavam publicadas. | Entry arquivada, apagada ou que virou "só logado" (o MP3 é público). Rascunho mantém. |
-| Graphic novel (plugin `novels`) | Ao publicar, e ao salvar grafo / editar obra / apagar capítulo de obra publicada: uma faixa por cena e idioma que tem texto próprio. | Obra apagada, ou cena/idioma que saiu da obra publicada. Despublicar mantém. |
-
-- A síntese roda no job `speech.process-pending` (cron, lotes de 4 em paralelo por até ~35 s) e,
-  na Vercel, também logo depois da publicação (`waitUntil`, até 12 faixas). Sem o cron configurado
-  (`CRON_SECRET` + `.github/workflows/cron.yml`), só essa geração imediata acontece.
-- Texto igual ao já gerado não gasta nada: o áudio é identificado por hash de texto + voz + modelo.
-  Por isso despublicar e republicar sem mudar o texto é de graça, e **trocar a voz vale para o que
-  for publicado ou alterado depois** (o resto continua com a voz antiga).
-- Falha do Google (rede, chave errada) tenta de novo nos ticks seguintes, até 3 vezes; republicar
-  tenta de novo uma faixa que falhou.
-- Texto acima de 30 000 caracteres não ganha áudio (o MP3 passaria de 20 MB).
-- Os MP3 ficam na categoria **"Leitura em voz alta"** da biblioteca de mídia; apagar um deles por
-  lá mostra o aviso de arquivo em uso.
-- Ouvir baixa o MP3 do storage (`preload="none"`: só ao dar play). Isso conta na transferência
-  do Vercel Blob/S3, não na cota do Google.
-
-## Para plugins
-
-`@venore/plugin-sdk/speech`: `syncSpeechAudio({ scope, items })` descreve o estado desejado de um
-scope do plugin (convenção: começar pela key, ex: `novels.work:<id>`) — o core enfileira o que é
-novo ou mudou e apaga o que saiu; `getSpeechAudio({ scopes })` devolve as URLs prontas.
+Com o Google a síntese roda no próprio app: job `speech.process-pending` (cron, lotes de 4 em
+paralelo por até ~35 s) e, na Vercel, logo depois da publicação (`waitUntil`, até 12 faixas).

@@ -23,22 +23,22 @@ redimensionadas das imagens já enviadas (migration `0053` roda sozinha no build
 o site renderiza normal e só o rascunho/histórico ficam indisponíveis. A config de tema atual é
 convertida sozinha (lida das chaves 7.x) até a primeira publicação. As migrations `0055` (coluna
 de mídia restrita perdida) e `0056` (schema `speech`) também rodam no build; a leitura em voz alta
-nasce desligada — para usar, seguir `docs/speech/google-cloud-tts.md` (`GOOGLE_TTS_API_KEY` e
-`/admin/settings`).
+nasce desligada — para usar de graça: `SPEECH_DRIVER=worker` no projeto e ligar em
+`/admin/settings` (`docs/speech/leitura-em-voz-alta.md`).
 
 ### Added
 
-- **Leitura em voz alta** (`contexts/speech`, `docs/speech/google-cloud-tts.md`): o áudio de cada
-  texto publicado é gerado uma vez pelo Google Cloud Text-to-Speech (vozes Chirp 3 HD, chave de API
-  em `GOOGLE_TTS_API_KEY`) e guardado como MP3 público na mídia; ouvir não chama o Google. Entries
-  públicas do CMS ganham o player "Ouvir este texto" (reconciliação pelo job
-  `speech.sync-cms-entries`); plugins usam `@venore/plugin-sdk/speech` (`syncSpeechAudio`,
-  `getSpeechAudio`) — o `novels` 0.3.0 lê cada cena. Fila com reserva atômica (job do cron e
-  geração logo após publicar nunca pagam a mesma faixa duas vezes), **teto mensal de caracteres**
-  (padrão 900 mil, 90% da cota grátis) checado antes de cada chamada, texto igual não gera de novo
-  e texto trocado apaga o MP3 antigo na hora. `/admin/settings` liga/desliga, escolhe a voz e o
-  teto e mostra o uso do mês. `CORE_VERSION` vai a 2.1.0 (SDK novo; faixas `>=2.0.0` continuam
-  valendo).
+- **Leitura em voz alta** (`contexts/speech`, `docs/speech/leitura-em-voz-alta.md`): o áudio de
+  cada texto publicado é gerado uma vez e guardado como MP3 público na mídia; ouvir não gera de
+  novo. Provedor por `SPEECH_DRIVER`: **`worker`** (grátis — `.github/workflows/speech-worker.yml`
+  gera com os modelos abertos Kokoro e Piper no GitHub Actions e devolve por `/api/speech/worker`,
+  autenticado com `CRON_SECRET`) ou `google` (Google Cloud TTS, Chirp 3 HD). Entries públicas do
+  CMS ganham o player "Ouvir este texto" (reconciliação pelo job `speech.sync-cms-entries`); plugins
+  usam `@venore/plugin-sdk/speech` (`syncSpeechAudio`, `getSpeechAudio`) — o `novels` 0.3.0 lê cada
+  cena. Fila com reserva atômica (duas sínteses nunca pegam a mesma faixa), **teto mensal de
+  caracteres** checado antes de cada síntese, texto igual não gera de novo e texto trocado apaga o
+  MP3 antigo na hora. `/admin/settings` liga/desliga, escolhe a voz e o teto e mostra o uso do mês.
+  `CORE_VERSION` vai a 2.1.0 (SDK novo; faixas `>=2.0.0` continuam valendo).
 
 - **Instâncias sem branch** (AGENTS.md §8): `main` é o único branch de deploy. O `package.json`
   declara a união dos pacotes `@venore/plugin-*`/`@venore/theme-*` (uma versão por pacote) e cada

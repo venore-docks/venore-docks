@@ -1,4 +1,4 @@
-import type { SpeechPort, SpeechSynthesisInput, SpeechSynthesisOutput } from "./speech-port";
+import type { SpeechPort, SpeechSynthesisInput, SpeechSynthesisOutput, SpeechVoiceOption } from "./speech-port";
 import { splitTextForSynthesis } from "./split-text";
 
 export const GOOGLE_TTS_ENDPOINT = "https://texttospeech.googleapis.com/v1/text:synthesize";
@@ -19,8 +19,23 @@ function stripId3(buffer: Buffer): Buffer {
 // Google Cloud Text-to-Speech pela API REST, autenticado por chave de API (restrita no console à
 // "Cloud Text-to-Speech API" — docs/speech/google-cloud-tts.md). Vozes Chirp 3 HD: sem SSML nem
 // controle de velocidade, então o texto vai cru.
+// Vozes Chirp 3 HD oferecidas na setting (o Google tem 30; estas cobrem os dois timbres).
+const CHIRP_VOICES: readonly SpeechVoiceOption[] = [
+  { key: "Kore", label: "Kore (feminina)" },
+  { key: "Aoede", label: "Aoede (feminina)" },
+  { key: "Leda", label: "Leda (feminina)" },
+  { key: "Zephyr", label: "Zephyr (feminina)" },
+  { key: "Charon", label: "Charon (masculina)" },
+  { key: "Fenrir", label: "Fenrir (masculina)" },
+  { key: "Orus", label: "Orus (masculina)" },
+  { key: "Puck", label: "Puck (masculina)" },
+];
+
 export class GoogleCloudTtsAdapter implements SpeechPort {
+  readonly kind = "inline" as const;
   readonly model = "google-chirp3-hd";
+  readonly voices = CHIRP_VOICES;
+  readonly defaultVoice = "Kore";
 
   constructor(
     private readonly apiKey: string,

@@ -140,6 +140,14 @@ export async function releaseClip(id: string, textHash: string): Promise<void> {
     .where(and(eq(audioClips.id, id), eq(audioClips.textHash, textHash), eq(audioClips.status, "processing")));
 }
 
+export async function findProcessingClip(id: string, textHash: string): Promise<{ characters: number } | null> {
+  const [row] = await db
+    .select({ characters: audioClips.characters })
+    .from(audioClips)
+    .where(and(eq(audioClips.id, id), eq(audioClips.textHash, textHash), eq(audioClips.status, "processing")));
+  return row ?? null;
+}
+
 export async function countClipsByStatus(): Promise<Record<SpeechClipStatus, number>> {
   const rows = await db
     .select({ status: audioClips.status, count: sql<number>`count(*)::int` })

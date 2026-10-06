@@ -1,13 +1,14 @@
 import { getSetting } from "@/contexts/settings";
-import { DEFAULT_SPEECH_VOICE, isSpeechVoice } from "./language";
+import { defaultSpeechVoice, isSpeechVoice } from "./voices";
 
 // Settings da leitura em voz alta (namespace core "speech" ⇒ escrita exige settings.manage). A
-// chave do Google vem da env (GOOGLE_TTS_API_KEY), nunca de setting.
+// escolha do provedor e as chaves vêm da env (SPEECH_DRIVER, CRON_SECRET, GOOGLE_TTS_API_KEY), nunca de setting.
 export const SPEECH_ENABLED_SETTING_KEY = "speech.enabled";
 export const SPEECH_VOICE_SETTING_KEY = "speech.voice";
 export const SPEECH_MONTHLY_LIMIT_SETTING_KEY = "speech.monthly_character_limit";
 
-// 90% da cota grátis mensal das vozes Chirp 3 HD (1 milhão de caracteres).
+// Teto de volume por mês. No Google é 90% da cota grátis do Chirp 3 HD (1 milhão de caracteres);
+// no worker não há cobrança, o teto só segura o tempo de GitHub Actions.
 export const DEFAULT_MONTHLY_CHARACTER_LIMIT = 900_000;
 export const MAX_MONTHLY_CHARACTER_LIMIT = 50_000_000;
 
@@ -26,7 +27,7 @@ export async function readSpeechSettings(): Promise<SpeechSettings> {
   const limitValue = limit.success ? limit.data?.value : undefined;
   return {
     enabled: enabledValue === true,
-    voice: typeof voiceValue === "string" && isSpeechVoice(voiceValue) ? voiceValue : DEFAULT_SPEECH_VOICE,
+    voice: typeof voiceValue === "string" && isSpeechVoice(voiceValue) ? voiceValue : defaultSpeechVoice(),
     monthlyCharacterLimit:
       typeof limitValue === "number" && Number.isInteger(limitValue) && limitValue >= 0 && limitValue <= MAX_MONTHLY_CHARACTER_LIMIT
         ? limitValue

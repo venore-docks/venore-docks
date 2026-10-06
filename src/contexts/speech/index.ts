@@ -1,4 +1,4 @@
-// Leitura em voz alta (docs/speech/google-cloud-tts.md): áudio gerado uma vez depois da
+// Leitura em voz alta (docs/speech/leitura-em-voz-alta.md): áudio gerado uma vez depois da
 // publicação, guardado como MP3 público na mídia, tocado sem chamar o provedor.
 //
 // Sem sessão e sem authorizeActor: quem sincroniza é o código de publicação do dono do conteúdo
@@ -6,6 +6,10 @@
 export { syncSpeechAudio } from "./features/sync-speech-audio/service";
 export { processPendingSpeech, scheduleSpeechProcessing } from "./features/process-pending-speech/service";
 export { getSpeechAudio } from "./features/get-speech-audio/service";
+// Worker externo (SPEECH_DRIVER=worker): só as rotas /api/speech/worker chamam, depois de
+// conferir o CRON_SECRET.
+export { getSpeechWorkStatus, claimSpeechWork, completeSpeechWork, failSpeechWork } from "./features/worker/service";
+export type { SpeechWorkJob } from "./features/worker/types";
 export type { GetSpeechAudioQuery, GetSpeechAudioResult } from "./features/get-speech-audio/service";
 // Painel do admin: quem chama precisa ter checado settings.manage.
 export { getSpeechStatus } from "./features/get-speech-status/service";
@@ -22,7 +26,7 @@ export {
   DEFAULT_MONTHLY_CHARACTER_LIMIT,
   MAX_MONTHLY_CHARACTER_LIMIT,
 } from "./shared/speech-settings";
-export { SPEECH_VOICES, DEFAULT_SPEECH_VOICE, isSpeechVoice } from "./shared/language";
+export { speechVoices, isSpeechVoice } from "./shared/voices";
 export type {
   SpeechAudio,
   SpeechSyncItem,
