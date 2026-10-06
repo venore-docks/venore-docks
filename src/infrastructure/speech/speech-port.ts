@@ -24,7 +24,7 @@ export interface SpeechPort {
   isEnabled(): boolean;
   // Identifica provedor + modelo: entra no hash do áudio guardado, pra trocar de modelo gerar de novo.
   readonly model: string;
-  // Vozes oferecidas em /admin/settings (a setting guarda a key).
+  // Vozes oferecidas em /admin/speech (a setting guarda a key).
   readonly voices: readonly SpeechVoiceOption[];
   readonly defaultVoice: string;
   synthesize(input: SpeechSynthesisInput): Promise<SpeechSynthesisOutput>;

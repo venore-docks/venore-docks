@@ -7,6 +7,11 @@ const mocks = vi.hoisted(() => ({
     return { success: true as const, data: {} };
   }),
   revalidatePath: vi.fn(),
+  retryFailedSpeech: vi.fn(async (input: { scope?: string | null }) => {
+    void input;
+    return { success: true as const, data: { requeued: 2 } };
+  }),
+  requestSpeechWorkerRun: vi.fn(async () => ({ success: true as const, data: { dispatched: true as const } })),
 }));
 vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidatePath }));
 vi.mock("@/contexts/rbac", () => ({
@@ -22,9 +27,11 @@ vi.mock("@/contexts/speech", () => ({
   SPEECH_ENABLED_SETTING_KEY: "speech.enabled",
   SPEECH_VOICE_SETTING_KEY: "speech.voice",
   SPEECH_MONTHLY_LIMIT_SETTING_KEY: "speech.monthly_character_limit",
+  retryFailedSpeech: mocks.retryFailedSpeech,
+  requestSpeechWorkerRun: mocks.requestSpeechWorkerRun,
 }));
 
-const { updateSpeechSettingsAction } = await import("./speech");
+const { updateSpeechSettingsAction, retryFailedSpeechAction, requestSpeechWorkerRunAction } = await import("./actions");
 
 function form(entries: Record<string, string>): FormData {
   const data = new FormData();
@@ -36,6 +43,8 @@ beforeEach(() => {
   mocks.authorized = true;
   mocks.setSetting.mockClear();
   mocks.revalidatePath.mockClear();
+  mocks.retryFailedSpeech.mockClear();
+  mocks.requestSpeechWorkerRun.mockClear();
 });
 
 describe("updateSpeechSettingsAction", () => {
@@ -61,5 +70,28 @@ describe("updateSpeechSettingsAction", () => {
     expect((await updateSpeechSettingsAction({ error: null }, form({ voice: "Kore", monthlyCharacterLimit: "-1" }))).error).toMatch(/teto/);
     expect((await updateSpeechSettingsAction({ error: null }, form({ voice: "Kore", monthlyCharacterLimit: "abc" }))).error).toMatch(/teto/);
     expect(mocks.setSetting).not.toHaveBeenCalled();
+  });
+});
+
+describe("ações do painel de áudios", () => {
+  it("sem settings.manage não reenfileira nem chama o worker", async () => {
+    mocks.authorized = false;
+    expect((await retryFailedSpeechAction({ error: null, notice: null }, form({ scope: "s" }))).error).toBe("Sem permissão.");
+    expect((await requestSpeechWorkerRunAction()).error).toBe("Sem permissão.");
+    expect(mocks.retryFailedSpeech).not.toHaveBeenCalled();
+    expect(mocks.requestSpeechWorkerRun).not.toHaveBeenCalled();
+  });
+
+  it("tentar de novo usa o scope do formulário; vazio = todos", async () => {
+    const state = await retryFailedSpeechAction({ error: null, notice: null }, form({ scope: "novels.work:1" }));
+    expect(mocks.retryFailedSpeech).toHaveBeenCalledWith({ scope: "novels.work:1" });
+    expect(state).toEqual({ error: null, notice: "2 textos voltaram para a fila." });
+    await retryFailedSpeechAction({ error: null, notice: null }, form({}));
+    expect(mocks.retryFailedSpeech).toHaveBeenLastCalledWith({ scope: null });
+  });
+
+  it("gerar agora chama o worker", async () => {
+    expect((await requestSpeechWorkerRunAction()).error).toBeNull();
+    expect(mocks.requestSpeechWorkerRun).toHaveBeenCalledOnce();
   });
 });

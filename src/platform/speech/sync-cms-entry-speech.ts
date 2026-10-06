@@ -36,6 +36,7 @@ export async function syncCmsEntrySpeech(): Promise<OperationResult<{ synced: nu
     const result = await syncSpeechAudio({
       scope: cmsEntrySpeechScope(entry.id),
       items: [{ itemKey: "body", locale, text: entry.text }],
+      source: { label: entry.title, href: `/admin/cms/entries/${entry.id}` },
     });
     if (!result.success) return result;
     await setSpeechSyncCursor(CURSOR_KEY, entry.updatedAt);

@@ -5,6 +5,8 @@ const store = {
   listClipsByScope: vi.fn(),
   upsertPendingClip: vi.fn(),
   deleteClips: vi.fn(),
+  upsertScopeSource: vi.fn(),
+  deleteScopeSource: vi.fn(),
 };
 const deleteGeneratedAssets = vi.fn();
 const scheduleSpeechProcessing = vi.fn();
@@ -49,6 +51,19 @@ describe("syncSpeechAudio", () => {
     expect(result).toEqual({ success: true, data: { queued: 1, unchanged: 0, removed: 0 } });
     expect(store.upsertPendingClip).toHaveBeenCalledWith(expect.objectContaining({ text: "Olá", voice: "Kore", characters: 3 }));
     expect(scheduleSpeechProcessing).toHaveBeenCalledOnce();
+  });
+
+  it("guarda a origem do scope e apaga quando o scope esvazia", async () => {
+    await syncSpeechAudio({
+      scope: "s",
+      items: [{ itemKey: "body", locale: "pt-BR", text: "Olá" }],
+      source: { label: "  Minha obra  ", href: "/admin/novels/works/1" },
+    });
+    expect(store.upsertScopeSource).toHaveBeenCalledWith("s", "Minha obra", "/admin/novels/works/1");
+
+    store.listClipsByScope.mockResolvedValue([clip({})]);
+    await syncSpeechAudio({ scope: "s", items: [], source: { label: "Minha obra" } });
+    expect(store.deleteScopeSource).toHaveBeenCalledWith("s");
   });
 
   it("texto igual não gasta nada", async () => {

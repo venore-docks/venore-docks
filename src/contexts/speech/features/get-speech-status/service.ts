@@ -14,7 +14,7 @@ export type SpeechStatus = SpeechSettings & {
   clips: Record<SpeechClipStatus, number>;
 };
 
-// Painel de /admin/settings. Quem chama já checou settings.manage (a página e a action).
+// Painel /admin/speech. Quem chama já checou settings.manage (a página e a action).
 export async function getSpeechStatus(): Promise<OperationResult<SpeechStatus>> {
   const month = currentUsageMonth();
   const [settings, usedCharacters, clips] = await Promise.all([readSpeechSettings(), getUsage(month), countClipsByStatus()]);

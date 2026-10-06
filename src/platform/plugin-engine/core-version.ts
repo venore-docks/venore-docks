@@ -11,4 +11,5 @@
 // compatibilidade com plugins existentes (mesmo critério de major bump). Minor sobe quando o SDK
 // ganha algo que um plugin novo passa a exigir (faixas ">=2.0.0 <3.0.0" continuam valendo).
 // 2.1.0: @venore/plugin-sdk/speech (leitura em voz alta).
-export const CORE_VERSION = "2.1.0";
+// 2.2.0: getSpeechProgress e `source` no syncSpeechAudio (painel de áudios).
+export const CORE_VERSION = "2.2.0";

@@ -86,3 +86,7 @@ next-env.d.ts
 /test-results/
 /playwright-report/
 /blob-report/
+
+# Python (scripts/speech-worker)
+__pycache__/
+*.pyc

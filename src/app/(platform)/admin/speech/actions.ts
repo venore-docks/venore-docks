@@ -5,6 +5,8 @@ import { authorizeActor } from "@/contexts/rbac";
 import { setSetting } from "@/contexts/settings";
 import {
   isSpeechVoice,
+  requestSpeechWorkerRun,
+  retryFailedSpeech,
   MAX_MONTHLY_CHARACTER_LIMIT,
   SPEECH_ENABLED_SETTING_KEY,
   SPEECH_MONTHLY_LIMIT_SETTING_KEY,
@@ -44,4 +46,32 @@ export async function updateSpeechSettingsAction(
   // Ligar/desligar mostra ou esconde o botão de ouvir em todo o site público.
   revalidatePath("/", "layout");
   return { error: null };
+}
+
+export type SpeechPanelActionState = { error: string | null; notice: string | null };
+
+// "Tentar de novo": textos com falha voltam para a fila (de um conteúdo, ou todos sem `scope`).
+export async function retryFailedSpeechAction(
+  _prevState: SpeechPanelActionState,
+  formData: FormData,
+): Promise<SpeechPanelActionState> {
+  const authz = await authorizeActor("settings.manage");
+  if (!authz.authorized) return { error: authz.error.message, notice: null };
+
+  const result = await retryFailedSpeech({ scope: String(formData.get("scope") ?? "") || null });
+  if (!result.success) return { error: result.error.message, notice: null };
+  revalidatePath("/admin/speech");
+  const { requeued } = result.data;
+  return { error: null, notice: requeued === 1 ? "1 texto voltou para a fila." : `${requeued} textos voltaram para a fila.` };
+}
+
+// "Gerar agora": pede uma execução do worker no GitHub Actions (SPEECH_WORKER_GITHUB_TOKEN).
+export async function requestSpeechWorkerRunAction(): Promise<SpeechPanelActionState> {
+  const authz = await authorizeActor("settings.manage");
+  if (!authz.authorized) return { error: authz.error.message, notice: null };
+
+  const result = await requestSpeechWorkerRun();
+  if (!result.success) return { error: result.error.message, notice: null };
+  revalidatePath("/admin/speech");
+  return { error: null, notice: "Worker chamado: ele leva alguns minutos para instalar as vozes e começar." };
 }

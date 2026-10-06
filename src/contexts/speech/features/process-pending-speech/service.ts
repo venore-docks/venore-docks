@@ -1,6 +1,6 @@
 import { waitUntil } from "@vercel/functions";
 import { deleteGeneratedAssets, storeGeneratedAsset } from "@/contexts/media";
-import { speechPort } from "@/infrastructure/speech";
+import { speechPort, speechWorkerTrigger } from "@/infrastructure/speech";
 import { beginOperation, endOperation } from "@/observability";
 import type { ProcessPendingSpeechResult } from "../../contracts/types";
 import {
@@ -101,9 +101,22 @@ export async function processPendingSpeech(options: ProcessPendingSpeechOptions 
   return { success: true, data: { ...counts, remaining } };
 }
 
-// Depois de enfileirar, gera já na Vercel (waitUntil mantém a função viva depois da resposta);
-// o que não couber fica para o job do cron. Fora da Vercel, só o cron.
+// Pedidos de execução do worker em sequência (várias cenas salvas seguidas, o job do CMS) viram
+// um só: o GitHub guarda no máximo uma execução pendente por vez, e esta janela evita chamadas à toa.
+const DISPATCH_WINDOW_MS = 60_000;
+let lastDispatchAt = 0;
+
+// Depois de enfileirar:
+// - inline (Google): gera já na Vercel (waitUntil mantém a função viva depois da resposta); o que
+//   não couber fica para o job do cron. Fora da Vercel, só o cron.
+// - worker: pede uma execução do workflow (SPEECH_WORKER_GITHUB_TOKEN), sem esperar o agendamento.
 export function scheduleSpeechProcessing(): void {
+  if (speechPort.kind === "worker") {
+    if (!speechWorkerTrigger.isConfigured() || Date.now() - lastDispatchAt < DISPATCH_WINDOW_MS) return;
+    lastDispatchAt = Date.now();
+    waitUntil(speechWorkerTrigger.dispatch().catch(() => undefined));
+    return;
+  }
   if (!process.env.VERCEL || speechPort.kind !== "inline") return;
   waitUntil(processPendingSpeech({ maxItems: 12, timeBudgetMs: 25_000 }).catch(() => undefined));
 }

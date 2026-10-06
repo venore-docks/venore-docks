@@ -26,7 +26,9 @@ HERE = Path(__file__).resolve().parent
 VOICES = {key: value for key, value in json.loads((HERE / "voices.json").read_text()).items() if not key.startswith("_")}
 MP3_KBPS = 32  # fala em mono: 32 kbps cabe ~18 min no limite de 4,4 MB da entrega
 MAX_MP3_BYTES = 4_400_000
-CLAIM_BATCH = 5
+CLAIM_BATCH = 1  # um por vez: o painel mostra como "gerando agora" só o que está sendo gerado
+PROGRESS_EVERY_SECONDS = 4
+SEGMENT_CHARS = 400
 KOKORO_REPO = "hexgrad/Kokoro-82M"
 KOKORO_LANG = {"pt": "p", "en-US": "a", "en-GB": "b", "en": "a", "es": "e", "fr": "f", "it": "i", "ja": "j"}
 PIPER_DIR = Path(os.environ.get("PIPER_VOICES_DIR", Path.home() / ".cache" / "piper-voices"))
@@ -62,14 +64,31 @@ class Engines:
             raise ValueError(f"Sem voz configurada para {language_code} (voices.json).")
         return table.get(voice) or table["female"]
 
-    def synthesize(self, text: str, language_code: str, voice: str) -> tuple[bytes, int]:
-        """Devolve (PCM 16 bits mono, taxa de amostragem)."""
+    def synthesize(self, text: str, language_code: str, voice: str, on_progress=None) -> tuple[bytes, int]:
+        """Devolve (PCM 16 bits mono, taxa de amostragem). Gera por trechos e chama
+        on_progress(fração 0..1) depois de cada um."""
         choice = self.voice_for(language_code, voice)
-        if choice["engine"] == "kokoro":
-            return self._kokoro(text, language_code, choice["voice"])
-        if choice["engine"] == "piper":
-            return self._piper(text, choice["voice"])
-        raise ValueError(f"Motor desconhecido: {choice['engine']}")
+        segments = split_segments(text)
+        total = sum(len(segment) for segment in segments) or 1
+        pcm = bytearray()
+        sample_rate = 0
+        done = 0
+        for segment in segments:
+            if choice["engine"] == "kokoro":
+                chunk, rate = self._kokoro(segment, language_code, choice["voice"])
+            elif choice["engine"] == "piper":
+                chunk, rate = self._piper(segment, choice["voice"])
+            else:
+                raise ValueError(f"Motor desconhecido: {choice['engine']}")
+            if chunk:
+                pcm += chunk
+                sample_rate = rate
+            done += len(segment)
+            if on_progress:
+                on_progress(done / total)
+        if not pcm:
+            raise ValueError("Nenhum áudio gerado.")
+        return bytes(pcm), sample_rate
 
     def _kokoro(self, text: str, language_code: str, voice: str) -> tuple[bytes, int]:
         import numpy as np
@@ -93,7 +112,7 @@ class Engines:
             if result.audio is not None:
                 parts.extend([result.audio.detach().cpu().numpy().astype(np.float32), pause])
         if not parts:
-            raise ValueError("Kokoro não gerou áudio.")
+            return b"", 24_000  # trecho só de pontuação: nada a falar
         audio = np.clip(np.concatenate(parts), -1.0, 1.0)
         return (audio * 32767).astype("<i2").tobytes(), 24_000
 
@@ -115,9 +134,28 @@ class Engines:
         for chunk in loaded.synthesize(text):
             sample_rate = chunk.sample_rate
             pcm += chunk.audio_int16_bytes
-        if not pcm:
-            raise ValueError("Piper não gerou áudio.")
         return bytes(pcm), sample_rate
+
+
+def split_segments(text: str) -> list[str]:
+    """Parágrafos, e parágrafo longo em frases agrupadas até SEGMENT_CHARS: a síntese anda por
+    trechos para o painel ver o andamento. Cada trecho termina numa pausa natural."""
+    import re
+
+    segments: list[str] = []
+    for paragraph in (part.strip() for part in re.split(r"\n+", text)):
+        if not paragraph:
+            continue
+        current = ""
+        for sentence in re.split(r"(?<=[.!?…。！？])\s+", paragraph):
+            if current and len(current) + len(sentence) + 1 > SEGMENT_CHARS:
+                segments.append(current)
+                current = sentence
+            else:
+                current = f"{current} {sentence}".strip()
+        if current:
+            segments.append(current)
+    return segments or [text]
 
 
 def ensure_japanese() -> None:
@@ -151,7 +189,12 @@ def load_targets() -> dict[str, dict]:
     raw = os.environ.get("CRON_TARGETS", "").strip()
     if not raw:
         return {}
-    targets = json.loads(raw)
+    try:
+        targets = json.loads(raw)
+    except json.JSONDecodeError as error:
+        # Valor colado pela metade ou com quebra de linha no secret: falha visível, não silenciosa.
+        log(f"::error::CRON_TARGETS não é um JSON válido ({error.msg}, linha {error.lineno}, coluna {error.colno}).")
+        sys.exit(1)
     for target in targets.values():
         print(f"::add-mask::{target['secret']}", flush=True)
     return targets
@@ -160,6 +203,20 @@ def load_targets() -> dict[str, dict]:
 def api(target: dict, method: str, path: str, **kwargs) -> requests.Response:
     headers = {"Authorization": f"Bearer {target['secret']}", **kwargs.pop("headers", {})}
     return requests.request(method, f"{target['url'].rstrip('/')}{path}", headers=headers, timeout=60, **kwargs)
+
+
+def signal(target: dict, path: str, payload: dict) -> dict | None:
+    """Aviso ao painel (fase do worker, andamento). Instância sem essas rotas (versão antiga) ou
+    fora do ar não interrompe a geração."""
+    try:
+        response = api(target, "POST", path, json=payload)
+        return response.json() if response.status_code == 200 else None
+    except (requests.RequestException, ValueError):
+        return None
+
+
+def heartbeat(target: dict, stage: str, detail: str | None = None) -> None:
+    signal(target, "/api/speech/worker/heartbeat", {"stage": stage, "detail": detail})
 
 
 def pending_work(targets: dict[str, dict]) -> dict[str, int]:
@@ -186,6 +243,8 @@ def process(targets: dict[str, dict], names: list[str], deadline: float) -> int:
     failures = 0
     for name in names:
         target = targets[name]
+        heartbeat(target, "generating")
+        done = 0
         while time.time() < deadline:
             response = api(target, "POST", "/api/speech/worker/claim", json={"limit": CLAIM_BATCH})
             response.raise_for_status()
@@ -197,8 +256,18 @@ def process(targets: dict[str, dict], names: list[str], deadline: float) -> int:
                 break
             for job in jobs:
                 started = time.time()
+                last_report = 0.0
+
+                def on_progress(fraction: float, job=job) -> None:
+                    nonlocal last_report
+                    if time.time() - last_report < PROGRESS_EVERY_SECONDS or fraction >= 1:
+                        return
+                    last_report = time.time()
+                    signal(target, f"/api/speech/worker/clips/{job['id']}/progress", {"textHash": job["textHash"], "percent": round(fraction * 100)})
+
                 try:
-                    pcm, sample_rate = engines.synthesize(job["text"], job["languageCode"], job["voice"])
+                    signal(target, f"/api/speech/worker/clips/{job['id']}/progress", {"textHash": job["textHash"], "percent": 0})
+                    pcm, sample_rate = engines.synthesize(job["text"], job["languageCode"], job["voice"], on_progress)
                     mp3 = to_mp3(pcm, sample_rate)
                     if len(mp3) > MAX_MP3_BYTES:
                         mp3 = to_mp3(pcm, sample_rate, kbps=24)
@@ -211,6 +280,8 @@ def process(targets: dict[str, dict], names: list[str], deadline: float) -> int:
                     )
                     upload.raise_for_status()
                     stored = upload.json().get("stored")
+                    done += 1
+                    heartbeat(target, "generating", f"{done} pronto(s) nesta execução")
                     log(
                         f"{name}: {job['languageCode']}/{job['voice']} {len(job['text'])} caracteres -> "
                         f"{len(mp3) // 1024} KB em {time.time() - started:.1f}s{'' if stored else ' (descartado: texto mudou)'}"
@@ -227,6 +298,7 @@ def process(targets: dict[str, dict], names: list[str], deadline: float) -> int:
                         )
                     except requests.RequestException:
                         pass
+        heartbeat(target, "finished", f"{done} áudio(s) gerado(s)")
     return failures
 
 
@@ -267,6 +339,9 @@ def main() -> int:
 
     work = pending_work(targets)
     if args.check:
+        # Achou fila: o painel mostra "preparando as vozes" enquanto o workflow instala os modelos.
+        for name in work:
+            heartbeat(targets[name], "preparing", f"{work[name]} na fila")
         print(f"has_work={'true' if work else 'false'}")
         return 0
     if not work:

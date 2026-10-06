@@ -4,11 +4,11 @@ import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useActionToast } from "@/hooks/use-action-toast";
-import { updateSpeechSettingsAction, type SpeechSettingsActionState } from "../_actions/speech";
+import { updateSpeechSettingsAction, type SpeechSettingsActionState } from "../actions";
 
 const initialState: SpeechSettingsActionState = { error: null };
 
-export function SpeechFormFields({
+export function SpeechSettingsForm({
   enabled,
   voice,
   monthlyCharacterLimit,

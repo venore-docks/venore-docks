@@ -37,3 +37,5 @@ export function createSpeechPort(env: Record<string, string | undefined> = proce
 export const speechPort: SpeechPort = createSpeechPort();
 
 export type { SpeechPort, SpeechPortKind, SpeechSynthesisInput, SpeechSynthesisOutput, SpeechVoiceOption } from "./speech-port";
+export { speechWorkerTrigger, createSpeechWorkerTrigger } from "./github-worker-trigger";
+export type { SpeechWorkerRun, SpeechWorkerTrigger } from "./github-worker-trigger";

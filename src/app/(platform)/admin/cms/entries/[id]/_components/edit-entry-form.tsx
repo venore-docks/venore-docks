@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { useActionToast } from "@/hooks/use-action-toast";
 import { updateEntryAction, type EditEntryActionState } from "../actions";
+import { SpeechProgress, type SpeechProgressValue } from "@/components/speech/speech-progress";
 
 const initialState: EditEntryActionState = { error: null };
 
@@ -39,7 +40,7 @@ export function EditEntryForm({
   body: string;
   hasComposition: boolean;
   categoryId: string | null;
-  speech: { enabled: boolean; status: string | null };
+  speech: { enabled: boolean; status: string | null; progress: SpeechProgressValue | null };
   contentTypeIds: string[];
   visibility: "public" | "authenticated";
   media: PickableMedia | null;
@@ -111,8 +112,13 @@ export function EditEntryForm({
         </label>
         <p className="mt-1 text-xs text-muted-foreground/56">
           {speech.status ??
-            "O áudio é gerado depois de publicado, só para conteúdo aberto, e fica pronto em até ~15 minutos."}
+            "O áudio é gerado depois de publicado, só para conteúdo aberto."}
         </p>
+        {speech.enabled && speech.progress && (
+          <div className="mt-2 max-w-sm">
+            <SpeechProgress progress={speech.progress} compact />
+          </div>
+        )}
       </div>
 
       <div>

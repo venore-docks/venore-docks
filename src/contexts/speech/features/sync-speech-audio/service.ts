@@ -5,7 +5,7 @@ import type { SyncSpeechAudioInput, SyncSpeechAudioResult } from "../../contract
 import { MAX_ITEM_CHARACTERS, MAX_ITEMS_PER_SCOPE, SPEECH_MEDIA_CATEGORY_KEY } from "../../shared/constants";
 import { countCharacters, normalizeSpeechText, speechLanguageCode, speechTextHash } from "../../shared/language";
 import { readSpeechSettings } from "../../shared/speech-settings";
-import { deleteClips, listClipsByScope, upsertPendingClip } from "../../shared/store";
+import { deleteClips, deleteScopeSource, listClipsByScope, upsertPendingClip, upsertScopeSource } from "../../shared/store";
 import { scheduleSpeechProcessing } from "../process-pending-speech/service";
 
 const itemId = (itemKey: string, locale: string) => `${itemKey}\u0000${locale}`;
@@ -74,6 +74,8 @@ export async function syncSpeechAudio(input: SyncSpeechAudioInput): Promise<Sync
     const deleted = await deleteGeneratedAssets({ ids: removeAssetIds, categoryKey: SPEECH_MEDIA_CATEGORY_KEY });
     if (!deleted.success) return fail(deleted.error.code, deleted.error.message);
   }
+  if (keep.size === 0) await deleteScopeSource(scope);
+  else if (input.source?.label.trim()) await upsertScopeSource(scope, input.source.label.trim().slice(0, 300), input.source.href ?? null);
   if (queued > 0) scheduleSpeechProcessing();
 
   endOperation(handle, { success: true });

@@ -16,6 +16,9 @@ export type SpeechSyncItem = {
 export type SyncSpeechAudioInput = {
   scope: string;
   items: SpeechSyncItem[];
+  // Como o painel de áudios (/admin/speech) mostra o scope: título do conteúdo e link do editor.
+  // Opcional; sem ele o painel mostra o nome cru do scope.
+  source?: { label: string; href?: string | null };
 };
 
 export type SyncSpeechAudioResult = OperationResult<{ queued: number; unchanged: number; removed: number }>;
@@ -38,4 +41,32 @@ export type SpeechUsage = {
   month: string;
   characters: number;
   limit: number;
+};
+
+// Andamento do áudio de um scope (uma obra, uma entry): quantos textos estão prontos, na fila,
+// sendo gerados agora ou com falha (que só voltam à fila quando alguém pede de novo).
+export type SpeechProgress = {
+  total: number;
+  ready: number;
+  pending: number;
+  processing: number;
+  failed: number;
+  // Percentual (0–99) do texto sendo gerado agora, informado pelo worker; null sem geração em curso.
+  currentPercent: number | null;
+  lastError: string | null;
+  updatedAt: string | null;
+};
+
+export type GetSpeechProgressQuery = { scopes: string[] };
+export type GetSpeechProgressResult = OperationResult<Record<string, SpeechProgress>>;
+
+// O que o worker (SPEECH_DRIVER=worker) está fazendo, pelo último sinal de vida:
+// preparing = achou fila e está instalando as vozes; generating = gerando; finished = terminou a
+// última execução; silent = parou de avisar no meio (execução morreu); null = nunca avisou ou não
+// é o modo worker. `since` = início da fase atual.
+export type SpeechWorkerActivity = {
+  mode: "inline" | "worker" | "disabled";
+  stage: "preparing" | "generating" | "finished" | "silent" | null;
+  since: string | null;
+  lastSignalAt: string | null;
 };

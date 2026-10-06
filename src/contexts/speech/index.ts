@@ -6,9 +6,18 @@
 export { syncSpeechAudio } from "./features/sync-speech-audio/service";
 export { processPendingSpeech, scheduleSpeechProcessing } from "./features/process-pending-speech/service";
 export { getSpeechAudio } from "./features/get-speech-audio/service";
+// Andamento por scope (só contagens) — tela de edição do dono do conteúdo; plugins via SDK.
+export { getSpeechProgress } from "./features/get-speech-progress/service";
 // Worker externo (SPEECH_DRIVER=worker): só as rotas /api/speech/worker chamam, depois de
 // conferir o CRON_SECRET.
-export { getSpeechWorkStatus, claimSpeechWork, completeSpeechWork, failSpeechWork } from "./features/worker/service";
+export {
+  getSpeechWorkStatus,
+  claimSpeechWork,
+  completeSpeechWork,
+  failSpeechWork,
+  reportSpeechWorkProgress,
+  recordSpeechWorkerStage,
+} from "./features/worker/service";
 export type { SpeechWorkJob } from "./features/worker/types";
 export type { GetSpeechAudioQuery, GetSpeechAudioResult } from "./features/get-speech-audio/service";
 // Painel do admin: quem chama precisa ter checado settings.manage.
@@ -16,6 +25,12 @@ export { getSpeechStatus } from "./features/get-speech-status/service";
 export type { SpeechStatus } from "./features/get-speech-status/service";
 export { findSpeechMediaUsage } from "./features/find-media-usage/service";
 export { listSpeechScopes } from "./features/list-speech-scopes/service";
+// Painel /admin/speech: quem chama precisa ter checado settings.manage.
+export { listSpeechQueue } from "./features/list-speech-queue/service";
+export type { SpeechQueueItem } from "./features/list-speech-queue/service";
+export { retryFailedSpeech } from "./features/retry-failed-speech/service";
+export { getSpeechWorkerInfo, requestSpeechWorkerRun, getSpeechWorkerActivity } from "./features/speech-worker-run/service";
+export type { SpeechWorkerInfo } from "./features/speech-worker-run/service";
 export { getSpeechSyncCursor, setSpeechSyncCursor } from "./features/sync-cursor/service";
 export { readSpeechSettings } from "./shared/speech-settings";
 export type { SpeechSettings } from "./shared/speech-settings";
@@ -29,8 +44,15 @@ export {
 export { speechVoices, isSpeechVoice } from "./shared/voices";
 export type {
   SpeechAudio,
+  SpeechProgress,
+  SpeechWorkerActivity,
+  GetSpeechProgressQuery,
+  GetSpeechProgressResult,
   SpeechSyncItem,
   SyncSpeechAudioInput,
   SyncSpeechAudioResult,
   ProcessPendingSpeechResult,
 } from "./contracts/types";
+
+export { speechAdminNavigationItems } from "./admin-navigation";
+export { speechBreadcrumbSegments } from "./breadcrumbs";

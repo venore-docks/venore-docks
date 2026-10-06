@@ -50,7 +50,7 @@ Referência de volume: uma cena de graphic novel tem de 100 a 600 caracteres; um
 | Onde | O quê |
 | --- | --- |
 | Vercel → projeto → **Environment Variables** | `SPEECH_DRIVER=google` e `GOOGLE_TTS_API_KEY` = a chave do passo 4 (Production; Preview só se quiser áudio nos previews). Redeploy depois. |
-| `/admin/settings` → **Leitura em voz alta** | Ligar a geração, escolher a voz e o teto mensal de caracteres. |
+| Editorial → **Áudios** (`/admin/speech`) | Ligar a geração, escolher a voz e o teto mensal de caracteres. |
 
 Sem `GOOGLE_TTS_API_KEY`, ou com a leitura desligada, nada é gerado e nenhum botão de ouvir
 aparece. `GOOGLE_TTS_ENDPOINT` (opcional) só troca o endereço da API — servidor falso em teste

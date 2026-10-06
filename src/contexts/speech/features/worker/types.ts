@@ -16,3 +16,9 @@ export type CompleteSpeechWorkInput = { id: string; textHash: string; audio: Buf
 export type CompleteSpeechWorkResult = OperationResult<{ stored: boolean }>;
 export type FailSpeechWorkInput = { id: string; textHash: string; error: string };
 export type SpeechWorkStatus = OperationResult<{ mode: string; enabled: boolean; pending: number }>;
+export type ReportSpeechWorkProgressInput = { id: string; textHash: string; percent: number };
+
+// Fases que o worker informa: preparing (achou fila, instalando modelos), generating (gerando),
+// finished (terminou a execução).
+export const SPEECH_WORKER_STAGES = ["preparing", "generating", "finished"] as const;
+export type SpeechWorkerStage = (typeof SPEECH_WORKER_STAGES)[number];

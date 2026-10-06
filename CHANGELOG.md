@@ -24,9 +24,25 @@ o site renderiza normal e só o rascunho/histórico ficam indisponíveis. A conf
 convertida sozinha (lida das chaves 7.x) até a primeira publicação. As migrations `0055` (coluna
 de mídia restrita perdida) e `0056` (schema `speech`) também rodam no build; a leitura em voz alta
 nasce desligada — para usar de graça: `SPEECH_DRIVER=worker` no projeto e ligar em
-`/admin/settings` (`docs/speech/leitura-em-voz-alta.md`).
+**Editorial → Áudios** (`/admin/speech`; `docs/speech/leitura-em-voz-alta.md`). As migrations
+`0057`/`0058` (origem de cada scope, andamento da faixa e sinal de vida do worker) também rodam no
+build. Recomendado no modo worker: `SPEECH_WORKER_GITHUB_TOKEN` (o app chama o worker na hora).
 
 ### Added
+
+- **Painel de áudios e produção visível** (`/admin/speech`, Editorial → **Áudios**): a
+  configuração da leitura em voz alta sai de `/admin/settings` e ganha a fila — uma linha por
+  conteúdo com título e link do editor (`source` no `syncSpeechAudio`), barra de produção com as
+  faixas prontas e o percentual da faixa em geração, falhas com o último erro e "Tentar de novo",
+  e o que o worker está fazendo (preparando as vozes, gerando, parado, sem sinal) mais a execução
+  recente no GitHub. Atualiza sozinho enquanto há fila. A mesma barra aparece na edição da entry
+  e da obra do `novels` 0.5.0. O worker gera uma faixa por vez, em trechos, informando percentual
+  e fase (`/api/speech/worker/clips/<id>/progress`, `/api/speech/worker/heartbeat`). Com
+  `SPEECH_WORKER_GITHUB_TOKEN` o app dispara o worker (`workflow_dispatch`) assim que algo entra
+  na fila e mostra **"Gerar agora"** — o `schedule` do GitHub atrasa horas. Salvar/publicar uma
+  entry já enfileira o áudio (antes só no cron). `cron.yml` e o worker falham com erro quando o
+  secret `CRON_TARGETS` não é JSON válido (antes passavam em silêncio). SDK:
+  `getSpeechProgress`, `getSpeechWorkerActivity`; `CORE_VERSION` 2.2.0.
 
 - **Leitura em voz alta** (`contexts/speech`, `docs/speech/leitura-em-voz-alta.md`): o áudio de
   cada texto que o autor escolheu (opção "Gerar áudio" na edição da entry e da obra do `novels`,

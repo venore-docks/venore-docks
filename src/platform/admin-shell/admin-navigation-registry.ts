@@ -5,6 +5,7 @@ import { importExportAdminNavigationItems } from "@/contexts/import-export";
 import { mediaAdminNavigationItems } from "@/contexts/media";
 import { rbacAdminNavigationItems } from "@/contexts/rbac";
 import { settingsAdminNavigationItems } from "@/contexts/settings";
+import { speechAdminNavigationItems } from "@/contexts/speech";
 import { themesAdminNavigationItems } from "@/contexts/themes";
 import { observabilityAdminNavigationItems } from "@/observability";
 import { getPluginRegistrationReport } from "../plugin-engine/register-plugins";
@@ -29,6 +30,7 @@ export async function collectAdminNavigationItems(): Promise<AdminNavItemDefinit
     ...contentFeedAdminNavigationItems,
     ...mediaAdminNavigationItems,
     ...importExportAdminNavigationItems,
+    ...speechAdminNavigationItems,
     ...settingsAdminNavigationItems,
     ...themesAdminNavigationItems,
     ...observabilityAdminNavigationItems,

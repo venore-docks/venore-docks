@@ -9,7 +9,7 @@ página, dar play ou recarregar não gera nada de novo. Contexto: `src/contexts/
 
 | Driver | Custo | Como gera | Quando o áudio fica pronto |
 | --- | --- | --- | --- |
-| **`worker`** (recomendado) | Zero, sem conta em provedor | GitHub Actions (`.github/workflows/speech-worker.yml`) com modelos abertos — Kokoro (Apache-2.0) e Piper — escolhidos por idioma em `scripts/speech-worker/voices.json` | Até ~15 min depois de publicar (o worker roda a cada 15 min) |
+| **`worker`** (recomendado) | Zero, sem conta em provedor | GitHub Actions (`.github/workflows/speech-worker.yml`) com modelos abertos — Kokoro (Apache-2.0) e Piper — escolhidos por idioma em `scripts/speech-worker/voices.json` | Minutos depois de salvar, com `SPEECH_WORKER_GITHUB_TOKEN` (o app chama o worker); sem o token, quando o agendamento do GitHub rodar — que atrasa horas em repositório com pouca atividade |
 | `google` | Cota grátis mensal, mas conta nova no Brasil exige pré-pagamento de R$ 200 | Google Cloud TTS, vozes Chirp 3 HD — ver [google-cloud-tts.md](google-cloud-tts.md) | Na hora, na Vercel |
 
 Sem `SPEECH_DRIVER` (e sem `GOOGLE_TTS_API_KEY`) a leitura fica desligada e nenhum botão de ouvir
@@ -20,14 +20,40 @@ aparece.
 1. **Cron já configurado** — o worker usa o mesmo secret `CRON_TARGETS` do `cron.yml`
    (`{"nome": {"url": "https://...", "secret": "<CRON_SECRET>"}}`) e a env `CRON_SECRET` de cada
    projeto na Vercel. Sem `CRON_SECRET` o modo worker fica desligado.
+   O secret precisa ser JSON válido **numa linha só**: valor colado pela metade derruba o `cron.yml`
+   e o worker com erro (antes passava em silêncio, sem chamar nenhuma instância).
 2. Na Vercel → projeto → **Environment Variables**: `SPEECH_DRIVER=worker`. Redeploy.
-3. Em `/admin/settings` → **Leitura em voz alta**: ligar (chave geral do site), escolher a voz
+3. **Recomendado — `SPEECH_WORKER_GITHUB_TOKEN`.** O `schedule` do GitHub Actions atrasa horas em
+   repositório com pouca atividade (o `cron.yml` "a cada 5 min" chegou a rodar a cada ~5 h). Com
+   um token, o app pede uma execução do worker (`workflow_dispatch`) assim que algo entra na fila,
+   e o painel ganha o botão **"Gerar agora"** e o estado da execução mais recente. Criar em GitHub →
+   Settings → Developer settings → **Fine-grained tokens**: repositório `venore-docks/venore-docks`,
+   permissão **Actions: Read and write** (nada mais). Pôr na env `SPEECH_WORKER_GITHUB_TOKEN` de
+   cada projeto (fork: `SPEECH_WORKER_GITHUB_REPO=dono/repo`, `SPEECH_WORKER_GITHUB_REF=branch`).
+   Várias chamadas seguidas viram uma execução: o GitHub guarda só uma pendente por vez.
+4. Em **Editorial → Áudios** (`/admin/speech`, exige `settings.manage`): ligar (chave geral do site), escolher a voz
    (feminina/masculina) e o teto mensal de caracteres (no worker não há cobrança; o teto só limita
    o volume de trabalho).
-4. Em cada entry/obra que deve ter áudio: marcar **"Gerar áudio"** e salvar.
+5. Em cada entry/obra que deve ter áudio: marcar **"Gerar áudio"** e salvar.
 
-Repositório público = minutos de Actions sem custo. A cada 15 min o worker consulta a fila de cada
-instância (`GET /api/speech/worker/claim`) e só instala os modelos se houver trabalho.
+Repositório público = minutos de Actions sem custo. A cada execução o worker consulta a fila de
+cada instância (`GET /api/speech/worker/claim`) e só instala os modelos (~3–5 min) se houver
+trabalho.
+
+## Acompanhar a produção
+
+- **Editorial → Áudios** (`/admin/speech`): o que o worker está fazendo agora (preparando as
+  vozes, gerando, parado, sem sinal), a execução mais recente no GitHub com link para o log,
+  barra geral e uma linha por conteúdo com áudio (título e link do editor, faixas prontas, na fila,
+  em geração com o percentual, falhas com o último erro e **"Tentar de novo"**). A página se
+  atualiza sozinha a cada 15 s enquanto há fila.
+- **Na edição** da entry do CMS e da obra do `novels`: a mesma barra, só daquele conteúdo.
+- **No GitHub**: Actions → **Leitura em voz alta (worker)** → a execução → passo "Gerar o áudio da
+  fila", uma linha por faixa gerada.
+
+Cada faixa é um texto (a entry inteira; uma cena num idioma). O worker gera uma faixa por vez, em
+trechos de até ~400 caracteres, e informa o percentual a cada ~4 s — o que também renova a reserva
+da faixa (texto longo não volta para a fila no meio).
 
 ### Vozes
 
@@ -54,8 +80,10 @@ que for publicado ou alterado depois.
 | `POST /api/speech/worker/claim` `{ limit }` | Reserva textos e a cota do mês deles: `{ jobs: [{ id, textHash, locale, languageCode, voice, text }], limitReached }` |
 | `PUT /api/speech/worker/clips/<id>` | Corpo `audio/mpeg`, header `X-Speech-Text-Hash`. `{ stored: false }` quando o texto mudou no meio (o MP3 é descartado) |
 | `POST /api/speech/worker/clips/<id>/failure` `{ textHash, error }` | Devolve a cota e conta a tentativa |
+| `POST /api/speech/worker/clips/<id>/progress` `{ textHash, percent }` | Andamento da faixa (renova a reserva); `{ active: false }` se o texto mudou |
+| `POST /api/speech/worker/heartbeat` `{ stage, detail? }` | Fase do worker: `preparing` (achou fila, instalando modelos), `generating`, `finished` |
 
-Reserva vencida (worker que morreu no meio) volta para a fila depois de 10 min.
+Reserva vencida (worker que morreu no meio, sem avisar progresso) volta para a fila depois de 10 min.
 
 ## Quando o áudio é gerado (e quando é apagado)
 

@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   enabled: true,
   cursor: null as Date | null,
-  entries: [] as { id: string; updatedAt: Date; text: string }[],
+  entries: [] as { id: string; title: string; updatedAt: Date; text: string }[],
   scopes: [] as string[],
   keeping: [] as string[],
   syncSpeechAudio: vi.fn(async (input: { scope: string; items: unknown[] }) => ({
@@ -51,13 +51,17 @@ describe("syncCmsEntrySpeech", () => {
     const t2 = new Date("2026-10-02T10:00:00Z");
     mocks.cursor = new Date("2026-09-30T00:00:00Z");
     mocks.entries = [
-      { id: "e1", updatedAt: t1, text: "Um" },
-      { id: "e2", updatedAt: t2, text: "Dois" },
+      { id: "e1", title: "Primeira", updatedAt: t1, text: "Um" },
+      { id: "e2", title: "Segunda", updatedAt: t2, text: "Dois" },
     ];
     const result = await syncCmsEntrySpeech();
     expect(result).toEqual({ success: true, data: { synced: 2, removed: 0 } });
     expect(mocks.listPublishedEntryTexts).toHaveBeenCalledWith({ updatedAfter: mocks.cursor, limit: 50 });
-    expect(mocks.syncSpeechAudio).toHaveBeenCalledWith({ scope: "cms.entry:e1", items: [{ itemKey: "body", locale: "en", text: "Um" }] });
+    expect(mocks.syncSpeechAudio).toHaveBeenCalledWith({
+      scope: "cms.entry:e1",
+      items: [{ itemKey: "body", locale: "en", text: "Um" }],
+      source: { label: "Primeira", href: "/admin/cms/entries/e1" },
+    });
     expect(mocks.setSpeechSyncCursor).toHaveBeenLastCalledWith("cms.entries", t2);
   });
 

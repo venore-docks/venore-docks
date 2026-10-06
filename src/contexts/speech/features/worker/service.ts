@@ -1,5 +1,6 @@
 import { deleteGeneratedAssets, storeGeneratedAsset } from "@/contexts/media";
 import { speechPort } from "@/infrastructure/speech";
+import type { OperationResult } from "@/shared/types";
 import { beginOperation, endOperation } from "@/observability";
 import {
   MAX_SYNTHESIS_ATTEMPTS,
@@ -14,18 +15,23 @@ import {
   countClipsByStatus,
   findProcessingClip,
   markClipReady,
+  recordWorkerHeartbeat,
+  setClipProgress,
   recordClipFailure,
   refundUsage,
   releaseClip,
   reserveUsage,
 } from "../../shared/store";
-import type {
-  ClaimSpeechWorkResult,
-  CompleteSpeechWorkInput,
-  CompleteSpeechWorkResult,
-  FailSpeechWorkInput,
-  SpeechWorkJob,
-  SpeechWorkStatus,
+import {
+  SPEECH_WORKER_STAGES,
+  type ClaimSpeechWorkResult,
+  type CompleteSpeechWorkInput,
+  type CompleteSpeechWorkResult,
+  type FailSpeechWorkInput,
+  type ReportSpeechWorkProgressInput,
+  type SpeechWorkerStage,
+  type SpeechWorkJob,
+  type SpeechWorkStatus,
 } from "./types";
 
 const ACTOR = { id: "speech-worker", type: "system" } as const;
@@ -109,4 +115,21 @@ export async function failSpeechWork(input: FailSpeechWorkInput): Promise<Comple
   await refundUsage(currentUsageMonth(), clip.characters);
   await recordClipFailure(input.id, input.textHash, input.error, MAX_SYNTHESIS_ATTEMPTS);
   return { success: true, data: { stored: false } };
+}
+
+// Andamento do texto em síntese (0–100). false = o clip já não está reservado com esse texto
+// (mudou ou foi pego por outro): o worker pode parar e descartar.
+export async function reportSpeechWorkProgress(input: ReportSpeechWorkProgressInput): Promise<OperationResult<{ active: boolean }>> {
+  if (!Number.isFinite(input.percent)) {
+    return { success: false, error: { code: "speech.worker.invalid_progress", message: "percent precisa ser um número." } };
+  }
+  return { success: true, data: { active: await setClipProgress(input.id, input.textHash, input.percent) } };
+}
+
+// Sinal de vida do worker: em que fase está (o painel mostra "preparando as vozes", "gerando").
+export async function recordSpeechWorkerStage(input: { stage: string; detail?: string | null }): Promise<OperationResult<{ stage: SpeechWorkerStage }>> {
+  const stage = SPEECH_WORKER_STAGES.find((candidate) => candidate === input.stage);
+  if (!stage) return { success: false, error: { code: "speech.worker.invalid_stage", message: `Fase desconhecida: ${input.stage}.` } };
+  await recordWorkerHeartbeat(stage, input.detail ? String(input.detail).slice(0, 300) : null);
+  return { success: true, data: { stage } };
 }

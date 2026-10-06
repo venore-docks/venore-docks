@@ -6,7 +6,7 @@ import type { ListPublishedEntryTextsQuery, PublishedEntryText } from "./types";
 // barrel para platform/speech/sync-cms-entry-speech.ts (regra 14), nunca para o SDK.
 export async function listPublishedEntryTexts(query: ListPublishedEntryTextsQuery): Promise<PublishedEntryText[]> {
   const rows = await findReadableEntriesUpdatedAfter(query.updatedAfter, query.limit);
-  return rows.map((row) => ({ id: row.id, updatedAt: row.updatedAt, text: extractEntryPlainText(row.title, row.data) }));
+  return rows.map((row) => ({ id: row.id, title: row.title, updatedAt: row.updatedAt, text: extractEntryPlainText(row.title, row.data) }));
 }
 
 // Dos ids com áudio, os que ainda podem mantê-lo (não apagados, não arquivados, públicos).

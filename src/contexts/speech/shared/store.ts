@@ -1,7 +1,7 @@
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/infrastructure/database/client";
-import { audioClips, syncCursors, usageMonths } from "../database/schema";
-import type { SpeechClipStatus } from "../contracts/types";
+import { audioClips, scopeSources, syncCursors, usageMonths, workerHeartbeats } from "../database/schema";
+import type { SpeechClipStatus, SpeechProgress } from "../contracts/types";
 
 export type StoredClip = {
   id: string;
@@ -62,7 +62,7 @@ export async function upsertPendingClip(input: ClipUpsert): Promise<void> {
   const now = new Date();
   await db
     .insert(audioClips)
-    .values({ ...input, status: "pending", attempts: 0, mediaAssetId: null, lastError: null, synthesizedAt: null })
+    .values({ ...input, status: "pending", attempts: 0, progress: 0, mediaAssetId: null, lastError: null, synthesizedAt: null })
     .onConflictDoUpdate({
       target: [audioClips.scope, audioClips.itemKey, audioClips.locale],
       set: {
@@ -72,6 +72,7 @@ export async function upsertPendingClip(input: ClipUpsert): Promise<void> {
         characters: input.characters,
         status: "pending",
         attempts: 0,
+        progress: 0,
         lastError: null,
         mediaAssetId: null,
         synthesizedAt: null,
@@ -105,7 +106,7 @@ export async function claimPendingClips(limit: number): Promise<StoredClip[]> {
     attempts: number;
     media_asset_id: string | null;
   }>(sql`
-    update ${audioClips} set status = 'processing', updated_at = now()
+    update ${audioClips} set status = 'processing', progress = 0, updated_at = now()
     where ${audioClips.id} in (
       select ${audioClips.id} from ${audioClips}
       where ${audioClips.status} = 'pending'
@@ -136,7 +137,7 @@ export async function claimPendingClips(limit: number): Promise<StoredClip[]> {
 export async function releaseClip(id: string, textHash: string): Promise<void> {
   await db
     .update(audioClips)
-    .set({ status: "pending" })
+    .set({ status: "pending", progress: 0 })
     .where(and(eq(audioClips.id, id), eq(audioClips.textHash, textHash), eq(audioClips.status, "processing")));
 }
 
@@ -166,7 +167,7 @@ export async function countClipsByStatus(): Promise<Record<SpeechClipStatus, num
 export async function markClipReady(id: string, textHash: string, mediaAssetId: string): Promise<boolean> {
   const updated = await db
     .update(audioClips)
-    .set({ status: "ready", mediaAssetId, lastError: null, synthesizedAt: new Date(), updatedAt: new Date() })
+    .set({ status: "ready", progress: 100, mediaAssetId, lastError: null, synthesizedAt: new Date(), updatedAt: new Date() })
     .where(and(eq(audioClips.id, id), eq(audioClips.textHash, textHash), eq(audioClips.status, "processing")))
     .returning({ id: audioClips.id });
   return updated.length > 0;
@@ -177,6 +178,7 @@ export async function recordClipFailure(id: string, textHash: string, message: s
     .update(audioClips)
     .set({
       attempts: sql`${audioClips.attempts} + 1`,
+      progress: 0,
       status: sql`case when ${audioClips.attempts} + 1 >= ${maxAttempts} then 'failed' else 'pending' end`,
       lastError: message.slice(0, 500),
       updatedAt: new Date(),
@@ -234,4 +236,131 @@ export async function setCursor(key: string, cursor: Date): Promise<void> {
     .insert(syncCursors)
     .values({ key, cursor })
     .onConflictDoUpdate({ target: syncCursors.key, set: { cursor, updatedAt: new Date() } });
+}
+
+export async function upsertScopeSource(scope: string, label: string, href: string | null): Promise<void> {
+  await db
+    .insert(scopeSources)
+    .values({ scope, label, href })
+    .onConflictDoUpdate({ target: scopeSources.scope, set: { label, href, updatedAt: new Date() } });
+}
+
+export async function deleteScopeSource(scope: string): Promise<void> {
+  await db.delete(scopeSources).where(eq(scopeSources.scope, scope));
+}
+
+export type ScopeProgressRow = SpeechProgress & {
+  scope: string;
+  label: string | null;
+  href: string | null;
+  characters: number;
+};
+
+export const emptyProgress = (): SpeechProgress => ({
+  total: 0,
+  ready: 0,
+  pending: 0,
+  processing: 0,
+  failed: 0,
+  currentPercent: null,
+  lastError: null,
+  updatedAt: null,
+});
+
+// Contagem por status de cada scope, mais a origem descrita pelo dono. `scopes` nulo = todos
+// (painel), limitado aos `limit` scopes mexidos por último — os que ainda têm fila primeiro.
+export async function listScopeProgress(scopes: string[] | null, limit = 200): Promise<ScopeProgressRow[]> {
+  if (scopes && scopes.length === 0) return [];
+  const open = sql<number>`count(*) filter (where ${audioClips.status} in ('pending', 'processing', 'failed'))::int`;
+  const rows = await db
+    .select({
+      scope: audioClips.scope,
+      label: scopeSources.label,
+      href: scopeSources.href,
+      total: sql<number>`count(*)::int`,
+      ready: sql<number>`count(*) filter (where ${audioClips.status} = 'ready')::int`,
+      pending: sql<number>`count(*) filter (where ${audioClips.status} = 'pending')::int`,
+      processing: sql<number>`count(*) filter (where ${audioClips.status} = 'processing')::int`,
+      failed: sql<number>`count(*) filter (where ${audioClips.status} = 'failed')::int`,
+      currentPercent: sql<number | null>`max(${audioClips.progress}) filter (where ${audioClips.status} = 'processing')`,
+      characters: sql<number>`coalesce(sum(${audioClips.characters}), 0)::int`,
+      lastError: sql<string | null>`(array_agg(${audioClips.lastError} order by ${audioClips.updatedAt} desc) filter (where ${audioClips.lastError} is not null))[1]`,
+      updatedAt: sql<string>`max(${audioClips.updatedAt})`,
+    })
+    .from(audioClips)
+    .leftJoin(scopeSources, eq(scopeSources.scope, audioClips.scope))
+    .where(scopes ? inArray(audioClips.scope, scopes) : undefined)
+    .groupBy(audioClips.scope, scopeSources.label, scopeSources.href)
+    .orderBy(desc(sql`${open} > 0`), desc(sql`max(${audioClips.updatedAt})`))
+    .limit(limit);
+  return rows.map((row) => ({
+    ...emptyProgress(),
+    scope: row.scope,
+    label: row.label,
+    href: row.href,
+    total: Number(row.total),
+    ready: Number(row.ready),
+    pending: Number(row.pending),
+    processing: Number(row.processing),
+    failed: Number(row.failed),
+    currentPercent: row.currentPercent === null || row.currentPercent === undefined ? null : Number(row.currentPercent),
+    characters: Number(row.characters),
+    lastError: row.lastError ?? null,
+    updatedAt: row.updatedAt ? new Date(row.updatedAt).toISOString() : null,
+  }));
+}
+
+// Falhas voltam para a fila do zero (tentativas zeradas). `scope` nulo = todas.
+export async function requeueFailedClips(scope: string | null): Promise<number> {
+  const updated = await db
+    .update(audioClips)
+    .set({ status: "pending", attempts: 0, progress: 0, lastError: null, updatedAt: new Date() })
+    .where(scope ? and(eq(audioClips.status, "failed"), eq(audioClips.scope, scope)) : eq(audioClips.status, "failed"))
+    .returning({ id: audioClips.id });
+  return updated.length;
+}
+
+// Último áudio terminado — o painel mostra "último áudio gerado há X" para saber se o worker anda.
+export async function findLastSynthesizedAt(): Promise<Date | null> {
+  const [row] = await db.select({ at: sql<string | null>`max(${audioClips.synthesizedAt})` }).from(audioClips);
+  return row?.at ? new Date(row.at) : null;
+}
+
+// Andamento do texto em síntese. Também renova a reserva (updatedAt): texto longo que avisa
+// progresso não volta para a fila no meio da geração.
+export async function setClipProgress(id: string, textHash: string, percent: number): Promise<boolean> {
+  const updated = await db
+    .update(audioClips)
+    .set({ progress: Math.max(0, Math.min(99, Math.round(percent))), updatedAt: new Date() })
+    .where(and(eq(audioClips.id, id), eq(audioClips.textHash, textHash), eq(audioClips.status, "processing")))
+    .returning({ id: audioClips.id });
+  return updated.length > 0;
+}
+
+export type WorkerHeartbeat = { stage: string; detail: string | null; startedAt: Date; updatedAt: Date };
+const HEARTBEAT_KEY = "worker";
+
+// Mudar de fase reinicia startedAt; repetir a mesma fase só renova updatedAt.
+export async function recordWorkerHeartbeat(stage: string, detail: string | null): Promise<void> {
+  const now = new Date();
+  await db
+    .insert(workerHeartbeats)
+    .values({ key: HEARTBEAT_KEY, stage, detail, startedAt: now, updatedAt: now })
+    .onConflictDoUpdate({
+      target: workerHeartbeats.key,
+      set: {
+        stage,
+        detail,
+        updatedAt: now,
+        startedAt: sql`case when ${workerHeartbeats.stage} = ${stage} then ${workerHeartbeats.startedAt} else ${now.toISOString()}::timestamptz end`,
+      },
+    });
+}
+
+export async function findWorkerHeartbeat(): Promise<WorkerHeartbeat | null> {
+  const [row] = await db
+    .select({ stage: workerHeartbeats.stage, detail: workerHeartbeats.detail, startedAt: workerHeartbeats.startedAt, updatedAt: workerHeartbeats.updatedAt })
+    .from(workerHeartbeats)
+    .where(eq(workerHeartbeats.key, HEARTBEAT_KEY));
+  return row ?? null;
 }

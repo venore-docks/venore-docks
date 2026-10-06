@@ -35,6 +35,12 @@ jobs:
             echo "::warning::CRON_TARGETS não configurado — nada a fazer."
             exit 0
           fi
+          # JSON quebrado (colado pela metade, quebra de linha no meio) falhava em silêncio: o jq
+          # morria dentro do "< <(...)" e o loop não via nenhuma instância.
+          if ! echo "$CRON_TARGETS" | jq -e 'type == "object"' > /dev/null 2>&1; then
+            echo "::error::CRON_TARGETS não é um JSON válido ({\"nome\": {\"url\": ..., \"secret\": ...}}). Cole o valor inteiro, em uma linha."
+            exit 1
+          fi
           failed=0
           while IFS=$'\t' read -r name url secret; do
             [ -n "$name" ] || continue

@@ -1,13 +1,21 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { applyEntryRevision, discardEntryProposal, getEntry, publishEntry, updateEntry } from "@/contexts/cms";
 import { authorizeActor } from "@/contexts/rbac";
 import { PREVIEW_ROUTE, PREVIEW_TTL_OPTIONS_HOURS, createPreviewToken } from "@/platform/cms-preview/preview-token";
 import { getSiteOrigin } from "@/platform/seo/site-origin";
 import { resolveBlockDefinition } from "@/platform/page-builder/block-registry";
+import { syncCmsEntrySpeech } from "@/platform/speech/sync-cms-entry-speech";
 
 export type EditEntryActionState = { error: string | null; notice?: string | null };
+
+// Leitura em voz alta: a reconciliação também roda no cron, mas o agendamento do GitHub atrasa
+// horas — depois de salvar/publicar, a entry entra na fila já (e o worker é chamado).
+function syncSpeechAfterResponse() {
+  after(() => syncCmsEntrySpeech().catch(() => undefined));
+}
 
 const PROPOSAL_NOTICE = "Conteúdo publicado: sua alteração foi enviada como proposta e entra no ar quando um editor aplicar.";
 
@@ -47,6 +55,7 @@ export async function updateEntryAction(
     return { error: result.error.message };
   }
 
+  syncSpeechAfterResponse();
   revalidatePath("/admin/cms");
   revalidatePath(`/admin/cms/entries/${id}`);
   return { error: null, notice: result.data.proposalId ? PROPOSAL_NOTICE : null };
@@ -61,6 +70,7 @@ export async function applyEntryRevisionAction(
   if (!result.success) {
     return { error: result.error.message };
   }
+  syncSpeechAfterResponse();
   revalidatePath("/admin/cms");
   revalidatePath(`/admin/cms/entries/${entryId}`);
   return { error: null, notice: result.data.proposalId ? PROPOSAL_NOTICE : "Versão aplicada." };
@@ -90,6 +100,7 @@ export async function publishEntryFromEditAction(
     return { error: result.error.message };
   }
 
+  syncSpeechAfterResponse();
   revalidatePath("/admin/cms");
   revalidatePath(`/admin/cms/entries/${id}`);
   return { error: null };
