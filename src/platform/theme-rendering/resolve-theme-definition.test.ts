@@ -78,6 +78,20 @@ describe("resolveThemeDefinition — recheck no render (spec §6 passo 7)", () =
     expect(admin.layout).toBe("topbar");
     expect(admin.replacedRegions).toEqual([]);
   });
+
+  it("admin sob v8: mantém o preset de kit declarado pelo tema (rail do Aurora) e a declaração de layout", async () => {
+    const { resolveThemeDefinition, toKitAdminDefinition } = await import("./resolve-theme-definition");
+    const { resolveArrangement } = await import("./theme-renderer");
+    const { theme } = resolveThemeDefinition("venore-slime", { registry });
+    const admin = toKitAdminDefinition({ ...theme, key: "x", layout: "rail", replacedRegions: ["header"] });
+    expect(admin.layout).toBe("rail");
+    expect(admin.layoutDecl).toBe(theme.layoutDecl);
+    expect(admin.replacedRegions).toEqual([]);
+    // Caminho real do (platform)/layout: toKitAdminDefinition ANTES de resolveArrangement.
+    const arrangement = resolveArrangement({ area: "admin", theme: admin, options: { values: {} } } as unknown as Parameters<typeof resolveArrangement>[0]);
+    expect(arrangement.preset).toBe("rail");
+    expect(arrangement.mobileNav).toBe("drawer");
+  });
 });
 
 describe("areaForPathname — área só pelo caminho (invariante §0.5)", () => {

@@ -53,10 +53,21 @@ export function resolveThemeDefinition(themeKey: string, options: ResolveThemeDe
   return { theme: inherited.theme, fallback: null };
 }
 
-// Admin sob v8 (invariante §0.5): só cores (data-theme/paleta) e marca do tema — layout topbar,
-// regiões/templates/opções/fontes do kit.
+// Admin sob v8 (invariante §0.5): cores (data-theme/paleta), marca e o PRESET de layout do kit que o
+// tema declara (Aurora: "rail") — regiões/templates/opções/fontes do kit. Layout próprio
+// (componente) não vale no admin e cai no topbar. Antes o layout era sempre "topbar" aqui, então
+// resolveArrangement nunca via a rail do tema e o /admin trocava o arranjo do site.
 export function toKitAdminDefinition(theme: ResolvedThemeDefinition): ResolvedThemeDefinition {
   if (theme.legacyShell) return theme;
   const kit = normalizeRegistryEntry(THEME_REGISTRY[FALLBACK_THEME_KEY]);
-  return { ...kit, key: theme.key, chain: theme.chain, manifest: theme.manifest, colorPalettes: theme.colorPalettes, palette: theme.palette, layout: "topbar" };
+  return {
+    ...kit,
+    key: theme.key,
+    chain: theme.chain,
+    manifest: theme.manifest,
+    colorPalettes: theme.colorPalettes,
+    palette: theme.palette,
+    layout: typeof theme.layout === "string" ? theme.layout : "topbar",
+    layoutDecl: theme.layoutDecl,
+  };
 }
