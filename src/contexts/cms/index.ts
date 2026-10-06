@@ -110,7 +110,7 @@ export type {
 } from "./contracts/types";
 export type { ResolvedMenuItem, AdminResolvedMenuItem, AdminMenuItemStatus } from "./menu-resolution";
 export { MAX_MENU_ITEM_DEPTH } from "./menu-tree";
-export { getEntryBody, getEntryComposition as extractEntryComposition } from "./contracts/entry-body";
+export { getEntryBody, getEntryComposition as extractEntryComposition, isEntrySpeechEnabled } from "./contracts/entry-body";
 export type { Block, Area, Composition } from "./contracts/block";
 export { blockSchema, areaSchema, compositionSchema } from "./contracts/block";
 export { validateComposition } from "./validate-composition";

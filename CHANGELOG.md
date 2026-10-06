@@ -29,12 +29,13 @@ nasce desligada — para usar de graça: `SPEECH_DRIVER=worker` no projeto e lig
 ### Added
 
 - **Leitura em voz alta** (`contexts/speech`, `docs/speech/leitura-em-voz-alta.md`): o áudio de
-  cada texto publicado é gerado uma vez e guardado como MP3 público na mídia; ouvir não gera de
-  novo. Provedor por `SPEECH_DRIVER`: **`worker`** (grátis — `.github/workflows/speech-worker.yml`
+  cada texto que o autor escolheu (opção "Gerar áudio" na edição da entry e da obra do `novels`,
+  desligada por padrão) é gerado uma vez depois de publicado e guardado como MP3 público na mídia;
+  ouvir não gera de novo. Provedor por `SPEECH_DRIVER`: **`worker`** (grátis — `.github/workflows/speech-worker.yml`
   gera com os modelos abertos Kokoro e Piper no GitHub Actions e devolve por `/api/speech/worker`,
   autenticado com `CRON_SECRET`) ou `google` (Google Cloud TTS, Chirp 3 HD). Entries públicas do
   CMS ganham o player "Ouvir este texto" (reconciliação pelo job `speech.sync-cms-entries`); plugins
-  usam `@venore/plugin-sdk/speech` (`syncSpeechAudio`, `getSpeechAudio`) — o `novels` 0.3.0 lê cada
+  usam `@venore/plugin-sdk/speech` (`syncSpeechAudio`, `getSpeechAudio`) — o `novels` 0.4.0 lê cada
   cena. Fila com reserva atômica (duas sínteses nunca pegam a mesma faixa), **teto mensal de
   caracteres** checado antes de cada síntese, texto igual não gera de novo e texto trocado apaga o
   MP3 antigo na hora. `/admin/settings` liga/desliga, escolhe a voz e o teto e mostra o uso do mês.

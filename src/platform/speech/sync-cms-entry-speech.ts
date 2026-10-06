@@ -21,11 +21,10 @@ async function siteLocale(): Promise<string> {
 
 // Composição cms + speech (regra 14). O CMS publica por vários caminhos (publicar, agendamento,
 // editar entry já publicada, aplicar revisão, importar) e nenhum deles avisa ninguém; em vez de
-// espalhar chamadas pelo context cms, este job reconcilia: entries publicadas e públicas que
-// mudaram desde o cursor ganham o áudio do texto atual, e o áudio de entry arquivada, apagada ou
-// que virou "só logado" é removido (o MP3 é público). Entry que voltou para rascunho mantém o
-// áudio: republicar sem mudar o texto não paga a síntese de novo. Ligar a leitura pela primeira
-// vez gera o áudio das entries que já estavam publicadas, dentro do teto mensal.
+// espalhar chamadas pelo context cms, este job reconcilia: entries com "Gerar áudio" marcado,
+// publicadas e públicas, que mudaram desde o cursor ganham o áudio do texto atual, e o áudio de entry arquivada, apagada ou
+// que virou "só logado" ou teve a opção desmarcada é removido (o MP3 é público). Entry que voltou para rascunho mantém o
+// áudio: republicar sem mudar o texto não paga a síntese de novo.
 export async function syncCmsEntrySpeech(): Promise<OperationResult<{ synced: number; removed: number }>> {
   const settings = await readSpeechSettings();
   if (!settings.enabled) return { success: true, data: { synced: 0, removed: 0 } };

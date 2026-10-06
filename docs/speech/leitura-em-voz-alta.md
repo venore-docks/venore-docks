@@ -1,7 +1,8 @@
 # Leitura em voz alta
 
-O áudio de cada texto publicado (entries públicas do CMS, cenas do plugin `novels`) é gerado **uma
-vez** e guardado como MP3 na biblioteca de mídia. Quem lê o site só baixa esse MP3 — abrir a
+O autor escolhe o que tem áudio: opção **"Gerar áudio (leitura em voz alta)"** na edição da entry
+do CMS e no formulário da obra do `novels` (desligada por padrão). O áudio de cada texto escolhido
+é gerado **uma vez**, depois de publicado, e guardado como MP3 na biblioteca de mídia. Quem lê o site só baixa esse MP3 — abrir a
 página, dar play ou recarregar não gera nada de novo. Contexto: `src/contexts/speech`.
 
 ## Provedores (`SPEECH_DRIVER`)
@@ -20,8 +21,10 @@ aparece.
    (`{"nome": {"url": "https://...", "secret": "<CRON_SECRET>"}}`) e a env `CRON_SECRET` de cada
    projeto na Vercel. Sem `CRON_SECRET` o modo worker fica desligado.
 2. Na Vercel → projeto → **Environment Variables**: `SPEECH_DRIVER=worker`. Redeploy.
-3. Em `/admin/settings` → **Leitura em voz alta**: ligar, escolher a voz (feminina/masculina) e o
-   teto mensal de caracteres (no worker não há cobrança; o teto só limita o volume de trabalho).
+3. Em `/admin/settings` → **Leitura em voz alta**: ligar (chave geral do site), escolher a voz
+   (feminina/masculina) e o teto mensal de caracteres (no worker não há cobrança; o teto só limita
+   o volume de trabalho).
+4. Em cada entry/obra que deve ter áudio: marcar **"Gerar áudio"** e salvar.
 
 Repositório público = minutos de Actions sem custo. A cada 15 min o worker consulta a fila de cada
 instância (`GET /api/speech/worker/claim`) e só instala os modelos se houver trabalho.
@@ -58,8 +61,8 @@ Reserva vencida (worker que morreu no meio) volta para a fila depois de 10 min.
 
 | Conteúdo | Gera | Apaga |
 | --- | --- | --- |
-| Entry do CMS **publicada e pública** | Job `speech.sync-cms-entries` (cron): toda entry publicada que mudou desde a última passada. Ligar a leitura pela primeira vez enfileira as entries que já estavam publicadas. | Entry arquivada, apagada ou que virou "só logado" (o MP3 é público). Rascunho mantém. |
-| Graphic novel (plugin `novels`) | Ao publicar, e ao salvar grafo / editar obra / apagar capítulo de obra publicada: uma faixa por cena e idioma que tem texto próprio. | Obra apagada, ou cena/idioma que saiu da obra publicada. Despublicar mantém. |
+| Entry do CMS com **"Gerar áudio"** marcado (`data.speech`), **publicada e aberta** | Job `speech.sync-cms-entries` (cron): toda entry assim que mudou desde a última passada (marcar a opção conta como mudança). A tela de edição mostra a situação (fila, pronto). | Opção desmarcada, entry arquivada, apagada ou que virou "só logado" (o MP3 é público). Rascunho mantém. |
+| Obra do plugin `novels` com **"Gerar áudio"** marcado (`works.speech_enabled`) | Ao publicar, ao marcar a opção, e ao salvar grafo / editar obra / apagar capítulo de obra publicada: uma faixa por cena e idioma que tem texto próprio. A tela da obra mostra "X de Y faixas prontas". | Opção desmarcada, obra apagada, ou cena/idioma que saiu da obra publicada. Despublicar mantém. |
 
 - Texto igual ao já gerado não gasta nada: o áudio é identificado por hash de texto + voz + modelo.
   Por isso despublicar e republicar sem mudar o texto é de graça, e **trocar a voz vale para o que

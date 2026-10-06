@@ -2,7 +2,9 @@ import { and, asc, eq, inArray, isNull, ne, sql } from "drizzle-orm";
 import { db } from "@/infrastructure/database/client";
 import { entries } from "../../../database/schema";
 
-const readable = and(eq(entries.status, "published"), eq(entries.visibility, "public"), isNull(entries.internalOwner));
+// Opção "Gerar áudio" da edição (data.speech === true).
+const speechChosen = sql`(${entries.data} ->> 'speech') = 'true'`;
+const readable = and(eq(entries.status, "published"), eq(entries.visibility, "public"), isNull(entries.internalOwner), speechChosen);
 
 export async function findReadableEntriesUpdatedAfter(updatedAfter: Date | null, limit: number) {
   return db
@@ -19,8 +21,8 @@ export async function findReadableEntriesUpdatedAfter(updatedAfter: Date | null,
     .limit(limit);
 }
 
-// Entry que ainda pode manter o áudio: existe, é pública e editorial e não foi arquivada.
-// Rascunho/agendada mantém (despublicar e republicar não paga a síntese de novo).
+// Entry que ainda pode manter o áudio: existe, é pública e editorial, não foi arquivada e segue
+// com a opção ligada. Rascunho/agendada mantém (despublicar e republicar não gera de novo).
 export async function findEntryIdsKeepingSpeech(ids: string[]): Promise<string[]> {
   if (ids.length === 0) return [];
   const rows = await db
@@ -32,6 +34,7 @@ export async function findEntryIdsKeepingSpeech(ids: string[]): Promise<string[]
         ne(entries.status, "archived"),
         eq(entries.visibility, "public"),
         isNull(entries.internalOwner),
+        speechChosen,
       ),
     );
   return rows.map((row) => row.id);

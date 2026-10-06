@@ -4,11 +4,14 @@ import {
   extractEntryComposition,
   getCachedEntry,
   getEntryBody,
+  isEntrySpeechEnabled,
   listCategoriesForAdmin,
   listContentTypes,
   listEntryRevisions,
 } from "@/contexts/cms";
 import { getMediaAsset } from "@/contexts/media";
+import { getSpeechAudio, readSpeechSettings } from "@/contexts/speech";
+import { cmsEntrySpeechScope } from "@/platform/speech/cms-entry-scope";
 import { getCmsPageData } from "@/platform/admin-shell/get-cms-page-data";
 import { EditEntryForm } from "./_components/edit-entry-form";
 import { PublishButton } from "./_components/publish-button";
@@ -63,6 +66,19 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
   const mediaResult = entry.mediaId ? await getMediaAsset({ id: entry.mediaId }) : null;
   const media = mediaResult?.success && mediaResult.data ? mediaResult.data : null;
 
+  // Situação do áudio (opção "Gerar áudio" da edição; geração em platform/speech).
+  const speechEnabled = isEntrySpeechEnabled(entry.data);
+  let speechStatus: string | null = null;
+  if (speechEnabled) {
+    const scope = cmsEntrySpeechScope(entry.id);
+    const [settings, audio] = await Promise.all([readSpeechSettings(), getSpeechAudio({ scopes: [scope] })]);
+    if (!settings.enabled) speechStatus = "A leitura em voz alta está desligada em Configurações: nada é gerado até ligar lá.";
+    else if (audio.success && (audio.data[scope]?.length ?? 0) > 0) speechStatus = "Áudio pronto: o botão de ouvir já aparece no site.";
+    else if (entry.visibility !== "public") speechStatus = "Conteúdo fechado (só logados) não ganha áudio.";
+    else if (entry.status !== "published") speechStatus = "O áudio será gerado quando o conteúdo for publicado.";
+    else speechStatus = "Na fila: o áudio fica pronto em até ~15 minutos.";
+  }
+
   const revisionsResult = await listEntryRevisions({ entryId: entry.id });
   const revisions = revisionsResult.success ? revisionsResult.data.revisions : [];
   const canPublish = revisionsResult.success && revisionsResult.data.canPublish;
@@ -102,6 +118,7 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
           categoryId={entry.categoryId}
           contentTypeIds={entry.contentTypeIds}
           visibility={entry.visibility}
+          speech={{ enabled: speechEnabled, status: speechStatus }}
           media={media}
           categories={categoriesResult.data}
           contentTypes={contentTypesResult.data}

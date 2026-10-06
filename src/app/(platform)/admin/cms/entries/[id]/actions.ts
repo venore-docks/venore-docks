@@ -25,7 +25,12 @@ export async function updateEntryAction(
   // O campo "Corpo" some do form assim que a entry já tem composição do Editor Visual
   // (ver hasComposition em edit-entry-form.tsx) — nesse caso formData não tem "body" e esta tela
   // não deve mandar nenhum patch de `data`, senão apagaria data.blocks.
-  const data = formData.has("body") ? { body: String(formData.get("body") ?? "") } : undefined;
+  // `speech` (opção "Gerar áudio") vai sempre: o merge de `data` em update-entry é raso, então não
+  // toca em data.blocks.
+  const data = {
+    ...(formData.has("body") ? { body: String(formData.get("body") ?? "") } : {}),
+    speech: formData.get("speech") === "on",
+  };
 
   const result = await updateEntry({
     id,

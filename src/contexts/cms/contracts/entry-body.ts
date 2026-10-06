@@ -22,3 +22,9 @@ export function getEntryComposition(data: unknown): Composition | null {
   const parsed = compositionSchema.safeParse((data as { blocks: unknown }).blocks);
   return parsed.success ? parsed.data : null;
 }
+
+// Leitura em voz alta: o autor escolhe na edição da entry (data.speech). Desligado por padrão —
+// só entry com a opção ligada (e publicada e aberta) ganha áudio (platform/speech).
+export function isEntrySpeechEnabled(data: unknown): boolean {
+  return Boolean(data && typeof data === "object" && (data as { speech?: unknown }).speech === true);
+}

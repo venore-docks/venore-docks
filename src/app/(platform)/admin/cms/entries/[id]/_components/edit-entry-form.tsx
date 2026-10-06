@@ -28,6 +28,7 @@ export function EditEntryForm({
   categoryId,
   contentTypeIds,
   visibility,
+  speech,
   media,
   categories,
   contentTypes,
@@ -38,6 +39,7 @@ export function EditEntryForm({
   body: string;
   hasComposition: boolean;
   categoryId: string | null;
+  speech: { enabled: boolean; status: string | null };
   contentTypeIds: string[];
   visibility: "public" | "authenticated";
   media: PickableMedia | null;
@@ -95,6 +97,22 @@ export function EditEntryForm({
             <SelectItem value="authenticated">Fechado (só logados)</SelectItem>
           </SelectContent>
         </Select>
+      </div>
+
+      <div>
+        <label className="flex items-center gap-2 text-sm text-foreground">
+          <input
+            type="checkbox"
+            name="speech"
+            defaultChecked={speech.enabled}
+            className="size-4 rounded-sm border-border outline-none ui-motion-base focus-visible:ring-2 focus-visible:ring-ring"
+          />
+          Gerar áudio (leitura em voz alta)
+        </label>
+        <p className="mt-1 text-xs text-muted-foreground/56">
+          {speech.status ??
+            "O áudio é gerado depois de publicado, só para conteúdo aberto, e fica pronto em até ~15 minutos."}
+        </p>
       </div>
 
       <div>
