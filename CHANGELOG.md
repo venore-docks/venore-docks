@@ -84,6 +84,12 @@ convertida sozinha (lida das chaves 7.x) até a primeira publicação.
 
 ### Fixed
 
+- **Coluna `media.assets.access_permission` faltando em banco novo** (migration `0055`, roda
+  sozinha no build). O merge do PR #8 tirou a `0054_media_access_permission` do
+  `_journal.json` (duas migrations 0054 colidiram), então banco criado ou atualizado depois disso
+  ficava sem a coluna: consultas de mídia falhavam e o prebuild avisava "não deu pra aplicar a
+  mídia restrita". A `0055` usa `ADD COLUMN IF NOT EXISTS` e não muda nada em banco que já tinha
+  aplicado a 0054 antiga.
 - **Page-builder gravava o texto de um bloco em outro**: ao trocar de bloco com campo de rich
   text de mesmo nome, o editor continuava mostrando o conteúdo do bloco anterior e a edição
   seguinte o salvava no bloco novo. Texto legado (string) também abria vazio e era apagado na
