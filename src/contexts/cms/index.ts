@@ -79,6 +79,14 @@ export { recordEntryView, flushEntryViews } from "./view-tracking";
 // Transição automática scheduled -> published/archived. Sem authorizeActor (processo de sistema) —
 // chamada só pelo agendador (platform/scheduled-jobs) e pelo timer em processo de ./scheduling.
 export { processScheduledEntries } from "./scheduling";
+// Texto das entries publicadas e públicas, para a leitura em voz alta. Sem authorizeActor (só
+// conteúdo que qualquer visitante lê) — chamado por platform/speech/sync-cms-entry-speech.ts.
+export {
+  listPublishedEntryTexts,
+  filterEntryIdsKeepingSpeech,
+} from "./features/entries/list-published-entry-texts/service";
+export type { PublishedEntryText } from "./features/entries/list-published-entry-texts/types";
+export { extractEntryPlainText } from "./contracts/entry-text";
 
 export { cmsAdminNavigationItems } from "./admin-navigation";
 export {

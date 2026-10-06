@@ -8,5 +8,7 @@
 // faixa "compatibility.coreVersion" comum (ex: o próprio exemplo do documento, ">=2.0.0 <3.0.0")
 // ser tratada como incompatível — verificado com semver.satisfies antes de fixar isso. Este valor
 // é só a parte semver "limpa" pra essa checagem; bump manual quando uma mudança no core quebrar
-// compatibilidade com plugins existentes (mesmo critério de major bump).
-export const CORE_VERSION = "2.0.0";
+// compatibilidade com plugins existentes (mesmo critério de major bump). Minor sobe quando o SDK
+// ganha algo que um plugin novo passa a exigir (faixas ">=2.0.0 <3.0.0" continuam valendo).
+// 2.1.0: @venore/plugin-sdk/speech (leitura em voz alta).
+export const CORE_VERSION = "2.1.0";

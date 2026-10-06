@@ -19,6 +19,7 @@ export const CORE_SETTING_NAMESPACES = [
   "rbac",
   "seo",
   "settings",
+  "speech",
   "theme",
 ] as const;
 

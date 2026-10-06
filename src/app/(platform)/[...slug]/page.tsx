@@ -12,6 +12,9 @@ import {
 import type { EntryRecord } from "@/contexts/cms";
 import { getCurrentUser } from "@/contexts/auth";
 import { getMediaAssetUrls } from "@/contexts/media";
+import { getSpeechAudio } from "@/contexts/speech";
+import { SpeechPlayer } from "@/components/speech/speech-player";
+import { cmsEntrySpeechScope } from "@/platform/speech/cms-entry-scope";
 import { resolvePublicPluginRoute } from "@/platform/plugin-routing/resolve-public-route";
 import type { ThemeEntryView } from "@/contexts/themes/contracts/v8";
 import { BlockRenderer } from "@/components/page-builder/block-renderer";
@@ -303,12 +306,16 @@ export default async function CatchAllPage({ params, searchParams }: CatchAllPro
 
   recordEntryView(entry.id);
 
-  const [context, currentUser, adminGate, origin] = await Promise.all([
+  // Áudio só existe para entry pública (o MP3 é público — ver platform/speech).
+  const speechScope = cmsEntrySpeechScope(entry.id);
+  const [context, currentUser, adminGate, origin, speech] = await Promise.all([
     resolveTemplateContext(),
     getCurrentUser(),
     getAdminPageData(),
     getSiteOrigin(),
+    entry.visibility === "public" ? getSpeechAudio({ scopes: [speechScope] }) : null,
   ]);
+  const speechUrl = speech?.success ? (speech.data[speechScope]?.[0]?.url ?? null) : null;
   const user = currentUser.success && currentUser.data ? currentUser.data : null;
   const outlets = await resolvePageOutlets(context, {
     user: toOutletUser(user),
@@ -365,7 +372,10 @@ export default async function CatchAllPage({ params, searchParams }: CatchAllPro
       backLink: { href: backHref, label: backLabel },
       firstBlockIsHero: composition?.[0]?.key === HERO_BLOCK_KEY,
       jsonLd: <CoreJsonLd data={jsonLd} nonce={context.nonce} />,
-      outlets: { before: null, after: outlets["entry.after-content"] ?? null },
+      outlets: {
+        before: speechUrl ? <SpeechPlayer src={speechUrl} /> : null,
+        after: outlets["entry.after-content"] ?? null,
+      },
     },
     { variant: resolveTemplateVariant("entry", { section: context.section, entryData: entry.data }) },
   );

@@ -90,6 +90,8 @@ vi.mock("@/contexts/auth", () => ({
   ],
 }));
 
+// Leitura em voz alta: sem áudio, o template sai igual (outlet "before" vazio).
+vi.mock("@/contexts/speech", () => ({ getSpeechAudio: async () => ({ success: true, data: {} }) }));
 vi.mock("@/contexts/media", () => ({
   getMediaAssetUrls: async ({ ids }: { ids: string[] }) => ({
     success: true,

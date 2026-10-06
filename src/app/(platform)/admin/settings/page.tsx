@@ -10,6 +10,7 @@ import { DefaultRoleForm } from "./_components/default-role-form";
 import { RegistrationApprovalToggleForm } from "./_components/registration-approval-toggle-form";
 import { LocaleForm } from "./_components/locale-form";
 import { MaintenanceForm } from "./_components/maintenance-form";
+import { SpeechForm } from "./_components/speech-form";
 
 export default async function SettingsAdminPage() {
   const gate = await getSettingsPageData();
@@ -77,6 +78,7 @@ export default async function SettingsAdminPage() {
       {/* v8 (spec §9): cada formulário tem dono e action próprios — idioma (W8), manutenção (W4). */}
       <LocaleForm />
       <MaintenanceForm />
+      <SpeechForm />
     </div>
   );
 }

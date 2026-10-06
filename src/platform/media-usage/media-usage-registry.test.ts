@@ -4,6 +4,7 @@ const findCmsMediaUsage = vi.fn();
 const findBrandMediaUsage = vi.fn();
 const findAcademyMediaUsage = vi.fn();
 const findThemeConfigMediaUsage = vi.fn();
+const findSpeechMediaUsageReferences = vi.fn();
 const registerPlugins = vi.fn();
 
 vi.mock("@/contexts/cms", () => ({
@@ -16,6 +17,10 @@ vi.mock("../brand/find-brand-media-usage", () => ({
 
 vi.mock("./find-theme-config-media-usage", () => ({
   findThemeConfigMediaUsage: (...args: unknown[]) => findThemeConfigMediaUsage(...args),
+}));
+
+vi.mock("./find-speech-media-usage", () => ({
+  findSpeechMediaUsageReferences: (...args: unknown[]) => findSpeechMediaUsageReferences(...args),
 }));
 
 // O resolver de uso de mídia do plugin vem de PLUGIN_CONTRIBUTIONS agora (campo mediaUsageResolver).
@@ -36,6 +41,7 @@ describe("collectMediaUsage", () => {
     findBrandMediaUsage.mockReset().mockResolvedValue([]);
     findAcademyMediaUsage.mockReset().mockResolvedValue([]);
     findThemeConfigMediaUsage.mockReset().mockResolvedValue([]);
+    findSpeechMediaUsageReferences.mockReset().mockResolvedValue([]);
     registerPlugins.mockReset();
   });
 
@@ -83,5 +89,15 @@ describe("collectMediaUsage", () => {
     const { collectMediaUsage } = await import("./media-usage-registry");
     expect((await collectMediaUsage("m-1")).map((ref) => ref.consumerKey)).toEqual(["themes"]);
     expect(findThemeConfigMediaUsage).toHaveBeenCalledWith("m-1");
+  });
+
+  it("inclui o MP3 da leitura em voz alta como provider do core", async () => {
+    registerPlugins.mockResolvedValue({ entries: [] });
+    findSpeechMediaUsageReferences.mockResolvedValue([
+      { consumerKey: "speech", consumerLabel: "Leitura em voz alta", label: "Áudio da entry (pt-BR)", href: "/admin/cms/entries/e-1" },
+    ]);
+    const { collectMediaUsage } = await import("./media-usage-registry");
+    expect((await collectMediaUsage("m-1")).map((ref) => ref.consumerKey)).toEqual(["speech"]);
+    expect(findSpeechMediaUsageReferences).toHaveBeenCalledWith("m-1");
   });
 });

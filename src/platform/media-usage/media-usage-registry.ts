@@ -2,6 +2,7 @@ import { findCmsMediaUsage } from "@/contexts/cms";
 import { PLUGIN_CONTRIBUTIONS } from "@/plugins/contributions";
 import { getPluginRegistrationReport } from "../plugin-engine/register-plugins";
 import { findBrandMediaUsage } from "../brand/find-brand-media-usage";
+import { findSpeechMediaUsageReferences } from "./find-speech-media-usage";
 import { findThemeConfigMediaUsage } from "./find-theme-config-media-usage";
 import type { MediaUsageProvider, MediaUsageReference } from "./types";
 
@@ -12,6 +13,8 @@ const CORE_PROVIDERS: Record<string, MediaUsageProvider> = {
   brand: findBrandMediaUsage,
   // Config do tema (spec v8 §7.6): assets (OG/ícone) e opções de mídia, publicado + rascunho.
   themes: findThemeConfigMediaUsage,
+  // MP3 gerado pela leitura em voz alta (contexts/speech).
+  speech: findSpeechMediaUsageReferences,
 };
 
 // Providers de plugin: vêm de src/plugins/*/contributions.ts (campo `mediaUsageResolver`),
