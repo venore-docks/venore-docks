@@ -7,7 +7,7 @@ import { rbacAdminNavigationItems } from "@/contexts/rbac";
 import { settingsAdminNavigationItems } from "@/contexts/settings";
 import { themesAdminNavigationItems } from "@/contexts/themes";
 import { observabilityAdminNavigationItems } from "@/observability";
-import { registerPlugins } from "../plugin-engine/register-plugins";
+import { getPluginRegistrationReport } from "../plugin-engine/register-plugins";
 import { assertUniqueNavigationKeys, buildVisibleAdminNavGroups } from "./admin-navigation-registry.core";
 import type { AdminNavItemDefinition } from "./admin-navigation.contracts";
 import { platformAdminNavigationItems } from "./platform-admin-navigation";
@@ -20,7 +20,7 @@ export { assertUniqueNavigationKeys, buildVisibleAdminNavGroups };
 // agrega, valida chave única e devolve a lista plana — nenhuma tela é enumerada à mão aqui, só
 // os módulos-fonte (mesmo espírito de src/plugins/registry.ts: Next.js exige import estático).
 export async function collectAdminNavigationItems(): Promise<AdminNavItemDefinition[]> {
-  const pluginReport = await registerPlugins();
+  const pluginReport = await getPluginRegistrationReport();
 
   const items: AdminNavItemDefinition[] = [
     ...platformAdminNavigationItems,

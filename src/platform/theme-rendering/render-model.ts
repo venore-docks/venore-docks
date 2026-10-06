@@ -28,42 +28,53 @@ export type ResolveThemeRenderModelInput = {
 // acrescenta atrás de resolvers com dono (outlets W7, strings W8, layout de página W5,
 // manutenção W4). Congelado depois da Fase F.
 export async function resolveThemeRenderModel({ contextualSlot, onSignOut }: ResolveThemeRenderModelInput): Promise<ThemeRenderModel> {
-  const document = await resolveDocumentModel();
-  const breadcrumbs = await resolveBreadcrumbs();
-  const contextual = await resolveContextualBar(document.pathname, contextualSlot);
-
-  const adminGate = await getAdminPageData();
-  const canToggleAdminNav = adminGate.granted;
-  const navMode = await getNavMode(canToggleAdminNav);
-  const adminNavGroups: NavGroup[] = adminGate.granted ? await getVisibleAdminNavGroupsForSidebar(adminGate.actor) : [];
-  const collapsed = await getSidebarCollapsed();
-
-  const slotProps = await resolveThemeSlotProps({
-    navMode,
-    adminNavGroups,
-    canToggleAdminNav,
-    onToggleNavMode: toggleNavModeAction,
-    canAccessAdmin: adminGate.granted,
-    onSignOut,
-    collapsed,
-    onToggleCollapsed: toggleSidebarCollapsedAction,
+  // Leituras independentes começam juntas (antes eram ~8 awaits em série — cada um uma ida ao
+  // banco): documento, trilha, gate de admin e colapso não dependem um do outro; barra contextual
+  // só precisa do pathname do documento; nav mode/grupos de admin/manutenção só do gate.
+  const documentPromise = resolveDocumentModel();
+  const adminGatePromise = getAdminPageData();
+  const navPromise = adminGatePromise.then(async (adminGate) => {
+    const [navMode, adminNavGroups] = await Promise.all([
+      getNavMode(adminGate.granted),
+      adminGate.granted ? getVisibleAdminNavGroupsForSidebar(adminGate.actor) : Promise.resolve<NavGroup[]>([]),
+    ]);
+    return { adminGate, navMode, adminNavGroups };
   });
+  const slotPropsPromise = Promise.all([navPromise, getSidebarCollapsed()]).then(([{ adminGate, navMode, adminNavGroups }, collapsed]) =>
+    resolveThemeSlotProps({
+      navMode,
+      adminNavGroups,
+      canToggleAdminNav: adminGate.granted,
+      onToggleNavMode: toggleNavModeAction,
+      canAccessAdmin: adminGate.granted,
+      onSignOut,
+      collapsed,
+      onToggleCollapsed: toggleSidebarCollapsedAction,
+    }),
+  );
 
-  const [maintenance, outlets, page] = await Promise.all([
-    resolveMaintenance({ granted: adminGate.granted }),
-    resolveThemeOutlets(
-      {
-        pathname: document.pathname ?? "/",
-        area: document.area,
-        user: slotProps.header.user,
-        canAccessAdmin: adminGate.granted,
-        themeKey: document.theme.key,
-        locale: document.locale,
-      },
-      document.theme,
-    ),
-    resolvePageLayout(document.pathname, document.theme, document.section),
+  const [document, breadcrumbs, adminGate, slotProps, contextual, maintenance, page] = await Promise.all([
+    documentPromise,
+    resolveBreadcrumbs(),
+    adminGatePromise,
+    slotPropsPromise,
+    documentPromise.then((doc) => resolveContextualBar(doc.pathname, contextualSlot)),
+    adminGatePromise.then((gate) => resolveMaintenance({ granted: gate.granted })),
+    documentPromise.then((doc) => resolvePageLayout(doc.pathname, doc.theme, doc.section)),
   ]);
+
+  // Outlets dependem do usuário já resolvido nas props de slot.
+  const outlets = await resolveThemeOutlets(
+    {
+      pathname: document.pathname ?? "/",
+      area: document.area,
+      user: slotProps.header.user,
+      canAccessAdmin: adminGate.granted,
+      themeKey: document.theme.key,
+      locale: document.locale,
+    },
+    document.theme,
+  );
 
   return {
     ...document,

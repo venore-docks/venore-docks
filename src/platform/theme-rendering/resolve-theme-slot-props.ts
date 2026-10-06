@@ -51,6 +51,17 @@ function withoutFallbackLogin<T extends { key: string; children?: T[] }>(items: 
     .map((item) => (item.children ? { ...item, children: withoutFallbackLogin(item.children) } : item));
 }
 
+// Usuário do header (nome, email, avatar). avatarMediaId (escolhido via seletor de mídia) tem
+// prioridade sobre `image` (populado pelo provider OAuth) — mesmo princípio de "tema nunca busca
+// dado sozinho": a resolução mediaId→url acontece aqui, na composição, não dentro do tema.
+async function resolveHeaderUser(): Promise<HeaderUserInfo | null> {
+  const currentUser = await getCurrentUser();
+  if (!currentUser.success || !currentUser.data) return null;
+  const avatarMedia = currentUser.data.avatarMediaId ? await getMediaAsset({ id: currentUser.data.avatarMediaId }) : null;
+  const imageUrl = avatarMedia?.success ? (avatarMedia.data?.url ?? currentUser.data.image) : currentUser.data.image;
+  return { displayName: currentUser.data.name ?? currentUser.data.email ?? "Usuário", email: currentUser.data.email, imageUrl };
+}
+
 // Este é o ÚNICO lugar do sistema onde valor de plataforma vira prop de slot — nunca dentro do
 // próprio tema. navMode/navItems/canToggleAdminNav já são resolvidos de verdade (platform/nav-mode
 // + platform/admin-shell), passados pelo layout e mesclados no SidebarLeft (main-nav/admin-nav não
@@ -81,24 +92,6 @@ export async function resolveThemeSlotProps(sidebarNav: {
   footer: FooterSlotProps;
   sidebarLeft: SidebarLeftSlotProps;
 }> {
-  const currentUser = await getCurrentUser();
-  let avatarUrl: string | null = null;
-  if (currentUser.success && currentUser.data) {
-    // avatarMediaId (escolhido via seletor de mídia) tem prioridade sobre `image` (populado pelo
-    // provider OAuth) — mesmo princípio de "tema nunca busca dado sozinho": a resolução mediaId→url
-    // acontece aqui, na composição, não dentro do tema.
-    const avatarMedia = currentUser.data.avatarMediaId ? await getMediaAsset({ id: currentUser.data.avatarMediaId }) : null;
-    avatarUrl = avatarMedia?.success ? (avatarMedia.data?.url ?? currentUser.data.image) : currentUser.data.image;
-  }
-  const user: HeaderUserInfo | null =
-    currentUser.success && currentUser.data
-      ? {
-          displayName: currentUser.data.name ?? currentUser.data.email ?? "Usuário",
-          email: currentUser.data.email,
-          imageUrl: avatarUrl,
-        }
-      : null;
-
   // location "main" (não "main-nav") desde a reescrita do subsistema de navegação — modelo de
   // menu/localização documentado em contexts/cms/contracts/types.ts. Árvore inteira é usada agora
   // (MainNavItem suporta aninhamento — toMainNavItems acima): item "label" (href null) vira
@@ -112,19 +105,24 @@ export async function resolveThemeSlotProps(sidebarNav: {
   // exemplo mínimo (FALLBACK_SITEMAP_ITEMS) — não é derivação de "todo conteúdo publicado" (isso
   // violaria o invariante de contexts/cms de que o sitemap é o que o menu escolheu mostrar), é só
   // um esqueleto estático pra o rodapé não ficar quebrado antes de o admin configurar o menu.
-  const aesthetics = await resolveBrandAesthetics();
   // notificationAlert só é consultado pra quem está logado — visitante anônimo nunca tem thread
   // nenhuma (collectNotificationAlert já devolveria null de qualquer forma, mas evita a query à
   // toa).
-  const [mainMenu, sitemapMenu, headerMenu, brandConfig, headerBehavior, navVisibility, notificationAlert, userNavItems] = await Promise.all([
+  // Tudo que não depende do usuário começa junto com a resolução dele (antes: usuário → avatar →
+  // estética da marca → Promise.all, quatro idas ao banco em série).
+  const userPromise = resolveHeaderUser();
+  const aestheticsPromise = resolveBrandAesthetics();
+  const [user, aesthetics, mainMenu, sitemapMenu, headerMenu, brandConfig, headerBehavior, navVisibility, notificationAlert, userNavItems] = await Promise.all([
+    userPromise,
+    aestheticsPromise,
     getMenuByLocation({ location: "main" }),
     getMenuByLocation({ location: "sitemap" }),
     getMenuByLocation({ location: "header" }),
-    getBrandConfig(aesthetics.mode),
+    aestheticsPromise.then((resolved) => getBrandConfig(resolved.mode)),
     getHeaderBehavior(),
     getNavVisibility(),
-    user ? collectNotificationAlert() : Promise.resolve(null),
-    user ? collectUserNavItems() : Promise.resolve([]),
+    userPromise.then((resolved) => (resolved ? collectNotificationAlert() : null)),
+    userPromise.then((resolved) => (resolved ? collectUserNavItems() : [])),
   ]);
   // Fallback quando o menu está VAZIO (instalação nova, sem menu no CMS) — não só quando a
   // leitura falha. Sem isso a sidebar renderiza "—" e o rodapé fica sem navegação nenhuma.

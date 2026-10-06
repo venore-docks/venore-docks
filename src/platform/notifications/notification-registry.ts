@@ -1,6 +1,6 @@
 import { PLUGIN_CONTRIBUTIONS } from "@/plugins/contributions";
 import { beginOperation, endOperation } from "@/observability";
-import { registerPlugins } from "../plugin-engine/register-plugins";
+import { getPluginRegistrationReport } from "../plugin-engine/register-plugins";
 import type { NotificationAlert } from "./types";
 
 // Badge no user-nav. Os providers vêm de src/plugins/*/contributions.ts (campo `notificationAlert`),
@@ -14,7 +14,7 @@ import type { NotificationAlert } from "./types";
 // derrubar o shell inteiro pra todo mundo — isso bloquearia até a própria tela de instalação.
 // Falha de um provider vira log e é ignorada, outros plugins continuam contribuindo normalmente.
 export async function collectNotificationAlert(): Promise<NotificationAlert> {
-  const pluginReport = await registerPlugins();
+  const pluginReport = await getPluginRegistrationReport();
   const activePluginKeys = new Set(
     pluginReport.entries.filter((entry) => entry.status === "active").map((entry) => entry.key),
   );

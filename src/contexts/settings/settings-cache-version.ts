@@ -26,10 +26,23 @@ function state(): VersionState {
   return globalWithState.__venoreSettingsCacheVersion;
 }
 
+// Checagem em voo compartilhada: um render dispara várias leituras de setting em paralelo
+// (Promise.all de marca/header/nav/locale/manutenção...) e, com o intervalo vencido, cada uma
+// fazia o seu SELECT em cache_versions. Agora a primeira faz e as demais aguardam a mesma.
+let inFlight: Promise<void> | null = null;
+
 export async function syncSettingsCacheVersion(): Promise<void> {
   const current = state();
   if (Date.now() - current.checkedAt < VERSION_CHECK_INTERVAL_MS) return;
+  if (!inFlight) {
+    inFlight = checkSettingsCacheVersion(current).finally(() => {
+      inFlight = null;
+    });
+  }
+  return inFlight;
+}
 
+async function checkSettingsCacheVersion(current: VersionState): Promise<void> {
   let version: number | null;
   try {
     version = await readCacheVersion(VERSION_NAMESPACE);

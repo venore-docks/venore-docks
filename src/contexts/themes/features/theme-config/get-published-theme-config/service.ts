@@ -33,9 +33,9 @@ function toColorRecord(value: unknown): Record<string, string> {
 // Sem `theme.config` (ou valor inválido): monta o documento a partir das chaves 7.x — as mesmas
 // leituras que o root layout fazia antes da v8, então o site renderiza igual.
 async function synthesizeFromLegacyKeys(): Promise<PublishedThemeConfig> {
-  const activeTheme = await readSettingValue(LEGACY_ACTIVE_THEME_KEY);
+  // As duas chaves são independentes: uma ida ao banco em paralelo, não duas em série.
+  const [activeTheme, paletteId] = await Promise.all([readSettingValue(LEGACY_ACTIVE_THEME_KEY), readSettingValue(LEGACY_ACTIVE_PALETTE_KEY)]);
   const themeKey = typeof activeTheme === "string" ? activeTheme : FALLBACK_THEME_KEY;
-  const paletteId = await readSettingValue(LEGACY_ACTIVE_PALETTE_KEY);
 
   let palette: ThemePaletteChoice = { mode: "default" };
   if (typeof paletteId === "string" && paletteId !== "default") {

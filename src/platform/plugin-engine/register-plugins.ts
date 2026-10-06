@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { RBAC_PERMISSIONS } from "@/contexts/rbac";
 import { registerDefaultSetting } from "@/contexts/settings";
 import { listExtensionStates } from "@/contexts/extensions";
@@ -110,3 +111,12 @@ export async function registerPlugins(manifests?: unknown[]): Promise<PluginRegi
 
   return report;
 }
+
+// Relatório memoizado por request (cache() do React) para os consumidores de RENDER — registro de
+// nav admin, user-nav, notificações, uso de mídia, getActivePluginKeys. Um render do
+// (platform)/layout chamava registerPlugins() 4-5 vezes (uma leitura de extension_state + um
+// evento de observabilidade cada). Continua sem cache ENTRE requests (motivo no comentário de
+// registerPlugins acima). Fluxos de escrita (instalar/desinstalar/(des)habilitar) chamam
+// registerPlugins() direto: precisam do estado logo depois da própria escrita. Fora de um render
+// React (Server Action, route handler, script) cache() não memoiza.
+export const getPluginRegistrationReport = cache((): Promise<PluginRegistrationReport> => registerPlugins());

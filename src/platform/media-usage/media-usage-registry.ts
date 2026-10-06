@@ -1,6 +1,6 @@
 import { findCmsMediaUsage } from "@/contexts/cms";
 import { PLUGIN_CONTRIBUTIONS } from "@/plugins/contributions";
-import { registerPlugins } from "../plugin-engine/register-plugins";
+import { getPluginRegistrationReport } from "../plugin-engine/register-plugins";
 import { findBrandMediaUsage } from "../brand/find-brand-media-usage";
 import { findThemeConfigMediaUsage } from "./find-theme-config-media-usage";
 import type { MediaUsageProvider, MediaUsageReference } from "./types";
@@ -22,7 +22,7 @@ const CORE_PROVIDERS: Record<string, MediaUsageProvider> = {
 // volta pra checagem. Nunca trava mídia pra sempre por causa de um plugin desligado, e nunca
 // finge que a referência não existe de verdade.
 export async function collectMediaUsage(mediaId: string): Promise<MediaUsageReference[]> {
-  const pluginReport = await registerPlugins();
+  const pluginReport = await getPluginRegistrationReport();
   const activePluginKeys = new Set(
     pluginReport.entries.filter((entry) => entry.status === "active").map((entry) => entry.key),
   );
