@@ -67,6 +67,17 @@ da faixa (texto longo não volta para a fila no meio).
 | de | Piper `de_DE-kerstin-low` | Piper `de_DE-thorsten-medium` |
 | ja | Kokoro `jf_alpha` | Kokoro `jm_kumo` |
 
+Como o worker lê: o texto perde o que o modelo leria errado (travessão de diálogo, aspas, ênfase
+de markdown), vira parágrafos e cada parágrafo vira trechos de até ~280 caracteres que terminam em
+fim de frase (a Kokoro corta o que passa de 510 fonemas, então frase longa é dividida em vírgula).
+Cada trecho é gerado inteiro, o silêncio das bordas é aparado e as pausas são fixas — 0,22 s entre
+frases e 0,6 s entre parágrafos —, com o volume igualado na faixa. `speed` por voz em
+`voices.json` (pt-BR: 0,95). MP3 mono a 48 kbps (32/24 kbps quando passaria de 4,4 MB, ~12 min).
+
+Trocar a voz ou o worker não refaz o que já está pronto: em **Editorial → Áudios**, **"Gerar de
+novo"** na linha do conteúdo põe todas as faixas dele de volta na fila com a voz atual (o áudio
+antigo sai na hora).
+
 Para ouvir antes de escolher: **Actions → Leitura em voz alta (worker) → Run workflow** com
 "Só gerar amostras" marcado (ou qualquer push que mexa em `scripts/speech-worker/`) — o run deixa o
 artifact **amostras-de-voz** com um MP3 de cada voz. Trocar uma voz em `voices.json` vale para o

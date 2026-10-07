@@ -44,6 +44,7 @@ const {
   getSpeechProgress,
   listSpeechQueue,
   retryFailedSpeech,
+  regenerateSpeech,
   reportSpeechWorkProgress,
   recordSpeechWorkerStage,
   getSpeechWorkerActivity,
@@ -171,5 +172,27 @@ describe("speech — worker externo (integração)", () => {
     await syncSpeechAudio({ scope: "test.w:2", items: [] });
     const empty = await listSpeechQueue();
     expect(empty.success && empty.data.items.find((item) => item.scope === "test.w:2")).toBeUndefined();
+  });
+
+  it("gerar de novo: faixas prontas voltam para a fila com a voz atual e o MP3 antigo sai", async () => {
+    await syncSpeechAudio({ scope: "test.w:3", items: [{ itemKey: "s1", locale: "pt-BR", text: "Uma cena." }] });
+    const claim = await claimSpeechWork(5);
+    if (!claim.success) throw new Error("claim");
+    const [job] = claim.data.jobs;
+    await completeSpeechWork({ id: job.id, textHash: job.textHash, contentType: "audio/mpeg", audio: mp3("v1") });
+    const [before] = await db.select().from(assets).where(eq(assets.contentType, "audio/mpeg"));
+    expect(before).toBeDefined();
+
+    settings.voice = "male";
+    try {
+      expect(await regenerateSpeech({ scope: "test.w:3" })).toEqual({ success: true, data: { requeued: 1 } });
+      const progress = await getSpeechProgress({ scopes: ["test.w:3"] });
+      expect(progress.success && progress.data["test.w:3"]).toMatchObject({ total: 1, ready: 0, pending: 1 });
+      expect(await db.select().from(assets).where(eq(assets.id, before.id))).toHaveLength(0);
+      const again = await claimSpeechWork(5);
+      expect(again.success && again.data.jobs[0]).toMatchObject({ voice: "male", text: "Uma cena." });
+    } finally {
+      settings.voice = "female";
+    }
   });
 });

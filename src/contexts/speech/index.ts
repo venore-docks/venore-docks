@@ -29,6 +29,7 @@ export { listSpeechScopes } from "./features/list-speech-scopes/service";
 export { listSpeechQueue } from "./features/list-speech-queue/service";
 export type { SpeechQueueItem } from "./features/list-speech-queue/service";
 export { retryFailedSpeech } from "./features/retry-failed-speech/service";
+export { regenerateSpeech } from "./features/regenerate-speech/service";
 export { getSpeechWorkerInfo, requestSpeechWorkerRun, getSpeechWorkerActivity } from "./features/speech-worker-run/service";
 export type { SpeechWorkerInfo } from "./features/speech-worker-run/service";
 export { getSpeechSyncCursor, setSpeechSyncCursor } from "./features/sync-cursor/service";

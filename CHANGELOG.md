@@ -43,6 +43,11 @@ build. Recomendado no modo worker: `SPEECH_WORKER_GITHUB_TOKEN` (o app chama o w
   entry já enfileira o áudio (antes só no cron). `cron.yml` e o worker falham com erro quando o
   secret `CRON_TARGETS` não é JSON válido (antes passavam em silêncio). SDK:
   `getSpeechProgress`, `getSpeechWorkerActivity`; `CORE_VERSION` 2.2.0.
+  Leitura mais fluida no worker: trechos que terminam em fim de frase (sem cortar a entonação
+  nem perder palavras no limite de fonemas da Kokoro), pausas fixas entre frases e parágrafos,
+  bordas aparadas, volume igualado, fala pt-BR a 0,95, MP3 a 48 kbps, travessão de diálogo e
+  aspas fora do texto lido. **"Gerar de novo"** por conteúdo no painel refaz o áudio com a voz e
+  o worker atuais.
 
 - **Leitura em voz alta** (`contexts/speech`, `docs/speech/leitura-em-voz-alta.md`): o áudio de
   cada texto que o autor escolheu (opção "Gerar áudio" na edição da entry e da obra do `novels`,

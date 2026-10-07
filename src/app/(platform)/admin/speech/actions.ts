@@ -5,6 +5,7 @@ import { authorizeActor } from "@/contexts/rbac";
 import { setSetting } from "@/contexts/settings";
 import {
   isSpeechVoice,
+  regenerateSpeech,
   requestSpeechWorkerRun,
   retryFailedSpeech,
   MAX_MONTHLY_CHARACTER_LIMIT,
@@ -74,4 +75,19 @@ export async function requestSpeechWorkerRunAction(): Promise<SpeechPanelActionS
   if (!result.success) return { error: result.error.message, notice: null };
   revalidatePath("/admin/speech");
   return { error: null, notice: "Worker chamado: ele leva alguns minutos para instalar as vozes e começar." };
+}
+
+// "Gerar de novo": refaz todas as faixas de um conteúdo com a voz e o worker atuais.
+export async function regenerateSpeechAction(
+  _prevState: SpeechPanelActionState,
+  formData: FormData,
+): Promise<SpeechPanelActionState> {
+  const authz = await authorizeActor("settings.manage");
+  if (!authz.authorized) return { error: authz.error.message, notice: null };
+
+  const result = await regenerateSpeech({ scope: String(formData.get("scope") ?? "") });
+  if (!result.success) return { error: result.error.message, notice: null };
+  revalidatePath("/admin/speech");
+  const { requeued } = result.data;
+  return { error: null, notice: requeued === 1 ? "1 faixa voltou para a fila." : `${requeued} faixas voltaram para a fila.` };
 }

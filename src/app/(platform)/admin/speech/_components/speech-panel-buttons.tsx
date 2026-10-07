@@ -3,7 +3,12 @@
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { useActionToast } from "@/hooks/use-action-toast";
-import { requestSpeechWorkerRunAction, retryFailedSpeechAction, type SpeechPanelActionState } from "../actions";
+import {
+  regenerateSpeechAction,
+  requestSpeechWorkerRunAction,
+  retryFailedSpeechAction,
+  type SpeechPanelActionState,
+} from "../actions";
 
 const initialState: SpeechPanelActionState = { error: null, notice: null };
 
@@ -29,6 +34,28 @@ export function RetryFailedButton({ scope, label = "Tentar de novo" }: { scope?:
       {scope && <input type="hidden" name="scope" value={scope} />}
       <Button type="submit" size="sm" variant="outline" disabled={pending}>
         {label}
+      </Button>
+    </form>
+  );
+}
+
+// "Gerar de novo": todas as faixas do conteúdo voltam para a fila com a voz atual. O áudio atual
+// sai na hora, então pede confirmação.
+export function RegenerateButton({ scope }: { scope: string }) {
+  const [state, formAction, pending] = useActionState(regenerateSpeechAction, initialState);
+  useActionToast({ pending, error: state.error, successMessage: state.notice ?? "Voltou para a fila." });
+  return (
+    <form
+      action={formAction}
+      onSubmit={(event) => {
+        if (!window.confirm("Gerar de novo todo o áudio deste conteúdo? O áudio atual sai até o novo ficar pronto.")) {
+          event.preventDefault();
+        }
+      }}
+    >
+      <input type="hidden" name="scope" value={scope} />
+      <Button type="submit" size="sm" variant="outline" disabled={pending}>
+        Gerar de novo
       </Button>
     </form>
   );

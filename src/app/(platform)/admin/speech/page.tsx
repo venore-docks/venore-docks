@@ -3,7 +3,7 @@ import { SpeechProgress } from "@/components/speech/speech-progress";
 import { SpeechWorkerStatus, timeAgo } from "@/components/speech/speech-worker-status";
 import { getSpeechStatus, getSpeechWorkerInfo, listSpeechQueue, speechVoices } from "@/contexts/speech";
 import { getSettingsPageData } from "@/platform/admin-shell/get-settings-page-data";
-import { RetryFailedButton, RunWorkerButton } from "./_components/speech-panel-buttons";
+import { RegenerateButton, RetryFailedButton, RunWorkerButton } from "./_components/speech-panel-buttons";
 import { SpeechSettingsForm } from "./_components/speech-settings-form";
 
 const number = (value: number) => value.toLocaleString("pt-BR");
@@ -171,6 +171,7 @@ export default async function SpeechAdminPage() {
                   {item.failed > 0 && item.lastError && <p className="mt-1 truncate text-xs text-destructive">{item.lastError}</p>}
                 </div>
                 {item.failed > 0 && <RetryFailedButton scope={item.scope} />}
+                {item.pending + item.processing === 0 && item.ready > 0 && <RegenerateButton scope={item.scope} />}
               </li>
             ))}
           </ul>

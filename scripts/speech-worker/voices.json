@@ -1,8 +1,8 @@
 {
-  "_comment": "Voz do Venore (setting speech.voice: female/male) -> motor e voz por idioma. Kokoro: hexgrad/Kokoro-82M (Apache-2.0). Piper: rhasspy/piper-voices. Trocar aqui não regera o áudio que já existe; só o que for publicado ou alterado depois.",
+  "_comment": "Voz do Venore (setting speech.voice: female/male) -> motor e voz por idioma. Kokoro: hexgrad/Kokoro-82M (Apache-2.0). Piper: rhasspy/piper-voices. speed (opcional, padrão 1.0): abaixo de 1 fala mais devagar. Trocar aqui não regera o áudio que já existe; para isso, Gerar de novo em Editorial -> Áudios.",
   "pt-BR": {
-    "female": { "engine": "kokoro", "voice": "pf_dora" },
-    "male": { "engine": "piper", "voice": "pt_BR-faber-medium" }
+    "female": { "engine": "kokoro", "voice": "pf_dora", "speed": 0.95 },
+    "male": { "engine": "piper", "voice": "pt_BR-faber-medium", "speed": 0.95 }
   },
   "en-US": {
     "female": { "engine": "kokoro", "voice": "af_heart" },

@@ -24,17 +24,24 @@ import requests
 
 HERE = Path(__file__).resolve().parent
 VOICES = {key: value for key, value in json.loads((HERE / "voices.json").read_text()).items() if not key.startswith("_")}
-MP3_KBPS = 32  # fala em mono: 32 kbps cabe ~18 min no limite de 4,4 MB da entrega
+MP3_KBPS = 48  # fala em mono: 48 kbps cabe ~12 min no limite de 4,4 MB; acima disso cai para 32/24
 MAX_MP3_BYTES = 4_400_000
 CLAIM_BATCH = 1  # um por vez: o painel mostra como "gerando agora" só o que está sendo gerado
 PROGRESS_EVERY_SECONDS = 4
-SEGMENT_CHARS = 400
+CHUNK_CHARS = 280  # trecho gerado de uma vez; folga para o limite de 510 fonemas da Kokoro
+SENTENCE_PAUSE = 0.22  # segundos entre frases
+PARAGRAPH_PAUSE = 0.6  # segundos entre parágrafos
 KOKORO_REPO = "hexgrad/Kokoro-82M"
 KOKORO_LANG = {"pt": "p", "en-US": "a", "en-GB": "b", "en": "a", "es": "e", "fr": "f", "it": "i", "ja": "j"}
 PIPER_DIR = Path(os.environ.get("PIPER_VOICES_DIR", Path.home() / ".cache" / "piper-voices"))
 
 SAMPLE_TEXT = {
-    "pt-BR": "A tempestade chegou antes do previsto. Do cais, você vê o farol apagado no alto do rochedo.",
+    "pt-BR": (
+        "A tempestade chegou antes do previsto. Do cais, você vê o farol apagado no alto do rochedo, "
+        "e o barco do velho Tomé balança perto demais das pedras.\n"
+        "— Alguém precisa subir até lá — diz Marina, sem tirar os olhos da água. — Agora.\n"
+        "Você sente o vento frio no rosto… e percebe que ninguém mais vai se oferecer."
+    ),
     "en-US": "The storm arrived earlier than expected. From the pier, you see the dark lighthouse on the cliff.",
     "es-ES": "La tormenta llegó antes de lo previsto. Desde el muelle, ves el faro apagado en lo alto del acantilado.",
     "fr-FR": "La tempête est arrivée plus tôt que prévu. Depuis le quai, tu vois le phare éteint en haut du rocher.",
@@ -65,32 +72,49 @@ class Engines:
         return table.get(voice) or table["female"]
 
     def synthesize(self, text: str, language_code: str, voice: str, on_progress=None) -> tuple[bytes, int]:
-        """Devolve (PCM 16 bits mono, taxa de amostragem). Gera por trechos e chama
-        on_progress(fração 0..1) depois de cada um."""
+        """Devolve (PCM 16 bits mono, taxa de amostragem).
+
+        Texto preparado (travessão de diálogo, símbolos), dividido em parágrafos e cada parágrafo em
+        trechos que terminam em fim de frase. Cada trecho é gerado inteiro (a entonação não quebra
+        no meio da frase), o silêncio das bordas é aparado e as pausas são as nossas: curta entre
+        frases, maior entre parágrafos. on_progress(fração 0..1) depois de cada trecho."""
+        import numpy as np
+
         choice = self.voice_for(language_code, voice)
-        segments = split_segments(text)
-        total = sum(len(segment) for segment in segments) or 1
-        pcm = bytearray()
+        speed = float(choice.get("speed", 1.0))
+        plan = [(index, chunk) for index, paragraph in enumerate(split_paragraphs(prepare_text(text))) for chunk in split_chunks(paragraph)]
+        total = sum(len(chunk) for _, chunk in plan) or 1
+        pieces: list = []
         sample_rate = 0
+        last_paragraph = None
         done = 0
-        for segment in segments:
+        for paragraph, chunk in plan:
             if choice["engine"] == "kokoro":
-                chunk, rate = self._kokoro(segment, language_code, choice["voice"])
+                sentences, sample_rate = self._kokoro(chunk, language_code, choice["voice"], speed)
             elif choice["engine"] == "piper":
-                chunk, rate = self._piper(segment, choice["voice"])
+                sentences, sample_rate = self._piper(chunk, choice["voice"], speed)
             else:
                 raise ValueError(f"Motor desconhecido: {choice['engine']}")
-            if chunk:
-                pcm += chunk
-                sample_rate = rate
-            done += len(segment)
+            for audio in sentences:
+                audio = trim_silence(audio)
+                if audio.size == 0:
+                    continue
+                if pieces:
+                    pause = PARAGRAPH_PAUSE if paragraph != last_paragraph else SENTENCE_PAUSE
+                    pieces.append(np.zeros(int(sample_rate * pause), dtype=np.float32))
+                pieces.append(audio)
+                last_paragraph = paragraph
+            done += len(chunk)
             if on_progress:
                 on_progress(done / total)
-        if not pcm:
+        if not pieces:
             raise ValueError("Nenhum áudio gerado.")
-        return bytes(pcm), sample_rate
+        audio = np.concatenate(pieces)
+        peak = float(np.max(np.abs(audio))) or 1.0
+        audio = np.clip(audio * (0.95 / peak), -1.0, 1.0)  # mesmo volume em toda faixa
+        return (audio * 32767).astype("<i2").tobytes(), sample_rate
 
-    def _kokoro(self, text: str, language_code: str, voice: str) -> tuple[bytes, int]:
+    def _kokoro(self, text: str, language_code: str, voice: str, speed: float) -> tuple[list, int]:
         import numpy as np
         from kokoro import KModel, KPipeline
 
@@ -106,18 +130,17 @@ class Engines:
             pipeline = KPipeline(lang_code=lang, repo_id=KOKORO_REPO, model=self._kokoro_model)
             self._kokoro_pipelines[lang] = pipeline
 
-        pause = np.zeros(int(24_000 * 0.3), dtype=np.float32)
-        parts = []
-        for result in pipeline(text, voice=voice, split_pattern=r"\n+"):
-            if result.audio is not None:
-                parts.extend([result.audio.detach().cpu().numpy().astype(np.float32), pause])
-        if not parts:
-            return b"", 24_000  # trecho só de pontuação: nada a falar
-        audio = np.clip(np.concatenate(parts), -1.0, 1.0)
-        return (audio * 32767).astype("<i2").tobytes(), 24_000
+        # split_pattern=None: o trecho já vem do tamanho certo (split_chunks), a Kokoro não corta de novo.
+        parts = [
+            result.audio.detach().cpu().numpy().astype(np.float32)
+            for result in pipeline(text, voice=voice, speed=speed, split_pattern=None)
+            if result.audio is not None
+        ]
+        return ([np.concatenate(parts)] if parts else []), 24_000
 
-    def _piper(self, text: str, voice: str) -> tuple[bytes, int]:
-        from piper import PiperVoice
+    def _piper(self, text: str, voice: str, speed: float) -> tuple[list, int]:
+        import numpy as np
+        from piper import PiperVoice, SynthesisConfig
         from piper.download_voices import download_voice
 
         loaded = self._piper_voices.get(voice)
@@ -129,33 +152,94 @@ class Engines:
             loaded = PiperVoice.load(model_path)
             self._piper_voices[voice] = loaded
 
-        pcm = bytearray()
+        sentences = []
         sample_rate = 22_050
-        for chunk in loaded.synthesize(text):
+        # O Piper devolve uma frase por pedaço; as pausas entre elas são as do synthesize.
+        for chunk in loaded.synthesize(text, syn_config=SynthesisConfig(length_scale=1.0 / speed)):
             sample_rate = chunk.sample_rate
-            pcm += chunk.audio_int16_bytes
-        return bytes(pcm), sample_rate
+            sentences.append(np.frombuffer(chunk.audio_int16_bytes, dtype="<i2").astype(np.float32) / 32768.0)
+        return sentences, sample_rate
 
 
-def split_segments(text: str) -> list[str]:
-    """Parágrafos, e parágrafo longo em frases agrupadas até SEGMENT_CHARS: a síntese anda por
-    trechos para o painel ver o andamento. Cada trecho termina numa pausa natural."""
+# ---------------------------------------------------------------- preparo do texto
+
+SENTENCE_END = r"(?<=[.!?…。！？])[\"”’»)]*\s+"
+
+
+def prepare_text(text: str) -> str:
+    """Tira do texto o que o modelo lê errado: travessão de diálogo, ênfase de markdown, aspas
+    (não se leem). Reticências viram "..." (a pausa que o modelo conhece)."""
     import re
 
-    segments: list[str] = []
-    for paragraph in (part.strip() for part in re.split(r"\n+", text)):
-        if not paragraph:
+    lines = []
+    for line in text.replace("\r", "").split("\n"):
+        line = line.strip()
+        line = re.sub(r"^[—–-]\s*", "", line)  # "— Olá" (fala) -> "Olá"
+        line = re.sub(r"([.!?…])\s*[—–]\s*", r"\1 ", line)  # "água. — Agora." -> "água. Agora."
+        line = re.sub(r"\s+[—–]\s+", ", ", line)  # "— disse ele —" no meio -> vírgulas
+        line = re.sub(r"[—–]", ", ", line)
+        line = line.replace("…", "...")
+        line = re.sub(r"[*_#~`|<>\[\]{}\"“”«»]", "", line)  # aspas não se leem; a frase basta
+        line = re.sub(r"\s{2,}", " ", line).strip(" ,")
+        lines.append(line)
+    return "\n".join(lines)
+
+
+def split_paragraphs(text: str) -> list[str]:
+    import re
+
+    return [part.strip() for part in re.split(r"\n+", text) if part.strip()]
+
+
+def split_chunks(paragraph: str) -> list[str]:
+    """Frases agrupadas até CHUNK_CHARS (sempre terminando em fim de frase). Frase maior que isso
+    é dividida em vírgula/ponto e vírgula; só em último caso, em espaço. Mantém cada trecho longe
+    do limite de 510 fonemas da Kokoro, que corta o que passa dele."""
+    import re
+
+    pieces: list[str] = []
+    for sentence in (part.strip() for part in re.split(SENTENCE_END, paragraph)):
+        if not sentence:
+            continue
+        if len(sentence) <= CHUNK_CHARS:
+            pieces.append(sentence)
             continue
         current = ""
-        for sentence in re.split(r"(?<=[.!?…。！？])\s+", paragraph):
-            if current and len(current) + len(sentence) + 1 > SEGMENT_CHARS:
-                segments.append(current)
-                current = sentence
+        for clause in re.split(r"(?<=[,;:])\s+", sentence):
+            while len(clause) > CHUNK_CHARS:
+                cut = clause.rfind(" ", 0, CHUNK_CHARS)
+                cut = cut if cut > 0 else CHUNK_CHARS
+                if current:
+                    pieces.append(current)
+                    current = ""
+                pieces.append(clause[:cut].strip())
+                clause = clause[cut:].strip()
+            if current and len(current) + len(clause) + 1 > CHUNK_CHARS:
+                pieces.append(current)
+                current = clause
             else:
-                current = f"{current} {sentence}".strip()
+                current = f"{current} {clause}".strip()
         if current:
-            segments.append(current)
-    return segments or [text]
+            pieces.append(current)
+
+    chunks: list[str] = []
+    for piece in pieces:
+        if chunks and len(chunks[-1]) + len(piece) + 1 <= CHUNK_CHARS:
+            chunks[-1] = f"{chunks[-1]} {piece}"
+        else:
+            chunks.append(piece)
+    return chunks
+
+
+def trim_silence(audio, threshold: float = 0.01, keep_seconds: float = 0.04, sample_rate: int = 24_000):
+    """Apara o silêncio das bordas (cada motor deixa uma sobra diferente), mantendo um respiro."""
+    import numpy as np
+
+    loud = np.flatnonzero(np.abs(audio) > threshold)
+    if loud.size == 0:
+        return audio[:0]
+    keep = int(sample_rate * keep_seconds)
+    return audio[max(0, loud[0] - keep) : loud[-1] + keep]
 
 
 def ensure_japanese() -> None:
@@ -269,8 +353,10 @@ def process(targets: dict[str, dict], names: list[str], deadline: float) -> int:
                     signal(target, f"/api/speech/worker/clips/{job['id']}/progress", {"textHash": job["textHash"], "percent": 0})
                     pcm, sample_rate = engines.synthesize(job["text"], job["languageCode"], job["voice"], on_progress)
                     mp3 = to_mp3(pcm, sample_rate)
-                    if len(mp3) > MAX_MP3_BYTES:
-                        mp3 = to_mp3(pcm, sample_rate, kbps=24)
+                    for kbps in (32, 24):  # texto muito longo: menos bitrate para caber na entrega
+                        if len(mp3) <= MAX_MP3_BYTES:
+                            break
+                        mp3 = to_mp3(pcm, sample_rate, kbps=kbps)
                     upload = api(
                         target,
                         "PUT",
