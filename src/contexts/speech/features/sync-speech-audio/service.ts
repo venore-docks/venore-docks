@@ -50,7 +50,7 @@ export async function syncSpeechAudio(input: SyncSpeechAudioInput): Promise<Sync
     const current = existing.get(id);
     const textHash = speechTextHash({ model: speechPort.model, voice: settings.voice, languageCode, text });
 
-    if (current && current.textHash === textHash && current.status !== "failed") {
+    if (!input.regenerate && current && current.textHash === textHash && current.status !== "failed") {
       keep.add(id);
       unchanged += 1;
       continue;

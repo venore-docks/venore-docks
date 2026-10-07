@@ -101,7 +101,7 @@ Reserva vencida (worker que morreu no meio, sem avisar progresso) volta para a f
 | Conteúdo | Gera | Apaga |
 | --- | --- | --- |
 | Entry do CMS com **"Gerar áudio"** marcado (`data.speech`), **publicada e aberta** | Job `speech.sync-cms-entries` (cron): toda entry assim que mudou desde a última passada (marcar a opção conta como mudança). A tela de edição mostra a situação (fila, pronto). | Opção desmarcada, entry arquivada, apagada ou que virou "só logado" (o MP3 é público). Rascunho mantém. |
-| Obra do plugin `novels` com **"Gerar áudio"** marcado (`works.speech_enabled`) | Ao publicar, ao marcar a opção, e ao salvar grafo / editar obra / apagar capítulo de obra publicada: uma faixa por cena e idioma que tem texto próprio. A tela da obra mostra "X de Y faixas prontas". | Opção desmarcada, obra apagada, ou cena/idioma que saiu da obra publicada. Despublicar mantém. |
+| Obra do plugin `novels` (0.6.0+) | Só por ação do autor no bloco **Áudio** da tela da obra: **Gerar áudio / Gerar o que falta** (faixas sem áudio, com falha ou com texto mudado) e **Gerar tudo de novo**. Uma faixa por cena e idioma com texto próprio; vale também para rascunho. Salvar, publicar ou editar cenas **não** mexe no áudio: texto mudado aparece como "desatualizado" e o áudio antigo continua tocando até o autor gerar de novo. | **Apagar áudio** no mesmo bloco, ou obra apagada. Despublicar mantém. |
 
 - Texto igual ao já gerado não gasta nada: o áudio é identificado por hash de texto + voz + modelo.
   Por isso despublicar e republicar sem mudar o texto é de graça, e **trocar a voz vale para o que
@@ -120,3 +120,7 @@ Reserva vencida (worker que morreu no meio, sem avisar progresso) volta para a f
 `@venore/plugin-sdk/speech`: `syncSpeechAudio({ scope, items })` descreve o estado desejado de um
 scope do plugin (convenção: começar pela key, ex: `novels.work:<id>`) — o core enfileira o que é
 novo ou mudou e apaga o que saiu; `getSpeechAudio({ scopes })` devolve as URLs prontas.
+`getSpeechState({ scope, items })` compara as faixas com o texto atual (em dia, desatualizada,
+faltando, na fila, gerando, com falha, sobrando) para o plugin mostrar e oferecer ações;
+`syncSpeechAudio({ ..., regenerate: true })` refaz tudo mesmo com o texto igual, e `items: []`
+apaga o áudio do scope. O `novels` chama `syncSpeechAudio` só a partir dessas ações do autor.

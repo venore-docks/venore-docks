@@ -45,6 +45,7 @@ const {
   listSpeechQueue,
   retryFailedSpeech,
   regenerateSpeech,
+  getSpeechState,
   reportSpeechWorkProgress,
   recordSpeechWorkerStage,
   getSpeechWorkerActivity,
@@ -194,5 +195,37 @@ describe("speech — worker externo (integração)", () => {
     } finally {
       settings.voice = "female";
     }
+  });
+
+  it("estado contra o texto atual: pronto, desatualizado (continua tocando), faltando, sobrando; regenerate refaz tudo", async () => {
+    const items = [
+      { itemKey: "s1", locale: "pt-BR", text: "Cena um." },
+      { itemKey: "s2", locale: "pt-BR", text: "Cena dois." },
+    ];
+    await syncSpeechAudio({ scope: "test.w:4", items });
+    for (let round = 0; round < 3; round += 1) {
+      const claim = await claimSpeechWork(5);
+      if (!claim.success) throw new Error("claim");
+      for (const job of claim.data.jobs) {
+        await completeSpeechWork({ id: job.id, textHash: job.textHash, contentType: "audio/mpeg", audio: mp3(job.text) });
+      }
+    }
+
+    const edited = [
+      { itemKey: "s1", locale: "pt-BR", text: "Cena um, reescrita." },
+      { itemKey: "s3", locale: "pt-BR", text: "Cena nova." },
+    ];
+    const state = await getSpeechState({ scope: "test.w:4", items: edited });
+    expect(state).toEqual({
+      success: true,
+      data: expect.objectContaining({ active: true, total: 2, ready: 0, outdated: 1, missing: 1, extra: 1, pending: 0 }),
+    });
+    // Desatualizado continua tocando até o autor pedir.
+    const audio = await getSpeechAudio({ scopes: ["test.w:4"] });
+    expect(audio.success && audio.data["test.w:4"]).toHaveLength(2);
+
+    // "Gerar de novo" com o texto igual: regenerate põe tudo na fila mesmo assim.
+    const again = await syncSpeechAudio({ scope: "test.w:4", items, regenerate: true });
+    expect(again.success && again.data).toEqual({ queued: 2, unchanged: 0, removed: 0 });
   });
 });

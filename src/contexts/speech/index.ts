@@ -8,6 +8,8 @@ export { processPendingSpeech, scheduleSpeechProcessing } from "./features/proce
 export { getSpeechAudio } from "./features/get-speech-audio/service";
 // Andamento por scope (só contagens) — tela de edição do dono do conteúdo; plugins via SDK.
 export { getSpeechProgress } from "./features/get-speech-progress/service";
+// Estado do áudio contra o texto atual do dono (pronto, desatualizado, faltando...) — plugins via SDK.
+export { getSpeechState } from "./features/get-speech-state/service";
 // Worker externo (SPEECH_DRIVER=worker): só as rotas /api/speech/worker chamam, depois de
 // conferir o CRON_SECRET.
 export {
@@ -47,6 +49,9 @@ export type {
   SpeechAudio,
   SpeechProgress,
   SpeechWorkerActivity,
+  SpeechState,
+  GetSpeechStateInput,
+  GetSpeechStateResult,
   GetSpeechProgressQuery,
   GetSpeechProgressResult,
   SpeechSyncItem,

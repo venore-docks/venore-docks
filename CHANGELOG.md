@@ -48,6 +48,10 @@ build. Recomendado no modo worker: `SPEECH_WORKER_GITHUB_TOKEN` (o app chama o w
   bordas aparadas, volume igualado, fala pt-BR a 0,95, MP3 a 48 kbps, travessão de diálogo e
   aspas fora do texto lido. **"Gerar de novo"** por conteúdo no painel refaz o áudio com a voz e
   o worker atuais.
+  Áudio do `novels` (0.6.0) por ação explícita: salvar, publicar ou editar cenas não gera nem
+  refaz áudio; o bloco Áudio da obra mostra faixas em dia, desatualizadas (o áudio antigo continua
+  tocando) e faltando, com **Gerar o que falta**, **Gerar tudo de novo** e **Apagar áudio**. SDK:
+  `getSpeechState`, `regenerate` no `syncSpeechAudio`; `CORE_VERSION` 2.3.0.
 
 - **Leitura em voz alta** (`contexts/speech`, `docs/speech/leitura-em-voz-alta.md`): o áudio de
   cada texto que o autor escolheu (opção "Gerar áudio" na edição da entry e da obra do `novels`,

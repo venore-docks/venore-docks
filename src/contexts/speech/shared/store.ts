@@ -14,6 +14,8 @@ export type StoredClip = {
   characters: number;
   status: SpeechClipStatus;
   attempts: number;
+  progress: number;
+  lastError: string | null;
   mediaAssetId: string | null;
 };
 
@@ -28,6 +30,8 @@ const clipColumns = {
   characters: audioClips.characters,
   status: audioClips.status,
   attempts: audioClips.attempts,
+  progress: audioClips.progress,
+  lastError: audioClips.lastError,
   mediaAssetId: audioClips.mediaAssetId,
 };
 
@@ -104,6 +108,8 @@ export async function claimPendingClips(limit: number): Promise<StoredClip[]> {
     characters: number;
     status: string;
     attempts: number;
+    progress: number;
+    last_error: string | null;
     media_asset_id: string | null;
   }>(sql`
     update ${audioClips} set status = 'processing', progress = 0, updated_at = now()
@@ -116,7 +122,7 @@ export async function claimPendingClips(limit: number): Promise<StoredClip[]> {
       limit ${limit}
       for update skip locked
     )
-    returning id, scope, item_key, locale, text, voice, text_hash, characters, status, attempts, media_asset_id
+    returning id, scope, item_key, locale, text, voice, text_hash, characters, status, attempts, progress, last_error, media_asset_id
   `);
   return result.rows.map((row) => ({
     id: row.id,
@@ -129,6 +135,8 @@ export async function claimPendingClips(limit: number): Promise<StoredClip[]> {
     characters: Number(row.characters),
     status: row.status as SpeechClipStatus,
     attempts: Number(row.attempts),
+    progress: Number(row.progress),
+    lastError: row.last_error,
     mediaAssetId: row.media_asset_id,
   }));
 }
