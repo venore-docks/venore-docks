@@ -15,7 +15,7 @@ describe("content security policy", () => {
 
   it("enforces the full policy in enforce mode", () => {
     const headers = buildCspHeaders("abc", "enforce", false);
-    expect(headers.response["Content-Security-Policy"]).toContain("script-src 'self' 'nonce-abc' 'strict-dynamic'");
+    expect(headers.response["Content-Security-Policy"]).toContain("script-src 'self' 'nonce-abc'");
     expect(headers.response["Content-Security-Policy"]).not.toContain("unsafe-eval");
   });
 

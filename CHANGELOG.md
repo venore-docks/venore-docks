@@ -139,6 +139,11 @@ build. Recomendado no modo worker: `SPEECH_WORKER_GITHUB_TOKEN` (o app chama o w
 
 ### Fixed
 
+- **`/api/csp-report` consumia a maior parte do CPU ativo em produção.** O `script-src` usava
+  `'strict-dynamic'`, mas o Next 16 (Turbopack) não põe nonce nas tags `<script src>` dos chunks,
+  então cada chunk virava violação (dezenas de POSTs por página) e `CSP_MODE=enforce` quebraria o
+  site. Agora `script-src 'self' 'nonce-…'`. A rota também passou a limitar por IP em memória
+  (sem `INSERT` no Postgres) e a deduplicar violações repetidas por 10 min.
 - **Coluna `media.assets.access_permission` faltando em banco novo** (migration `0055`, roda
   sozinha no build). O merge do PR #8 tirou a `0054_media_access_permission` do
   `_journal.json` (duas migrations 0054 colidiram), então banco criado ou atualizado depois disso

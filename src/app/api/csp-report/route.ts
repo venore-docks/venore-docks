@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { checkRateLimit, getClientIp } from "@/infrastructure/rate-limit";
+import { checkRateLimitInMemory, getClientIp } from "@/infrastructure/rate-limit";
 import { beginOperation, endOperation } from "@/observability";
 
 // Recebe relatórios de violação de CSP (report-uri, platform/security/content-security-policy.ts)
@@ -9,6 +9,26 @@ export const dynamic = "force-dynamic";
 
 const REPORT_RATE_LIMIT = { limit: 30, windowMs: 60_000 };
 const MAX_BODY_BYTES = 16 * 1024;
+
+// Limite e deduplicação em memória do processo, sem ir ao banco: o relatório é best-effort e um
+// INSERT no Postgres por violação (limitador + flush do log) dominava o CPU ativo da função.
+const DEDUPE_TTL_MS = 10 * 60_000;
+const MAX_DEDUPE_KEYS = 500;
+const recentViolations = new Map<string, number>();
+
+function isDuplicate(key: string): boolean {
+  const now = Date.now();
+  const seenAt = recentViolations.get(key);
+  if (seenAt !== undefined && now - seenAt < DEDUPE_TTL_MS) return true;
+  if (recentViolations.size >= MAX_DEDUPE_KEYS) {
+    for (const [k, at] of recentViolations) {
+      if (now - at >= DEDUPE_TTL_MS) recentViolations.delete(k);
+    }
+    if (recentViolations.size >= MAX_DEDUPE_KEYS) recentViolations.clear();
+  }
+  recentViolations.set(key, now);
+  return false;
+}
 
 type LegacyReport = { "csp-report"?: Record<string, unknown> };
 
@@ -21,7 +41,7 @@ function pick(report: Record<string, unknown>, ...keys: string[]): string {
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
-  const limit = await checkRateLimit(`csp-report:${getClientIp(request.headers)}`, REPORT_RATE_LIMIT);
+  const limit = checkRateLimitInMemory(`csp-report:${getClientIp(request.headers)}`, REPORT_RATE_LIMIT);
   if (!limit.allowed) return new NextResponse(null, { status: 204 });
 
   const text = await request.text();
@@ -43,6 +63,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     const directive = pick(report, "effective-directive", "effectiveDirective", "violated-directive");
     const blocked = pick(report, "blocked-uri", "blockedURL");
     const documentUri = pick(report, "document-uri", "documentURL");
+    if (isDuplicate(`${directive}|${blocked}|${documentUri}`)) continue;
     const handle = beginOperation({
       useCase: "platform.security.csp-violation",
       actor: { id: "browser", type: "system" },
