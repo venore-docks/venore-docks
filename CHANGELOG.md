@@ -28,6 +28,20 @@ nasce desligada — para usar de graça: `SPEECH_DRIVER=worker` no projeto e lig
 `0057`/`0058` (origem de cada scope, andamento da faixa e sinal de vida do worker) também rodam no
 build. Recomendado no modo worker: `SPEECH_WORKER_GITHUB_TOKEN` (o app chama o worker na hora).
 
+
+### Economia de tokens nas sessões do Claude
+
+- `AGENTS.md` cai de 36 KB para ~18 KB: §1.1 (rotas de plugin), §3 (CSS/tokens) e §8 (instâncias)
+  viram regras com `paths:` em `.claude/rules/`, carregadas só quando um arquivo da área é lido ou
+  editado; §7 vai para `docs/known-gaps.md`, sem os itens já resolvidos. A numeração das seções
+  continua, para as referências "AGENTS.md §N" no código seguirem válidas.
+- Nova §9 do `AGENTS.md`: uma sessão por tarefa, effort pela tarefa, bump fora de sessão longa,
+  higiene de saída de ferramentas.
+- `.claude/settings.json` compacta o contexto em 200 mil tokens; subagentes `explorador` (haiku) e
+  `leitor-de-ci` (sonnet); skills `bump-plugin` e `passagem-de-sessao` (`docs/sessoes/`).
+- `src/test-support/claude-config.test.ts`: orçamento de 20 KB para o `AGENTS.md` e validação do
+  frontmatter de regras, skills e subagentes.
+
 ### Added
 
 - **Painel de áudios e produção visível** (`/admin/speech`, Editorial → **Áudios**): a
