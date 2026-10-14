@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { CreateMenuDialog } from "./_components/create-menu-dialog";
 import { DeleteMenuButton } from "./_components/delete-menu-button";
+import { EditMenuScopeDialog } from "./_components/edit-menu-scope-dialog";
 
 const LOCATION_LABELS: Record<MenuLocation, string> = {
   main: "Principal",
@@ -82,7 +83,12 @@ export default async function MenusAdminPage() {
                     {menu.itemCount} {menu.itemCount === 1 ? "item" : "itens"}
                   </p>
                 </div>
-                <DeleteMenuButton menuId={menu.id} />
+                <div className="flex items-center gap-1">
+                  {menu.location === "contextual" && (
+                    <EditMenuScopeDialog menuId={menu.id} menuName={menu.name} scopePath={menu.scopePath ?? ""} />
+                  )}
+                  <DeleteMenuButton menuId={menu.id} />
+                </div>
               </li>
             ))}
           </ul>

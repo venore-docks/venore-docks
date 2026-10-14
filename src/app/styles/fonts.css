@@ -1,0 +1,8 @@
+/* Fontes (spec v8 §3 / §7.6). Dono: W8. Só var(): o tema/admin escolhe a família pelo CSS de
+   runtime (`html[data-theme=k]{--theme-font-sans:var(--font-inter)}`, whitelist FONT_IDS); sem
+   escolha, vale Geist — exatamente o que globals.css declarava antes da v8. */
+@theme inline {
+  --font-sans: var(--theme-font-sans, var(--font-geist-sans));
+  --font-mono: var(--theme-font-mono, var(--font-geist-mono));
+  --font-display: var(--theme-font-display, var(--font-sans));
+}

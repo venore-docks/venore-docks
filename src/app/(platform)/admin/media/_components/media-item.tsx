@@ -3,6 +3,7 @@ import { Lock, ShieldQuestion } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { MediaVisibility } from "@/contexts/media";
 import { DeleteMediaButton } from "./delete-media-button";
+import { DEFAULT_DATE_LOCALE, formatDate } from "@/shared/format-date";
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -45,7 +46,7 @@ export function MediaItem({
         {filename}
       </Link>
       <p className="text-xs text-muted-foreground/56">
-        {formatSize(size)} · {new Date(createdAt).toLocaleDateString("pt-BR")}
+        {formatSize(size)} · {formatDate(createdAt, DEFAULT_DATE_LOCALE, "short")}
       </p>
       <div className="flex flex-wrap items-center gap-1">
         {/* Reconhecível de relance, sem abrir (docs do pedido): cadeado + cor de destaque, não só

@@ -18,7 +18,13 @@
    `venore-slime` é o único hardcoded (fallback obrigatório); o resto vem do @import gerado abaixo
    (pacotes @venore/theme-* — scripts/gen-theme-registry.ts, a partir das deps do package.json). */
 @import "../themes/venore-slime/theme.css";
+/* Herança v8 (spec §3.1, W9): CSS dos ancestros reescrito com :is(), antes dos temas filhos. */
+@import "../themes/theme-lineage.generated.css";
 @import "../themes/theme-imports.generated.css";
+/* Contrato de tema v8 (spec §3): cada arquivo tem dono próprio e só consome var(). */
+@import "./styles/region-tokens.css";
+@import "./styles/fonts.css";
+@import "./styles/page-layout.css";
 
 /* tw-animate-css: os primitivos stock (dialog, select) usam animate-in/fade-in-0/zoom-in-95/
    slide-in-from-* — sem esse import essas classes não geram CSS nenhum (ficam inertes) e os
@@ -169,8 +175,7 @@ button:not(:disabled),
   --shadow-float: var(--shadow-float);
   --shadow-header: var(--shadow-header);
 
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* --font-sans / --font-mono: src/app/styles/fonts.css (v8, dono W8). */
 }
 
 /* ui-button-* / ui-icon-button-* — escala única de altura/padding pra button, input, select e

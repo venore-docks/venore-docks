@@ -5,6 +5,7 @@ import { cmsBreadcrumbSegments } from "@/contexts/cms";
 import { rbacBreadcrumbSegments } from "@/contexts/rbac";
 import { mediaBreadcrumbSegments } from "@/contexts/media";
 import { settingsBreadcrumbSegments } from "@/contexts/settings";
+import { speechBreadcrumbSegments } from "@/contexts/speech";
 import { themesBreadcrumbSegments } from "@/contexts/themes";
 import { observabilityBreadcrumbSegments } from "@/observability";
 import { PLUGIN_CONTRIBUTIONS } from "@/plugins/contributions";
@@ -17,6 +18,7 @@ const CORE_BREADCRUMB_SEGMENTS: BreadcrumbSegmentDefinition[] = [
   ...cmsBreadcrumbSegments,
   ...mediaBreadcrumbSegments,
   ...settingsBreadcrumbSegments,
+  ...speechBreadcrumbSegments,
   ...themesBreadcrumbSegments,
   ...observabilityBreadcrumbSegments,
 ];

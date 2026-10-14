@@ -34,10 +34,11 @@ export function buildBaselinePolicy(): string {
 export function buildContentPolicy(nonce: string, options: { isDev: boolean }): string {
   const directives = [
     "default-src 'self'",
-    // strict-dynamic: scripts carregados pelos scripts com nonce (chunks do Next) herdam a
-    // confiança; 'self' e https: são ignorados por navegadores com strict-dynamic e só valem de
-    // fallback pra navegadores antigos.
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${options.isDev ? " 'unsafe-eval'" : ""}`,
+    // Sem 'strict-dynamic' de propósito: o Next 16 (Turbopack) não põe nonce nas tags
+    // <script src="/_next/static/.../chunks/*.js"> nem nos preloads, e com strict-dynamic o
+    // navegador ignora 'self' — cada chunk virava violação (dezenas de POSTs por página) e o modo
+    // enforce derrubaria o site. Aqui 'self' libera os chunks; inline continua exigindo nonce.
+    `script-src 'self' 'nonce-${nonce}'${options.isDev ? " 'unsafe-eval'" : ""}`,
     // 'unsafe-inline' em estilo: atributos style="" (máscara do logo, paleta) não aceitam nonce.
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https:",

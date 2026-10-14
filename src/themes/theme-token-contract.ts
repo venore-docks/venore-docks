@@ -33,6 +33,38 @@ export const SLIME_IDENTITY_TOKENS: readonly string[] = [
   "--sidebar-width-collapsed",
 ];
 
+// Tier 3 da v8 (spec §3): `--region-<região>-<papel>` e `--section-<estilo>-<papel>`. Todos
+// OPCIONAIS — o default de src/app/styles/region-tokens.css aponta pro tier-2 — então nunca entram
+// no contrato obrigatório, mesmo que o slime passe a declarar algum. Um tema que declare um nome
+// de tier-3 fora desta lista (região/papel/estilo inexistente) está errado: nada consome o token.
+const V8_TOKEN_REGIONS = ["header", "rail", "contextual", "content", "footer"] as const;
+const V8_SECTION_STYLES = ["muted", "brand", "inverted", "accent"] as const;
+const V8_TOKEN_ROLES = [
+  "background",
+  "foreground",
+  "muted",
+  "muted-foreground",
+  "card",
+  "card-foreground",
+  "primary",
+  "primary-foreground",
+  "accent",
+  "accent-foreground",
+  "border",
+  "ring",
+] as const;
+
+export const OPTIONAL_V8_TOKENS: readonly string[] = [
+  ...V8_TOKEN_REGIONS.flatMap((region) => V8_TOKEN_ROLES.map((role) => `--region-${region}-${role}`)),
+  ...V8_SECTION_STYLES.flatMap((style) => V8_TOKEN_ROLES.map((role) => `--section-${style}-${role}`)),
+];
+
+const OPTIONAL_V8_TOKEN_SET = new Set(OPTIONAL_V8_TOKENS);
+export const isOptionalV8Token = (name: string): boolean => OPTIONAL_V8_TOKEN_SET.has(name);
+// Nome com prefixo de tier-3 que não é um tier-3 válido.
+export const isUnknownTier3Token = (name: string): boolean =>
+  /^--(region|section)-/.test(name) && !OPTIONAL_V8_TOKEN_SET.has(name);
+
 // Extrai o corpo `{ ... }` de uma regra CSS pelo seletor exato (casamento de chaves balanceado —
 // aguenta `calc()`, `color-mix()` aninhados). `selector` sem o `{` (ex: `[data-theme="x"]` ou
 // `[data-theme="x"].dark`). Retorna null se o seletor não existe no arquivo.

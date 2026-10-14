@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { useActionToast } from "@/hooks/use-action-toast";
 import { updateEntryAction, type EditEntryActionState } from "../actions";
+import { SpeechProgress, type SpeechProgressValue } from "@/components/speech/speech-progress";
 
 const initialState: EditEntryActionState = { error: null };
 
@@ -28,6 +29,7 @@ export function EditEntryForm({
   categoryId,
   contentTypeIds,
   visibility,
+  speech,
   media,
   categories,
   contentTypes,
@@ -38,6 +40,7 @@ export function EditEntryForm({
   body: string;
   hasComposition: boolean;
   categoryId: string | null;
+  speech: { enabled: boolean; status: string | null; progress: SpeechProgressValue | null };
   contentTypeIds: string[];
   visibility: "public" | "authenticated";
   media: PickableMedia | null;
@@ -95,6 +98,27 @@ export function EditEntryForm({
             <SelectItem value="authenticated">Fechado (só logados)</SelectItem>
           </SelectContent>
         </Select>
+      </div>
+
+      <div>
+        <label className="flex items-center gap-2 text-sm text-foreground">
+          <input
+            type="checkbox"
+            name="speech"
+            defaultChecked={speech.enabled}
+            className="size-4 rounded-sm border-border outline-none ui-motion-base focus-visible:ring-2 focus-visible:ring-ring"
+          />
+          Gerar áudio (leitura em voz alta)
+        </label>
+        <p className="mt-1 text-xs text-muted-foreground/56">
+          {speech.status ??
+            "O áudio é gerado depois de publicado, só para conteúdo aberto."}
+        </p>
+        {speech.enabled && speech.progress && (
+          <div className="mt-2 max-w-sm">
+            <SpeechProgress progress={speech.progress} compact />
+          </div>
+        )}
       </div>
 
       <div>

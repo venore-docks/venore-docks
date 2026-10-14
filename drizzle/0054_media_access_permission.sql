@@ -1,1 +1,0 @@
-ALTER TABLE "media"."assets" ADD COLUMN "access_permission" text;

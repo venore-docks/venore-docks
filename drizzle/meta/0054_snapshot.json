@@ -1,5 +1,5 @@
 {
-  "id": "3b330989-e0ab-4011-bb7c-a0ab5df6cc3b",
+  "id": "362031be-b243-4abc-8ea5-d5f290309878",
   "prevId": "1a86df88-5ff8-4cf7-84b7-0b3f79e225a8",
   "version": "7",
   "dialect": "postgresql",
@@ -2098,12 +2098,6 @@
           "notNull": true,
           "default": "'private'"
         },
-        "access_permission": {
-          "name": "access_permission",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "category_id": {
           "name": "category_id",
           "type": "text",
@@ -2608,6 +2602,129 @@
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "themes.theme_config_revisions": {
+      "name": "theme_config_revisions",
+      "schema": "themes",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "config": {
+          "name": "config",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "based_on_revision_id": {
+          "name": "based_on_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "published_by": {
+          "name": "published_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "published_at": {
+          "name": "published_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "theme_config_revisions_single_draft_idx": {
+          "name": "theme_config_revisions_single_draft_idx",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"themes\".\"theme_config_revisions\".\"status\" = 'draft'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "theme_config_revisions_single_published_idx": {
+          "name": "theme_config_revisions_single_published_idx",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"themes\".\"theme_config_revisions\".\"status\" = 'published'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "theme_config_revisions_archived_published_at_idx": {
+          "name": "theme_config_revisions_archived_published_at_idx",
+          "columns": [
+            {
+              "expression": "published_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "\"themes\".\"theme_config_revisions\".\"status\" = 'archived'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "theme_config_revisions_status_valid": {
+          "name": "theme_config_revisions_status_valid",
+          "value": "\"themes\".\"theme_config_revisions\".\"status\" IN ('draft', 'published', 'archived')"
+        }
+      },
       "isRLSEnabled": false
     },
     "web_push.push_subscriptions": {
@@ -3135,6 +3252,7 @@
     "media": "media",
     "rbac": "rbac",
     "settings": "settings",
+    "themes": "themes",
     "web_push": "web_push",
     "audit": "audit",
     "observability": "observability",

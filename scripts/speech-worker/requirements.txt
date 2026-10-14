@@ -1,0 +1,8 @@
+# Worker de leitura em voz alta (scripts/speech-worker/worker.py). torch entra pelo índice CPU no
+# workflow (o wheel padrão traz CUDA e passa de 2 GB).
+kokoro==0.9.4
+misaki[en]==0.9.4
+piper-tts==1.8.0
+lameenc==1.8.1
+numpy<3
+requests<3

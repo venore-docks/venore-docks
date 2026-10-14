@@ -4,18 +4,20 @@ import {
   extractEntryComposition,
   getCachedEntry,
   getEntryBody,
+  isEntrySpeechEnabled,
   listCategoriesForAdmin,
   listContentTypes,
   listEntryRevisions,
 } from "@/contexts/cms";
 import { getMediaAsset } from "@/contexts/media";
+import { getSpeechProgress, readSpeechSettings, type SpeechProgress } from "@/contexts/speech";
+import { cmsEntrySpeechScope } from "@/platform/speech/cms-entry-scope";
 import { getCmsPageData } from "@/platform/admin-shell/get-cms-page-data";
 import { EditEntryForm } from "./_components/edit-entry-form";
 import { PublishButton } from "./_components/publish-button";
 import { RevisionHistory, type RevisionHistoryItem } from "./_components/revision-history";
 import { PreviewLink } from "./_components/preview-link";
-
-const DATE_FORMAT = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" });
+import { DEFAULT_DATE_LOCALE, formatDate } from "@/shared/format-date";
 
 export default async function EditEntryPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -64,6 +66,24 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
   const mediaResult = entry.mediaId ? await getMediaAsset({ id: entry.mediaId }) : null;
   const media = mediaResult?.success && mediaResult.data ? mediaResult.data : null;
 
+  // Situação do áudio (opção "Gerar áudio" da edição; geração em platform/speech).
+  const speechEnabled = isEntrySpeechEnabled(entry.data);
+  let speechStatus: string | null = null;
+  let speechProgress: SpeechProgress | null = null;
+  if (speechEnabled) {
+    const scope = cmsEntrySpeechScope(entry.id);
+    const [settings, progress] = await Promise.all([readSpeechSettings(), getSpeechProgress({ scopes: [scope] })]);
+    speechProgress = progress.success ? (progress.data[scope] ?? null) : null;
+    const ready = (speechProgress?.ready ?? 0) > 0;
+    if (!settings.enabled) speechStatus = "A leitura em voz alta está desligada em Editorial → Áudios: nada é gerado até ligar lá.";
+    else if (ready) speechStatus = "Áudio pronto: o botão de ouvir já aparece no site.";
+    else if (entry.visibility !== "public") speechStatus = "Conteúdo fechado (só logados) não ganha áudio.";
+    else if (entry.status !== "published") speechStatus = "O áudio será gerado quando o conteúdo for publicado.";
+    else if (speechProgress?.processing) speechStatus = "Gerando o áudio agora.";
+    else if (speechProgress?.failed) speechStatus = "A geração falhou. Tente de novo em Editorial → Áudios.";
+    else speechStatus = "Na fila: o áudio fica pronto quando o worker passar (acompanhe em Editorial → Áudios).";
+  }
+
   const revisionsResult = await listEntryRevisions({ entryId: entry.id });
   const revisions = revisionsResult.success ? revisionsResult.data.revisions : [];
   const canPublish = revisionsResult.success && revisionsResult.data.canPublish;
@@ -73,7 +93,7 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
     kind: revision.kind,
     status: revision.status,
     title: revision.title,
-    createdAt: DATE_FORMAT.format(revision.createdAt),
+    createdAt: formatDate(revision.createdAt, DEFAULT_DATE_LOCALE, "dateTime") ?? "",
     authorLabel: revision.createdBy === gate.actor.id ? "você" : "outra pessoa da equipe",
     isOwnProposal: revision.createdBy === gate.actor.id,
   }));
@@ -103,6 +123,7 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
           categoryId={entry.categoryId}
           contentTypeIds={entry.contentTypeIds}
           visibility={entry.visibility}
+          speech={{ enabled: speechEnabled, status: speechStatus, progress: speechProgress }}
           media={media}
           categories={categoriesResult.data}
           contentTypes={contentTypesResult.data}

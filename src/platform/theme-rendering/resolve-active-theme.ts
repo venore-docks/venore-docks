@@ -8,6 +8,9 @@ import { THEME_REGISTRY, type ThemeRegistryEntry } from "@/themes/registry";
 // "quais componentes implementam aquele tema" (registro estático de código) é responsabilidade
 // de platform/, mesmo papel de platform/registration/handle-user-registered.ts.
 //
+// Write path / estado PERSISTIDO apenas (spec v8 §0.4): preview, rascunho e seção nunca passam
+// por aqui — esses só existem em platform/theme-rendering/document-model.ts.
+//
 // cache() memoiza por request: RootLayout (data-theme no <html>) e PlatformLayout (Slots) chamam
 // isso de forma independente no mesmo request, e sem memoização isso seria 2 leituras de
 // contexts/settings por página em vez de 1.
@@ -30,8 +33,10 @@ export const resolveActiveTheme = cache(async (): Promise<ThemeRegistryEntry> =>
 // ausência de configuração, e não pode virar uma shell de fallback silenciosa da aplicação por
 // baixo do tema quebrado. Lança erro explícito, propositalmente sem try/catch nem shell
 // alternativa aqui — a aplicação não tem shell própria de reserva (esse é o ponto).
+// v8: o equivalente a "ter um Shell" é ter uma `definition` (a árvore vem do kit/tema).
 function assertThemeEntryHasShell(entry: ThemeRegistryEntry | undefined, themeKey: string): asserts entry is ThemeRegistryEntry {
-  if (!entry || typeof entry.Shell !== "function") {
+  const renderable = entry && (entry.contract === 8 ? typeof entry.definition === "object" && entry.definition !== null : typeof entry.Shell === "function");
+  if (!entry || !renderable) {
     throw new Error(
       `Tema "${themeKey}" está registrado em THEME_REGISTRY sem um Shell válido. Um tema sem Shell é erro de carga, não degradação silenciosa (docs/themes/shell-contract.md).`,
     );

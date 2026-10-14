@@ -49,5 +49,14 @@
 // publicados (`fearless`, `druids`, `nite`, `knights`, `paladins`, `sorcerers`) já haviam declarado
 // themeContractVersion "7.0.0" antecipando este rename; só `sorcerers` de fato consome o campo em
 // código (badge de notificação no HeaderSlot), os demais só carregavam a declaração adiantada.
-export const CURRENT_THEME_CONTRACT_VERSION = "7.0.0";
-export const SUPPORTED_THEME_CONTRACT_RANGE = "^7.0.0";
+// Bump para "8.0.0" (docs/themes/theme-system-v8.md): `ThemeDefinition` — tema descreve layout,
+// regiões, templates, opções etc. como campos OPCIONAIS sobre o kit. É aditivo pro 7.x (o
+// contrato 7 continua aceito e é renderizado pelo adapter `legacy-shell-adapter.tsx`); o bump
+// existe porque o registro ganha uma segunda forma de entrada (`contract: 8`, com `definition`).
+export const CURRENT_THEME_CONTRACT_VERSION = "8.0.0";
+// Ativação, registry.test e recheck no render (resolve-theme-definition.ts).
+export const SUPPORTED_THEME_CONTRACT_RANGE = ">=7.0.0 <9.0.0";
+// Caminho do adapter (Shell 7.x inteiro).
+export const LEGACY_THEME_CONTRACT_RANGE = "^7.0.0";
+// Caminho ThemeDefinition.
+export const V8_THEME_CONTRACT_RANGE = "^8.0.0";

@@ -8,9 +8,9 @@ compatibilidade de plugin) nem com o "Version do documento" no cabeçalho de
 `docs/venore-docks.md` (revisão da doc, não do código).
 
 Cada entrada linka o(s) branch(es)/instância(s) que já receberam o fix quando isso não é óbvio —
-o core evolui em `main` e se propaga pras instâncias (branches deste repo, ou forks) por merge;
-uma instância só tem o fix depois que a própria instância faz esse merge (ver seção "Modelo de
-atualização" em `VENORE-DOCKS.md`).
+o core evolui em `main`. Desde a entrada "Instâncias sem branch" abaixo, toda instância deste repo
+faz deploy de `main` (`VENORE_INSTANCE`, AGENTS.md §8) e recebe o fix no próximo deploy; forks
+continuam propagando por merge.
 
 ## [Unreleased]
 
@@ -18,9 +18,90 @@ atualização" em `VENORE-DOCKS.md`).
 contas em `/admin/settings` (sem escolha, continua valendo `RBAC_DEFAULT_REGISTRATION_ROLE_KEY` ou
 `member`) e criar um menu de location "Cabeçalho (header)" em `/admin/cms/menus`. Depois do
 deploy, clicar em **"Otimizar imagens antigas"** em `/admin/media` pra gerar as cópias
-redimensionadas das imagens já enviadas (migration `0053` roda sozinha no build).
+redimensionadas das imagens já enviadas (migration `0053` roda sozinha no build). A migration
+`0054` (`themes.theme_config_revisions`, rascunho/histórico de tema) também roda no build; sem ela
+o site renderiza normal e só o rascunho/histórico ficam indisponíveis. A config de tema atual é
+convertida sozinha (lida das chaves 7.x) até a primeira publicação. As migrations `0055` (coluna
+de mídia restrita perdida) e `0056` (schema `speech`) também rodam no build; a leitura em voz alta
+nasce desligada — para usar de graça: `SPEECH_DRIVER=worker` no projeto e ligar em
+**Editorial → Áudios** (`/admin/speech`; `docs/speech/leitura-em-voz-alta.md`). As migrations
+`0057`/`0058` (origem de cada scope, andamento da faixa e sinal de vida do worker) também rodam no
+build. Recomendado no modo worker: `SPEECH_WORKER_GITHUB_TOKEN` (o app chama o worker na hora).
+
+
+### Economia de tokens nas sessões do Claude
+
+- `AGENTS.md` cai de 36 KB para ~18 KB: §1.1 (rotas de plugin), §3 (CSS/tokens) e §8 (instâncias)
+  viram regras com `paths:` em `.claude/rules/`, carregadas só quando um arquivo da área é lido ou
+  editado; §7 vai para `docs/known-gaps.md`, sem os itens já resolvidos. A numeração das seções
+  continua, para as referências "AGENTS.md §N" no código seguirem válidas.
+- Nova §9 do `AGENTS.md`: uma sessão por tarefa, effort pela tarefa, bump fora de sessão longa,
+  higiene de saída de ferramentas.
+- `.claude/settings.json` compacta o contexto em 200 mil tokens; subagentes `explorador` (haiku) e
+  `leitor-de-ci` (sonnet); skills `bump-plugin` e `passagem-de-sessao` (`docs/sessoes/`).
+- `src/test-support/claude-config.test.ts`: orçamento de 20 KB para o `AGENTS.md` e validação do
+  frontmatter de regras, skills e subagentes.
 
 ### Added
+
+- **Painel de áudios e produção visível** (`/admin/speech`, Editorial → **Áudios**): a
+  configuração da leitura em voz alta sai de `/admin/settings` e ganha a fila — uma linha por
+  conteúdo com título e link do editor (`source` no `syncSpeechAudio`), barra de produção com as
+  faixas prontas e o percentual da faixa em geração, falhas com o último erro e "Tentar de novo",
+  e o que o worker está fazendo (preparando as vozes, gerando, parado, sem sinal) mais a execução
+  recente no GitHub. Atualiza sozinho enquanto há fila. A mesma barra aparece na edição da entry
+  e da obra do `novels` 0.5.0. O worker gera uma faixa por vez, em trechos, informando percentual
+  e fase (`/api/speech/worker/clips/<id>/progress`, `/api/speech/worker/heartbeat`). Com
+  `SPEECH_WORKER_GITHUB_TOKEN` o app dispara o worker (`workflow_dispatch`) assim que algo entra
+  na fila e mostra **"Gerar agora"** — o `schedule` do GitHub atrasa horas. Salvar/publicar uma
+  entry já enfileira o áudio (antes só no cron). `cron.yml` e o worker falham com erro quando o
+  secret `CRON_TARGETS` não é JSON válido (antes passavam em silêncio). SDK:
+  `getSpeechProgress`, `getSpeechWorkerActivity`; `CORE_VERSION` 2.2.0.
+  Leitura mais fluida no worker: trechos que terminam em fim de frase (sem cortar a entonação
+  nem perder palavras no limite de fonemas da Kokoro), pausas fixas entre frases e parágrafos,
+  bordas aparadas, volume igualado, fala pt-BR a 0,95, MP3 a 48 kbps, travessão de diálogo e
+  aspas fora do texto lido. **"Gerar de novo"** por conteúdo no painel refaz o áudio com a voz e
+  o worker atuais.
+  Áudio do `novels` (0.6.0) por ação explícita: salvar, publicar ou editar cenas não gera nem
+  refaz áudio; o bloco Áudio da obra mostra faixas em dia, desatualizadas (o áudio antigo continua
+  tocando) e faltando, com **Gerar o que falta**, **Gerar tudo de novo** e **Apagar áudio**. SDK:
+  `getSpeechState`, `regenerate` no `syncSpeechAudio`; `CORE_VERSION` 2.3.0.
+
+- **Leitura em voz alta** (`contexts/speech`, `docs/speech/leitura-em-voz-alta.md`): o áudio de
+  cada texto que o autor escolheu (opção "Gerar áudio" na edição da entry e da obra do `novels`,
+  desligada por padrão) é gerado uma vez depois de publicado e guardado como MP3 público na mídia;
+  ouvir não gera de novo. Provedor por `SPEECH_DRIVER`: **`worker`** (grátis — `.github/workflows/speech-worker.yml`
+  gera com os modelos abertos Kokoro e Piper no GitHub Actions e devolve por `/api/speech/worker`,
+  autenticado com `CRON_SECRET`) ou `google` (Google Cloud TTS, Chirp 3 HD). Entries públicas do
+  CMS ganham o player "Ouvir este texto" (reconciliação pelo job `speech.sync-cms-entries`); plugins
+  usam `@venore/plugin-sdk/speech` (`syncSpeechAudio`, `getSpeechAudio`) — o `novels` 0.4.0 lê cada
+  cena. Fila com reserva atômica (duas sínteses nunca pegam a mesma faixa), **teto mensal de
+  caracteres** checado antes de cada síntese, texto igual não gera de novo e texto trocado apaga o
+  MP3 antigo na hora. `/admin/settings` liga/desliga, escolhe a voz e o teto e mostra o uso do mês.
+  `CORE_VERSION` vai a 2.1.0 (SDK novo; faixas `>=2.0.0` continuam valendo).
+
+- **Instâncias sem branch** (AGENTS.md §8): `main` é o único branch de deploy. O `package.json`
+  declara a união dos pacotes `@venore/plugin-*`/`@venore/theme-*` (uma versão por pacote) e cada
+  instância escolhe um subconjunto em `instances/<nome>.json`, selecionado pela env
+  `VENORE_INSTANCE` (vazia = "venore vanilla", tudo junto). Codegen de plugins/temas e
+  `test:plugins` filtram pela instância (`scripts/lib/instance-packages.ts`); job `instances` no
+  CI. Instâncias migradas: `broadcast-fem`, `erasto-league`, `graphic-novels`, `nestpro`,
+  `portal-colaborador`. **Na Vercel:** branch de produção `main` + `VENORE_INSTANCE=<nome>` em
+  cada projeto. Versões unificadas: `nestpro` sobe `@venore/plugin-disc` 0.1.1 → 0.2.0 e
+  `@venore/theme-nestpro` para v0.2.1; temas cujos repositórios foram apagados (halo, nebula,
+  nimbus, paladins, vega) saem de `graphic-novels`/`nestpro`/`portal-colaborador`.
+
+- **Contrato de tema 8.0.0** (`docs/themes/theme-system-v8.md`). O `venore-slime` virou o kit
+  (`src/theme-sdk/kit`): regiões substituíveis com fallback, layouts `topbar`/`rail`, navegação
+  mobile drawer/bottom-bar/tela cheia, templates e estados de página, catálogos pt-BR/en/es/ar e
+  RTL. Tema v8 declara só o que difere (`defineTheme`), com tokens por região, opções no
+  manifesto, fontes curadas, herança (`extends`, até 3 níveis), variantes de bloco, estilos de
+  seção e layout por página no page builder. `/admin/themes/customize` edita rascunho com preview
+  ao vivo, publica, mostra histórico com rollback e exporta/importa; seções do site podem trocar
+  tema/layout por prefixo. Safe mode (`/api/themes/safe-mode`) e `THEME_FORCE_FALLBACK`.
+  Galeria viva em `/admin/themes/gallery` e gate de CI (`npm run theme:check`: contrato de
+  tokens, contraste por região, orçamento, harness SSR e Playwright com axe a 390/1280 px).
+  Os 12 pacotes 7.x continuam funcionando sem mudança.
 
 - **Mídia restrita de verdade** (migration `0054`, coluna `media.assets.access_permission`). Um
   plugin declara em `manifest.restrictedUploadCategories` quais das suas categorias guardam dado
@@ -52,11 +133,23 @@ redimensionadas das imagens já enviadas (migration `0053` roda sozinha no build
 - **Papel padrão de novas contas em `/admin/settings`** (setting `auth.registration_default_role`).
   Só aparece para quem gerencia papéis, e só oferece papéis que a pessoa poderia conceder.
 - **Navegação do cabeçalho** vem do menu de location `header` do CMS (antes era sempre vazia).
+- **Editar o escopo de um menu contextual** em `/admin/cms/menus` (antes só dava para criar).
 - **Permission por namespace para settings de plugin (G5):** uma setting `<plugin>.*` também pode
   ser gravada com `<plugin>.settings.manage`, se o plugin declarar essa permission.
 
 ### Fixed
 
+- **`/api/csp-report` consumia a maior parte do CPU ativo em produção.** O `script-src` usava
+  `'strict-dynamic'`, mas o Next 16 (Turbopack) não põe nonce nas tags `<script src>` dos chunks,
+  então cada chunk virava violação (dezenas de POSTs por página) e `CSP_MODE=enforce` quebraria o
+  site. Agora `script-src 'self' 'nonce-…'`. A rota também passou a limitar por IP em memória
+  (sem `INSERT` no Postgres) e a deduplicar violações repetidas por 10 min.
+- **Coluna `media.assets.access_permission` faltando em banco novo** (migration `0055`, roda
+  sozinha no build). O merge do PR #8 tirou a `0054_media_access_permission` do
+  `_journal.json` (duas migrations 0054 colidiram), então banco criado ou atualizado depois disso
+  ficava sem a coluna: consultas de mídia falhavam e o prebuild avisava "não deu pra aplicar a
+  mídia restrita". A `0055` usa `ADD COLUMN IF NOT EXISTS` e não muda nada em banco que já tinha
+  aplicado a 0054 antiga.
 - **Page-builder gravava o texto de um bloco em outro**: ao trocar de bloco com campo de rich
   text de mesmo nome, o editor continuava mostrando o conteúdo do bloco anterior e a edição
   seguinte o salvava no bloco novo. Texto legado (string) também abria vazio e era apagado na
@@ -92,6 +185,9 @@ redimensionadas das imagens já enviadas (migration `0053` roda sozinha no build
 
 ### Security
 
+- **JSON-LD do breadcrumb dos temas 7.x passa a ser renderizado pelo core** (escapado,
+  `serializeJsonLd`): fecha uma XSS presente em 12 pacotes. O Shell 7.x recebe
+  `breadcrumbsJsonLd: null`. Headers `x-venore-theme-*` vindos de fora são descartados no proxy.
 - `dompurify` 3.4.16, `undici` 6.29.0/7.30.0 (alerta alto, via `@vercel/blob`), `ip-address`
   10.7.2 e `vitest` 4.1.11. Resta o `esbuild` antigo do `@esbuild-kit` (via `drizzle-kit`), que só
   afeta o dev server do esbuild — não usado.

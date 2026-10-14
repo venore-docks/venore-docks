@@ -8,6 +8,7 @@ import {
   listEntriesForAdmin,
   moveMenuItem,
   removeMenuItem,
+  updateMenu,
   updateMenuItem,
 } from "@/contexts/cms";
 import type { EntryStatus, MenuItemTarget, MenuLocation } from "@/contexts/cms";
@@ -51,6 +52,22 @@ export async function createMenuAction(_prevState: MenuActionState, formData: Fo
     name: String(formData.get("name") ?? ""),
     location,
     scopePath: location === "contextual" ? scopePath : undefined,
+  });
+
+  if (!result.success) {
+    return { error: result.error.message };
+  }
+
+  revalidatePath("/admin/cms/menus");
+  return { error: null };
+}
+
+// Escopo (prefixo de rota) de um menu contextual. O service normaliza ("/RH/" → "/rh") e recusa
+// menu de location fixa.
+export async function updateMenuScopeAction(_prevState: MenuActionState, formData: FormData): Promise<MenuActionState> {
+  const result = await updateMenu({
+    id: String(formData.get("menuId") ?? ""),
+    scopePath: String(formData.get("scopePath") ?? "").trim(),
   });
 
   if (!result.success) {

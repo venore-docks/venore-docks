@@ -142,7 +142,9 @@ export async function getThemeUpdateStatus(themeKey: string): Promise<OperationR
     }
 
     const latest = await fetchLatestTag(ref.owner, ref.repo, token);
-    const installedVersion = entry.manifest.version;
+    // version do package.json do pacote (codegen), não manifest.version — 12 dos 13 pacotes
+    // tinham os dois dessincronizados (spec v8 §5).
+    const installedVersion = entry.packageVersion;
     const installedSemver = semver.valid(semver.coerce(installedVersion)) ?? "0.0.0";
     const updateAvailable = Boolean(latest && semver.gt(latest.version, installedSemver));
 

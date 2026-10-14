@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { ThemeManifestV8Fields } from "./v8/manifest";
 
 // T2 (docs/implementation-roadmap.md — Fase 5): decisão da marca (modo/tamanho/posição/cor) é
 // design, não conteúdo — sai de contexts/settings (era admin-editável via /admin/settings/
@@ -31,7 +32,7 @@ export type ThemeCapabilities = {
   headerBehavior?: boolean;
 };
 
-export type ThemeManifest = {
+export type ThemeManifest7 = {
   key: string; // kebab-case, único, estável — mesmo padrão de PluginManifest.key
   name: string;
   version: string;
@@ -42,6 +43,10 @@ export type ThemeManifest = {
   colorModes: readonly ThemeColorMode[];
   capabilities?: ThemeCapabilities;
 };
+
+// Contrato 8.0.0: os campos novos são TODOS opcionais (contracts/v8/manifest.ts) — um manifesto
+// 7.x continua satisfazendo este tipo sem mudança (spec v8 §0.2).
+export type ThemeManifest = ThemeManifest7 & ThemeManifestV8Fields;
 
 export type ActiveThemeState = {
   themeKey: string;

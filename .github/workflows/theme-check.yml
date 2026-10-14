@@ -1,0 +1,117 @@
+name: Theme check
+
+# Gate reutilizável de um tema (spec v8 §10) — o MESMO do job `themes` do core, para o repositório
+# de um pacote @venore/theme-* rodar antes de criar a tag. Faz checkout do core, instala o tema
+# candidato (o checkout do repositório que chamou) no lugar da versão declarada e roda
+# scripts/theme-check.ts: codegen estrito, contrato de tokens, contraste por região, orçamento de
+# performance, harness SSR e Playwright (390/1280, claro/escuro, overflow, teclado, axe).
+#
+# Uso no repositório do tema (.github/workflows/check.yml):
+#
+#   on: [push, pull_request]
+#   jobs:
+#     theme-check:
+#       uses: venore-docks/venore-docks/.github/workflows/theme-check.yml@main
+#       with:
+#         theme-key: aurora
+#       secrets:
+#         core-token: ${{ secrets.VENORE_CORE_TOKEN }}
+
+on:
+  workflow_call:
+    inputs:
+      theme-key:
+        description: Chave do tema no registro (manifest.key / venoreTheme.key).
+        required: true
+        type: string
+      core-repository:
+        description: Repositório do core Venore Docks.
+        required: false
+        type: string
+        default: venore-docks/venore-docks
+      core-ref:
+        description: Branch, tag ou commit do core contra o qual o tema é verificado.
+        required: false
+        type: string
+        default: main
+      browser:
+        description: Roda a etapa Playwright (false = só vitest).
+        required: false
+        type: boolean
+        default: true
+    secrets:
+      core-token:
+        description: Token com leitura do core e dos pacotes @venore privados (git+https).
+        required: false
+
+jobs:
+  theme-check:
+    runs-on: ubuntu-latest
+    env:
+      CI: "true"
+      # `secrets` não pode ser lido num `if:` de step — passa por env.
+      CORE_TOKEN: ${{ secrets.core-token }}
+    steps:
+      - name: Checkout do tema
+        uses: actions/checkout@v4
+        with:
+          path: theme
+
+      - name: Checkout do core
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.core-repository }}
+          ref: ${{ inputs.core-ref }}
+          token: ${{ secrets.core-token || github.token }}
+          path: core
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: core/package-lock.json
+
+      - name: Credenciais dos pacotes @venore (git+https)
+        if: ${{ env.CORE_TOKEN != '' }}
+        run: git config --global url."https://x-access-token:${CORE_TOKEN}@github.com/".insteadOf "https://github.com/"
+
+      - name: Dependências do core
+        working-directory: core
+        run: npm ci
+
+      - name: Instala o tema candidato no core
+        # --install-links copia o pacote (e instala as dependências dele) em vez de um symlink: o
+        # bundle do orçamento e o @source do Tailwind enxergam o pacote como num deploy de verdade.
+        working-directory: core
+        run: npm install --install-links ../theme
+
+      - name: Chromium do Playwright
+        if: ${{ inputs.browser }}
+        working-directory: core
+        run: npx playwright install --with-deps chromium
+
+      - name: theme-check
+        working-directory: core
+        run: npx tsx scripts/theme-check.ts --theme "${{ inputs.theme-key }}" ${{ !inputs.browser && '--no-browser' || '' }}
+
+      - name: Relatório (codegen + orçamento)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: theme-check-report-${{ inputs.theme-key }}
+          path: core/src/themes/theme-report.generated.json
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Screenshots, HTML do harness e a11y
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: theme-check-artifacts-${{ inputs.theme-key }}
+          path: |
+            core/test-results/themes-screenshots/
+            core/test-results/themes-ssr/
+            core/test-results/themes-a11y/
+            core/playwright-report/themes/
+          retention-days: 14
+          if-no-files-found: ignore

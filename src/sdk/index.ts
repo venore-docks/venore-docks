@@ -21,7 +21,10 @@ export { getCache, setCache, invalidateCache, invalidateCacheByPrefix } from "@/
 export { isPluginActive } from "@/platform/plugin-engine/is-plugin-active";
 export { importActivePluginBarrel } from "@/platform/plugin-engine/import-plugin-barrel";
 export type { PluginManifest } from "@/platform/plugin-engine/manifest-schema";
-export type { PluginContributions, PluginSeedFn } from "@/platform/plugin-engine/plugin-contributions";
+export type { PluginContributions, PluginSeedFn, PluginOutletContribution } from "@/platform/plugin-engine/plugin-contributions";
+// Outlets do tema v8 (spec §2.8) — o plugin declara em PluginContributions.outlets.
+export { THEME_OUTLET_NAMES } from "@/contexts/themes/contracts/v8/outlets";
+export type { ThemeOutletName, OutletRenderContext } from "@/contexts/themes/contracts/v8/outlets";
 export * from "@/platform/plugin-routing/types";
 // NÃO reexportar @/platform/plugin-engine/plugin-seed-registry: ele importa @/plugins/contributions
 // (pra RESOLVER seeds), e um plugin que importa deste entry fecharia ciclo em runtime via o

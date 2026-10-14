@@ -6,4 +6,11 @@
 // Este entry (raiz) é FOLHA: só o contrato de slot. UI (cn, primitivos, NavIcon, Sitemap) fica
 // em "@venore/theme-sdk/ui" pra não arrastar client components pra quem só quer os tipos.
 export * from "@/contexts/themes/contracts/types";
-export { CURRENT_THEME_CONTRACT_VERSION, SUPPORTED_THEME_CONTRACT_RANGE } from "@/contexts/themes/contracts/contract-version";
+export * from "@/contexts/themes/contracts/v8";
+export {
+  CURRENT_THEME_CONTRACT_VERSION,
+  SUPPORTED_THEME_CONTRACT_RANGE,
+  LEGACY_THEME_CONTRACT_RANGE,
+  V8_THEME_CONTRACT_RANGE,
+} from "@/contexts/themes/contracts/contract-version";
+export { defineTheme } from "./define";

@@ -97,7 +97,7 @@ export function ContactFormClient({
       </div>
       <Textarea name="message" placeholder="Sua mensagem" rows={5} maxLength={5000} required aria-label="Sua mensagem" />
       {/* Honeypot: fora da tela e fora da navegação por teclado. */}
-      <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 opacity-0" />
+      <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" className="absolute -start-[9999px] h-0 w-0 opacity-0" />
       {turnstileSiteKey && <div ref={widgetRef} />}
       {error && <p className="text-sm text-destructive">{error}</p>}
       <Button type="submit" disabled={status === "sending" || (Boolean(turnstileSiteKey) && !captchaToken)}>

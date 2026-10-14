@@ -1,0 +1,21 @@
+{
+  "plugins": [
+    "birthdays",
+    "calendar",
+    "disc",
+    "photo-gallery",
+    "vagas"
+  ],
+  "themes": [
+    "academy",
+    "aurora",
+    "druids",
+    "fearless",
+    "harbor",
+    "knights",
+    "nestpro",
+    "nite",
+    "sorcerers",
+    "volt"
+  ]
+}

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const registerPlugins = vi.fn();
 vi.mock("./register-plugins", () => ({
   registerPlugins: (...args: unknown[]) => registerPlugins(...args),
+  getPluginRegistrationReport: (...args: unknown[]) => registerPlugins(...args),
 }));
 
 describe("isPluginActive", () => {

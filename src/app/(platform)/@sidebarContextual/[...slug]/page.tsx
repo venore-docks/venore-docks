@@ -5,8 +5,9 @@ import { resolveSidebarContextualPluginRoute } from "@/platform/plugin-routing/r
 // resolveSidebarContextualPluginRoute) e renderiza o componente do plugin, ou null. Catch-all
 // obrigatório ([...slug], não [[...slug]]): a raiz "/" já é coberta por default.tsx, e um optional
 // catch-all colidiria com a page "/" do route group. Nenhum segmento de plugin fica físico aqui.
-// O layout ((platform)/layout.tsx) ainda decide, por hasSidebarContextualContent(pathname), se
-// sequer mostra a coluna. `dynamic` é export direto (AGENTS.md §1.1).
+// O layout ((platform)/layout.tsx) decide, pela barra contextual como dado
+// (platform/theme-rendering/resolve-contextual-bar.ts, mesma resolução memoizada), se sequer
+// mostra a coluna. `dynamic` é export direto (AGENTS.md §1.1).
 export const dynamic = "force-dynamic";
 
 export default async function SidebarContextualSlot({

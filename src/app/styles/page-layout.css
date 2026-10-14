@@ -1,0 +1,42 @@
+/* Layout de página (spec v8 §3 / §7.15). Dono: W5. Só var()/palavras-chave — nenhum valor de
+   design (globals.no-design-values.test.ts).
+
+   A página emite um marcador oculto `<span data-page-layout data-page-width data-page-rail
+   data-page-contextual>` (platform/page-builder/page-layout-marker.tsx). O (platform)/layout não
+   re-renderiza em navegação soft, então estas regras — e não o `page` do render-model, calculado
+   uma vez na carga — decidem largura, rail e barra contextual da página atual, sem flash.
+
+   Alvos: o contêiner da coluna de conteúdo é o pai de `main#conteudo` (ContentFrame do kit); a
+   rail é `[data-region="rail"]` (drawer do kit, estático a partir de lg); a barra contextual é
+   `[data-region="contextual"]` / `[data-contextual-mobile]`. Shells 7.x não emitem esses
+   atributos: não são afetados. */
+
+/* Largura: "contained" é o max-w do ContentFrame (nada a fazer). "wide" usa o contêiner 7xl do
+   Tailwind (sobreponível por tema com --page-width-wide); "full" tira o limite. */
+:where(body):has([data-page-width="wide"]) :where(div:has(> main#conteudo)) {
+  max-inline-size: var(--page-width-wide, var(--container-7xl));
+}
+
+:where(body):has([data-page-width="full"]) :where(div:has(> main#conteudo)) {
+  max-inline-size: none;
+}
+
+/* Rail oculta: só a partir de lg — abaixo disso o mesmo <aside> é o drawer da navegação mobile,
+   que nunca some por preferência da página. */
+@variant lg {
+  :where(body):has([data-page-rail="hidden"]) [data-region="rail"] {
+    display: none;
+  }
+
+  /* Carga inicial de uma página que não emite marcador (ex.: rota de plugin numa seção com rail
+     oculta): vale o `page.showRail` do render-model, que o ThemeRenderer grava no wrapper da rail.
+     Qualquer marcador da página atual (navegação soft) tem precedência. */
+  :where(body):not(:has([data-page-rail])) [data-page-rail-initial="hidden"] [data-region="rail"] {
+    display: none;
+  }
+}
+
+/* Barra contextual desligada pela página. */
+:where(body):has([data-page-contextual="none"]) :is([data-region="contextual"], [data-contextual-mobile]) {
+  display: none;
+}

@@ -1,4 +1,5 @@
 import { getCache, setCache } from "@/infrastructure/cache/memory-cache";
+import { normalizePathPrefix } from "@/shared/normalize-path-prefix";
 import { getActorPermissionKeys } from "../../../actor-permission-keys";
 import { filterMenuTreeByPermission, resolvePublicMenuTree } from "../../../menu-resolution";
 import type { PreResolvedMenuItem } from "../../../menu-resolution";
@@ -17,8 +18,15 @@ function menuCacheKeyFor(menuId: string): string {
   return `cms:navigation:menu:${menuId}`;
 }
 
+// B2: compara caminho e escopo na mesma forma canônica (normalizePathPrefix) — "/rh/", "rh",
+// "/RH" e "/not%C3%ADcias" vs "/notícias" casam. Menus gravados antes da normalização na escrita
+// continuam funcionando porque o escopo também é normalizado aqui, na leitura.
 function matchesScope(path: string, scopePath: string): boolean {
-  return path === scopePath || path.startsWith(scopePath.endsWith("/") ? scopePath : `${scopePath}/`);
+  const normalizedPath = normalizePathPrefix(path);
+  const normalizedScope = normalizePathPrefix(scopePath);
+  return (
+    normalizedScope === "/" || normalizedPath === normalizedScope || normalizedPath.startsWith(`${normalizedScope}/`)
+  );
 }
 
 // Decisão travada: correspondência mais longa entre os scopePath cujo prefixo bate com `path`.
@@ -29,7 +37,7 @@ export function findLongestScopeMatch(
 ): { id: string; scopePath: string } | undefined {
   return candidates
     .filter((candidate) => matchesScope(path, candidate.scopePath))
-    .sort((left, right) => right.scopePath.length - left.scopePath.length)[0];
+    .sort((left, right) => normalizePathPrefix(right.scopePath).length - normalizePathPrefix(left.scopePath).length)[0];
 }
 
 async function resolvePreFilteredTree(menuId: string): Promise<PreResolvedMenuItem[]> {

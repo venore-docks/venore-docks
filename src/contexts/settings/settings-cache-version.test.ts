@@ -33,6 +33,16 @@ describe("settings cache version", () => {
     expect(getCache("settings:nav.hideLoginLink")).toBeNull();
   });
 
+  it("shares one in-flight version check between concurrent readers", async () => {
+    let resolveVersion: (value: number) => void = () => undefined;
+    readCacheVersion.mockReturnValueOnce(new Promise<number>((resolve) => (resolveVersion = resolve)));
+    const pending = Promise.all([syncSettingsCacheVersion(), syncSettingsCacheVersion(), syncSettingsCacheVersion()]);
+    resolveVersion(3);
+    await pending;
+
+    expect(readCacheVersion).toHaveBeenCalledTimes(1);
+  });
+
   it("keeps the cache when the version is unchanged and checks the database at most every 5 s", async () => {
     readCacheVersion.mockResolvedValue(7);
     await syncSettingsCacheVersion();

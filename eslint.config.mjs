@@ -39,6 +39,8 @@ const eslintConfig = defineConfig([
         { type: "observability", pattern: "src/observability", partialMatch: false },
         { type: "platform", pattern: "src/platform/*", partialMatch: false },
         { type: "component", pattern: "src/components", partialMatch: false },
+        // Kit de tema da v8 (o venore-slime de hoje, spec §11): só contratos de tema, ui e shared.
+        { type: "theme-kit", pattern: "src/theme-sdk/kit", partialMatch: false },
       ],
       "boundaries/files": [
         // O contrato de slot (contexts/themes/contracts/**) é a ÚNICA superfície de context que
@@ -90,6 +92,26 @@ const eslintConfig = defineConfig([
               },
               message:
                 "Um tema só pode importar o contrato de slot (src/contexts/themes/contracts/**) — nunca um barrel público nem arquivo interno de context. O tema recebe todo dado por prop do Shell, resolvido em platform/theme-rendering (docs/venore-docks.md — Contrato de slot).",
+            },
+            {
+              // v8 (spec §11): tema não importa platform/ nem plugin — dado chega por prop, e o que
+              // um pacote de tema precisa do core vem de @venore/theme-sdk.
+              from: { element: { type: "theme" } },
+              disallow: { to: { element: { type: ["platform", "plugin"] } } },
+              message:
+                "Um tema não importa src/platform/** nem src/plugins/** (spec v8 §11) — o dado chega por prop resolvido em platform/theme-rendering; utilitários do core vêm de @venore/theme-sdk.",
+            },
+            {
+              // Kit de tema (src/theme-sdk/kit/**): pode importar contratos de tema
+              // (contexts/themes/contracts/**), @/components/ui/** e src/shared/** — nunca
+              // platform/, plugins nem context (barrel ou interno).
+              from: { element: { type: "theme-kit" } },
+              disallow: [
+                { to: { element: { type: ["platform", "plugin"] } } },
+                { to: { element: { type: "context" }, file: { categories: ["context-internal", "context-public"] } } },
+              ],
+              message:
+                "O kit de tema (src/theme-sdk/kit/**) só importa contratos de tema, @/components/ui/** e src/shared/** — nunca platform/, plugins ou context (spec v8 §11).",
             },
             {
               // Um plugin importa de OUTRO plugin só pelo barrel público (index.ts) ou
@@ -154,6 +176,8 @@ const eslintConfig = defineConfig([
       "src/components/**/*.{js,jsx,ts,tsx}",
       "src/plugins/**/*.{js,jsx,ts,tsx}",
       "src/platform/**/*.{js,jsx,ts,tsx}",
+      // Kit de tema da v8 (ex-componentes do venore-slime, movidos de src/themes/).
+      "src/theme-sdk/**/*.{js,jsx,ts,tsx}",
     ],
     rules: {
       "no-restricted-syntax": [

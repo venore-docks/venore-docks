@@ -1,0 +1,126 @@
+# Leitura em voz alta
+
+O autor escolhe o que tem áudio: opção **"Gerar áudio (leitura em voz alta)"** na edição da entry
+do CMS e no formulário da obra do `novels` (desligada por padrão). O áudio de cada texto escolhido
+é gerado **uma vez**, depois de publicado, e guardado como MP3 na biblioteca de mídia. Quem lê o site só baixa esse MP3 — abrir a
+página, dar play ou recarregar não gera nada de novo. Contexto: `src/contexts/speech`.
+
+## Provedores (`SPEECH_DRIVER`)
+
+| Driver | Custo | Como gera | Quando o áudio fica pronto |
+| --- | --- | --- | --- |
+| **`worker`** (recomendado) | Zero, sem conta em provedor | GitHub Actions (`.github/workflows/speech-worker.yml`) com modelos abertos — Kokoro (Apache-2.0) e Piper — escolhidos por idioma em `scripts/speech-worker/voices.json` | Minutos depois de salvar, com `SPEECH_WORKER_GITHUB_TOKEN` (o app chama o worker); sem o token, quando o agendamento do GitHub rodar — que atrasa horas em repositório com pouca atividade |
+| `google` | Cota grátis mensal, mas conta nova no Brasil exige pré-pagamento de R$ 200 | Google Cloud TTS, vozes Chirp 3 HD — ver [google-cloud-tts.md](google-cloud-tts.md) | Na hora, na Vercel |
+
+Sem `SPEECH_DRIVER` (e sem `GOOGLE_TTS_API_KEY`) a leitura fica desligada e nenhum botão de ouvir
+aparece.
+
+## Configurar o worker (grátis)
+
+1. **Cron já configurado** — o worker usa o mesmo secret `CRON_TARGETS` do `cron.yml`
+   (`{"nome": {"url": "https://...", "secret": "<CRON_SECRET>"}}`) e a env `CRON_SECRET` de cada
+   projeto na Vercel. Sem `CRON_SECRET` o modo worker fica desligado.
+   O secret precisa ser JSON válido **numa linha só**: valor colado pela metade derruba o `cron.yml`
+   e o worker com erro (antes passava em silêncio, sem chamar nenhuma instância).
+2. Na Vercel → projeto → **Environment Variables**: `SPEECH_DRIVER=worker`. Redeploy.
+3. **Recomendado — `SPEECH_WORKER_GITHUB_TOKEN`.** O `schedule` do GitHub Actions atrasa horas em
+   repositório com pouca atividade (o `cron.yml` "a cada 5 min" chegou a rodar a cada ~5 h). Com
+   um token, o app pede uma execução do worker (`workflow_dispatch`) assim que algo entra na fila,
+   e o painel ganha o botão **"Gerar agora"** e o estado da execução mais recente. Criar em GitHub →
+   Settings → Developer settings → **Fine-grained tokens**: repositório `venore-docks/venore-docks`,
+   permissão **Actions: Read and write** (nada mais). Pôr na env `SPEECH_WORKER_GITHUB_TOKEN` de
+   cada projeto (fork: `SPEECH_WORKER_GITHUB_REPO=dono/repo`, `SPEECH_WORKER_GITHUB_REF=branch`).
+   Várias chamadas seguidas viram uma execução: o GitHub guarda só uma pendente por vez.
+4. Em **Editorial → Áudios** (`/admin/speech`, exige `settings.manage`): ligar (chave geral do site), escolher a voz
+   (feminina/masculina) e o teto mensal de caracteres (no worker não há cobrança; o teto só limita
+   o volume de trabalho).
+5. Em cada entry/obra que deve ter áudio: marcar **"Gerar áudio"** e salvar.
+
+Repositório público = minutos de Actions sem custo. A cada execução o worker consulta a fila de
+cada instância (`GET /api/speech/worker/claim`) e só instala os modelos (~3–5 min) se houver
+trabalho.
+
+## Acompanhar a produção
+
+- **Editorial → Áudios** (`/admin/speech`): o que o worker está fazendo agora (preparando as
+  vozes, gerando, parado, sem sinal), a execução mais recente no GitHub com link para o log,
+  barra geral e uma linha por conteúdo com áudio (título e link do editor, faixas prontas, na fila,
+  em geração com o percentual, falhas com o último erro e **"Tentar de novo"**). A página se
+  atualiza sozinha a cada 15 s enquanto há fila.
+- **Na edição** da entry do CMS e da obra do `novels`: a mesma barra, só daquele conteúdo.
+- **No GitHub**: Actions → **Leitura em voz alta (worker)** → a execução → passo "Gerar o áudio da
+  fila", uma linha por faixa gerada.
+
+Cada faixa é um texto (a entry inteira; uma cena num idioma). O worker gera uma faixa por vez, em
+trechos de até ~400 caracteres, e informa o percentual a cada ~4 s — o que também renova a reserva
+da faixa (texto longo não volta para a fila no meio).
+
+### Vozes
+
+| Idioma | Feminina | Masculina |
+| --- | --- | --- |
+| pt-BR | Kokoro `pf_dora` | Piper `pt_BR-faber-medium` |
+| en | Kokoro `af_heart` | Kokoro `am_michael` |
+| es | Kokoro `ef_dora` | Kokoro `em_alex` |
+| fr | Kokoro `ff_siwis` | Piper `fr_FR-tom-medium` |
+| it | Kokoro `if_sara` | Kokoro `im_nicola` |
+| de | Piper `de_DE-kerstin-low` | Piper `de_DE-thorsten-medium` |
+| ja | Kokoro `jf_alpha` | Kokoro `jm_kumo` |
+
+Como o worker lê: o texto perde o que o modelo leria errado (travessão de diálogo, aspas, ênfase
+de markdown), vira parágrafos e cada parágrafo vira trechos de até ~280 caracteres que terminam em
+fim de frase (a Kokoro corta o que passa de 510 fonemas, então frase longa é dividida em vírgula).
+Cada trecho é gerado inteiro, o silêncio das bordas é aparado e as pausas são fixas — 0,22 s entre
+frases e 0,6 s entre parágrafos —, com o volume igualado na faixa. `speed` por voz em
+`voices.json` (pt-BR: 0,95). MP3 mono a 48 kbps (32/24 kbps quando passaria de 4,4 MB, ~12 min).
+
+Trocar a voz ou o worker não refaz o que já está pronto: em **Editorial → Áudios**, **"Gerar de
+novo"** na linha do conteúdo põe todas as faixas dele de volta na fila com a voz atual (o áudio
+antigo sai na hora).
+
+Para ouvir antes de escolher: **Actions → Leitura em voz alta (worker) → Run workflow** com
+"Só gerar amostras" marcado (ou qualquer push que mexa em `scripts/speech-worker/`) — o run deixa o
+artifact **amostras-de-voz** com um MP3 de cada voz. Trocar uma voz em `voices.json` vale para o
+que for publicado ou alterado depois.
+
+### API do worker (Bearer `CRON_SECRET`)
+
+| Rota | O que faz |
+| --- | --- |
+| `GET /api/speech/worker/claim` | `{ mode, enabled, pending }` |
+| `POST /api/speech/worker/claim` `{ limit }` | Reserva textos e a cota do mês deles: `{ jobs: [{ id, textHash, locale, languageCode, voice, text }], limitReached }` |
+| `PUT /api/speech/worker/clips/<id>` | Corpo `audio/mpeg`, header `X-Speech-Text-Hash`. `{ stored: false }` quando o texto mudou no meio (o MP3 é descartado) |
+| `POST /api/speech/worker/clips/<id>/failure` `{ textHash, error }` | Devolve a cota e conta a tentativa |
+| `POST /api/speech/worker/clips/<id>/progress` `{ textHash, percent }` | Andamento da faixa (renova a reserva); `{ active: false }` se o texto mudou |
+| `POST /api/speech/worker/heartbeat` `{ stage, detail? }` | Fase do worker: `preparing` (achou fila, instalando modelos), `generating`, `finished` |
+
+Reserva vencida (worker que morreu no meio, sem avisar progresso) volta para a fila depois de 10 min.
+
+## Quando o áudio é gerado (e quando é apagado)
+
+| Conteúdo | Gera | Apaga |
+| --- | --- | --- |
+| Entry do CMS com **"Gerar áudio"** marcado (`data.speech`), **publicada e aberta** | Job `speech.sync-cms-entries` (cron): toda entry assim que mudou desde a última passada (marcar a opção conta como mudança). A tela de edição mostra a situação (fila, pronto). | Opção desmarcada, entry arquivada, apagada ou que virou "só logado" (o MP3 é público). Rascunho mantém. |
+| Obra do plugin `novels` (0.6.0+) | Só por ação do autor no bloco **Áudio** da tela da obra: **Gerar áudio / Gerar o que falta** (faixas sem áudio, com falha ou com texto mudado) e **Gerar tudo de novo**. Uma faixa por cena e idioma com texto próprio; vale também para rascunho. Salvar, publicar ou editar cenas **não** mexe no áudio: texto mudado aparece como "desatualizado" e o áudio antigo continua tocando até o autor gerar de novo. | **Apagar áudio** no mesmo bloco, ou obra apagada. Despublicar mantém. |
+
+- Texto igual ao já gerado não gasta nada: o áudio é identificado por hash de texto + voz + modelo.
+  Por isso despublicar e republicar sem mudar o texto é de graça, e **trocar a voz vale para o que
+  for publicado ou alterado depois** (o resto continua com a voz antiga).
+- Falha na síntese (rede, modelo, chave errada) tenta de novo nos ciclos seguintes, até 3 vezes;
+  republicar tenta de novo uma faixa que falhou.
+- Texto acima de 15 000 caracteres (~2 500 palavras) não ganha áudio: no modo worker o MP3 volta no
+  corpo de uma requisição, e a Vercel corta acima de 4,5 MB.
+- Os MP3 ficam na categoria **"Leitura em voz alta"** da biblioteca de mídia; apagar um deles por
+  lá mostra o aviso de arquivo em uso.
+- Ouvir baixa o MP3 do storage (`preload="none"`: só ao dar play). Isso conta na transferência
+  do Vercel Blob/S3, nunca no provedor de voz.
+
+## Para plugins
+
+`@venore/plugin-sdk/speech`: `syncSpeechAudio({ scope, items })` descreve o estado desejado de um
+scope do plugin (convenção: começar pela key, ex: `novels.work:<id>`) — o core enfileira o que é
+novo ou mudou e apaga o que saiu; `getSpeechAudio({ scopes })` devolve as URLs prontas.
+`getSpeechState({ scope, items })` compara as faixas com o texto atual (em dia, desatualizada,
+faltando, na fila, gerando, com falha, sobrando) para o plugin mostrar e oferecer ações;
+`syncSpeechAudio({ ..., regenerate: true })` refaz tudo mesmo com o texto igual, e `items: []`
+apaga o áudio do scope. O `novels` chama `syncSpeechAudio` só a partir dessas ações do autor.

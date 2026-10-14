@@ -4,7 +4,19 @@ import { listBlockDefinitions } from "@/platform/page-builder/block-registry";
 import { getActivePluginKeys } from "@/platform/plugin-engine/get-active-plugin-keys";
 import { getCmsPageData } from "@/platform/admin-shell/get-cms-page-data";
 import { BlockRenderer } from "@/components/page-builder/block-renderer";
+import { readEntryPageLayout } from "@/contexts/cms/contracts/page-layout";
+import type { ResolvedThemeDefinition, ThemeText } from "@/contexts/themes/contracts/v8";
+import { withThemePresentationFields } from "@/platform/page-builder/with-theme-presentation-fields";
+import { resolveDocumentModel } from "@/platform/theme-rendering/document-model";
+import { resolveThemeDefinition } from "@/platform/theme-rendering/resolve-theme-definition";
 import { CompositionBuilder } from "./_components/composition-builder";
+import { PageLayoutPanel } from "./_components/page-layout-panel";
+
+// ThemeText do manifesto → texto (catálogo do tema em pt-BR; sem tradução, a própria chave).
+function themeTextResolver(theme: ResolvedThemeDefinition) {
+  const catalog = theme.messages["pt-BR"] ?? {};
+  return (text: ThemeText) => (typeof text === "string" ? text : (catalog[text.messageKey] ?? text.messageKey));
+}
 
 export default async function EntryBuilderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -48,14 +60,32 @@ export default async function EntryBuilderPage({ params }: { params: Promise<{ i
 
   const composition = compositionResult.data ?? [];
 
+  // Tema PÚBLICO ativo (no admin o documento usa o kit, mas preserva a key): as variantes de bloco,
+  // os estilos de seção e as variantes de template oferecidas são as dele.
+  const document = await resolveDocumentModel();
+  const theme = resolveThemeDefinition(document.theme.key).theme;
+  const resolveText = themeTextResolver(theme);
+  const definitions = withThemePresentationFields(listBlockDefinitions(activePluginKeys), theme.pageBuilder, resolveText);
+  const templateOptions = (theme.templateVariants.entry ?? [])
+    .filter((variant) => variant.value !== "default")
+    .map((variant) => ({ value: variant.value, label: resolveText(variant.label) }));
+
   return (
     <CompositionBuilder
       entryId={entry.id}
       entryTitle={entry.title}
       entrySlug={entry.slug}
       initialComposition={composition}
-      definitions={listBlockDefinitions(activePluginKeys)}
-      preview={<BlockRenderer blocks={composition} mode="edit" />}
+      definitions={definitions}
+      preview={<BlockRenderer blocks={composition} mode="edit" themeKey={theme.key} />}
+      layoutPanel={
+        <PageLayoutPanel
+          entryId={entry.id}
+          initialLayout={readEntryPageLayout(entry.data)}
+          templateOptions={templateOptions}
+          themeLabel={theme.manifest.name}
+        />
+      }
     />
   );
 }

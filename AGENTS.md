@@ -45,79 +45,17 @@ valida input → `authorizeActor("rbac.roles.assign")` → chama o `service` (ú
   `store.ts` — é como o adapter funciona, não deve ser "corrigido".
 - `useTheme()` do `next-themes` é a única exceção a "o tema nunca busca dado sozinho": o
   color-mode toggle (`src/components/color-mode-toggle.tsx`) lê/altera tema direto no client.
+  Os hooks/stores do kit de tema v8 (`src/theme-sdk/kit/hooks`, `kit/stores`: colapso da rail,
+  overlay/drawer, scroll lock, estado de scroll do header) são estado de UI no client, não busca
+  de dado — o dado continua chegando por prop, resolvido em `platform/theme-rendering`.
 
 ### 1.1 Rotas de plugin: `app/` não conhece nomes de plugin, tudo mora em `src/plugins/<nome>/routes/`
 
-Nenhuma página, `action.ts`, componente local de rota ou route handler de um plugin mora em
-`src/app/`, **e nenhuma pasta de `app/` é nomeada por plugin** (nada de `admin/broadcast/`,
-`api/birthdays/`, `academy/` — nem como shim). A fronteira de um plugin é só o plugin; `app/` só
-sabe que "existe um mecanismo genérico de despacho", nunca "existe o plugin X".
-
-Isso é resolvido por **duas peças por plugin** dentro de `src/plugins/<nome>/routes/`:
-
-1. Os componentes/handlers de verdade (`admin/page.tsx`, `admin-course/page.tsx`,
-   `api/course-export/route.ts` etc.) — mesma ideia de sempre, só que agora nunca têm um shim
-   correspondente em `app/`.
-2. `route-table.ts`, exportando `PluginRouteTable` (`src/platform/plugin-routing/types.ts`): um
-   array `{ pattern, Component }`/`{ pattern, handlers }` por área (`admin`, `public`, `api`).
-   `pattern` usa `:nome` pra segmento capturado (`"courses/:id/enrolled/:studentActorId"`) — o
-   nome do `:param` precisa bater com a prop que o componente espera. `admin`/`api` são
-   relativos (sem o nome do plugin, ex: `"messages"`); `public` é **caminho completo** (ex:
-   `"academy/:courseSlug"`, `"cursos"`) porque um plugin pode ter mais de um "namespace" de URL
-   pública (academy é dono de `academy/**` e também de `cursos`, uma vitrine separada). Os dois
-   helpers `asPluginPage`/`asPluginApiHandler` só existem pra contornar variância de parâmetro do
-   TypeScript (o componente real tem um `params` mais específico que `PluginRouteParams`); quem
-   escreve a `route-table.ts` é responsável por garantir que o `:param` do pattern bate com o que
-   o componente espera — não tem checagem automática disso.
-
-`src/plugins/route-registry.ts` agrega a `route-table` de cada plugin instalado (mesmo padrão de
-import estático de `src/plugins/registry.ts` pros manifestos). Cinco pontos em `app/` — só esses,
-pra sempre, independente de quantos plugins existirem ou quantas rotas cada um ganhar depois —
-consultam esse registro (os três abaixo, mais `ext/` e `@sidebarContextual/` nas "exceções
-físicas"):
-
-- `src/app/(platform)/admin/[plugin]/page.tsx` e `src/app/(platform)/admin/[plugin]/[...slug]/page.tsx`
-  — toda rota admin de plugin.
-- `src/app/api/[plugin]/[[...slug]]/route.ts` — toda rota de API de plugin.
-- `src/app/(platform)/[...slug]/page.tsx` (o catch-all do CMS) — antes de tentar resolver
-  categoria/entry, chama `resolvePublicPluginRoute(segments)`; um caminho que casa com um plugin
-  ativo renderiza o plugin, um que casa com um plugin **desativado** vira `notFound()` direto
-  (nunca cai pra procurar conteúdo do CMS no mesmo slug — o caminho fica "reservado" pro plugin
-  mesmo desligado), e um caminho que não casa com nenhum plugin segue o fluxo normal do CMS. Isso
-  é deliberado: o catch-all do CMS é o único dispatcher de rota pública do sistema, plugin incluso
-  — não existe mais uma pasta reservando o slug antes dele.
-
-Adicionar uma rota nova a um plugin existente (admin, pública ou API) é só uma entrada nova em
-`route-table.ts` — nunca toca `app/`.
-
-`<head>` de rota pública de plugin (title, description, Open Graph — ex: imagem de preview de link
-no WhatsApp) também mora na `route-table.ts`: a entrada `public` aceita um `generateMetadata`
-opcional, mesma assinatura do `generateMetadata` de um `page.tsx` (envolto em `asPluginMetadata`,
-mesmo motivo de `asPluginPage`). Quem chama é o `generateMetadata` do catch-all do CMS; sem ele, a
-página herda o metadata do layout raiz como qualquer outra. Imagem de Open Graph precisa de URL
-absoluta — o layout raiz não declara `metadataBase`, então o plugin monta a origem a partir do
-request.
-
-**Exceções físicas, não de conteúdo** (continuam existindo por exigência do Next.js, não por
-preguiça de generalizar):
-- Route segment config (`export const dynamic`, `revalidate`, `runtime`) só é lido de export
-  direto no arquivo de rota dentro de `app/`, nunca via import — por isso os pontos de
-  despacho acima declaram `export const dynamic = "force-dynamic"` (ou equivalente) neles mesmos,
-  cobrindo toda rota que passa por ali, em vez de cada plugin precisar declarar o seu.
-- Parallel route (`@slotName`, ex: `@sidebarContextual`) exige um arquivo físico no slot — resolvido
-  com um dispatcher único, `src/app/(platform)/@sidebarContextual/[...slug]/page.tsx`, que casa a
-  URL contra a área `sidebarContextual` das route-tables (`resolveSidebarContextualPluginRoute`).
-  Nenhum segmento de plugin fica físico no slot.
-- Uma página que precisa escapar por completo da shell do `(platform)` (sem header/nav/footer —
-  saída de TV, quiosque, telão) não pode entrar no catch-all do CMS, porque herdar
-  `(platform)/layout.tsx` é automático sob esse route group. Toda rota assim mora sob o prefixo
-  genérico único `src/app/ext/[...slug]/page.tsx` (`/ext/<caminho>`), casada contra a área
-  `standalone` da route-table (`resolveStandalonePluginRoute`) — ex: o `broadcast` declara
-  `broadcast/out/:token` e é servido em `/ext/broadcast/out/<token>`.
-
-**Um plugin pode ser dono de uma URL que não começa pelo seu próprio nome** (ex: `academy` é dono
-de `/cursos`, não só de `/academy/**`) — a `route-table.ts` "public" registra o caminho completo,
-não um prefixo implícito.
+Plugin nunca tem página, `action.ts` ou route handler em `src/app/`, nem pasta de `app/` com nome de plugin.
+Toda rota de plugin é uma entrada em `src/plugins/<nome>/routes/route-table.ts` (áreas `admin`, `public`, `api`,
+`sidebarContextual`, `standalone`), despachada por cinco pontos genéricos de `app/`. Detalhe completo, exceções
+físicas do Next.js e metadata de rota pública: `.claude/rules/plugin-routes.md` (carregado automaticamente ao
+mexer em `src/plugins/**`, `src/platform/plugin-*/**`, `src/app/api/**`, `src/app/ext/**` ou em `page.tsx`).
 
 ## 2. Padrões proibidos
 
@@ -209,73 +147,11 @@ logBuffer.push({ message, level });
 
 ## 3. Convenções de CSS / tokens
 
-- **Nenhuma decisão de design (cor, raio, sombra, espaçamento, tipografia, peso, duração, curva
-  de easing, proporção de escala) pode ser declarada em `src/app/globals.css`.** Esse arquivo só
-  CONSOME variáveis via `var(...)`; quem define valor é sempre um tema, em
-  `src/themes/<tema>/theme.css`, sob os seletores `[data-theme="<tema>"]` /
-  `[data-theme="<tema>"].dark`. O `THEME_REGISTRY` (`src/themes/registry.ts`) hoje tem só o
-  `venore-slime` hardcoded (fallback obrigatório, `src/themes/venore-slime/`); todo tema extra é
-  um pacote `@venore/theme-*` descoberto a partir das deps do `package.json`
-  (`scripts/gen-theme-registry.ts` → `registry.generated.ts` + `theme-imports.generated.css`,
-  ambos gitignored). Cada tema redeclara o mesmo vocabulário sob o seu próprio
-  `[data-theme="..."]`, nunca por cima de outro. `venore-slime` (`src/themes/venore-slime/theme.css`)
-  é a referência: o único com o vocabulário completo garantido e o fallback imutável (ver abaixo).
-  Ver `docs/themes/temas-como-pacotes-plano.md`. Isso vale inclusive para o vocabulário
-  shadcn (`--background`, `--primary`, etc.) e para os multiplicadores de escala usados em
-  `calc()` (ex: `--ui-radius-scale-lg: 2`, `--ui-button-padding-scale-xs: 0.5`) — o número da
-  proporção é decisão de design tanto quanto a cor.
-- Prova executável: `src/app/globals.no-design-values.test.ts` falha se um literal de design
-  (hex, `oklch()`/`rgb()`/`color-mix()`, `cubic-bezier()`, gradiente, `px`/`rem`/`em`, duração)
-  reaparecer em `globals.css`.
-- **`venore-slime` é o tema oficial e fallback do sistema — nunca deve ser removido/deletado**
-  de `src/themes/registry.ts` nem apagado do disco, independente de quantos outros temas estejam
-  instalados. Os demais temas do registry redeclaram o mesmo vocabulário (`--background`,
-  `--primary` etc.) sob seu próprio `[data-theme="..."]`, nunca por cima do `venore-slime`.
-- Vocabulário de cor único do projeto é o do **shadcn** (`bg-card`, `bg-muted`, `text-foreground`,
-  `text-muted-foreground`, `text-muted-foreground/56`, `border-border`, `border-ring`,
-  `bg-accent/14`, `text-destructive`, `text-warning`, `bg-primary`/`text-primary-foreground`).
-  Cores são declaradas em `oklch(...)` no `theme.css` de cada tema (ex:
-  `src/themes/venore-slime/theme.css`), nunca hex/rgb novo, e nunca em `globals.css`.
-- O vocabulário próprio anterior (`surface-*`, `text-text-*`, `border-subtle/default/strong`,
-  `accent-soft`, `info-*`) foi eliminado de `src/` e não deve reaparecer — ver a tabela de
-  mapeamento completa logo abaixo se precisar reconstituir um valor antigo.
-- `--warning-*` (`text-warning`/`bg-warning-soft`/`border-warning-border`) é o único token
-  semântico próprio que sobrevive à migração — sem equivalente shadcn, usado no admin do core
-  (ex: `src/app/(platform)/admin/cms/**`, `admin/media/**`) e nos blocos do page-builder.
-- **Nada de valor hardcoded** de cor/espaçamento/raio em componente de página, tema ou plugin —
-  regra do documento de arquitetura. Só a parte de **cor** tem enforcement mecânico hoje
-  (`no-restricted-syntax` em `eslint.config.mjs`, cobrindo `src/app`, `src/themes`,
-  `src/components`, `src/plugins`, `src/platform`) mais o teste de `globals.css` acima. Raio
-  (`rounded-*`) e espaçamento (`p-*`, `gap-*`) **não têm lint bloqueando valor cru** hoje — tratar
-  como regra manual até existir enforcement (ver Known Gaps).
-- Radius: escala derivada de uma única variável (`--radius: 0.2rem`, declarada no tema) via
-  `calc()` em `@theme inline` de `globals.css` (`--radius-sm` a `--radius-4xl`), multiplicada
-  pelas proporções `--ui-radius-scale-*` (também declaradas no tema) — não valores soltos por
-  componente.
-- **`src/components/ui/**` (primitivos shadcn stock) não é editado diretamente.** Customização
-  visual sobre um primitivo vive fora dele (ex: seletor `[data-slot="button"]` em `globals.css`),
-  para sobreviver a uma reinstalação via `shadcn` CLI. Exceção: `border-input` continua correto
-  *dentro* dos primitivos de formulário — é convenção de scaffold do shadcn, não uma tradução
-  pendente de `border-strong`.
-
-### Tabela de migração (referência para valores antigos)
-
-| token próprio | shadcn | observação |
-|---|---|---|
-| `surface-base` / `surface-canvas` | `background` | |
-| `surface-panel` | `card` | |
-| `surface-elevated` / `surface-subtle` | `muted` | |
-| `surface-overlay` | `popover` (+ `/80` quando é scrim: `Dialog`, `MobileNavDrawer`) | |
-| `text-primary` | `foreground` | |
-| `text-secondary` / `text-muted` | `muted-foreground` | |
-| `text-tertiary` | `muted-foreground` + `/56` fixo | replica `color-mix` antigo, pixel-idêntico |
-| `text-accent` | `primary` | troca de papel, não de opacidade |
-| `border-subtle` | `border` | |
-| `border-default` / `border-strong` | `ring` (não `input`) | `--border-strong` == `--ring` numericamente |
-| `accent-soft` | `accent` + `/14` fixo | nunca `bg-accent` sólido no lugar |
-| `info-*` | `border-border bg-secondary text-secondary-foreground` | sem papel "info" no shadcn |
-| `rounded-control` | `rounded-xl` | |
-| `header-*`, `app-bg-*`/`app-background` | não migram — identidade do Venore Slime | `src/themes/venore-slime/theme.css` |
+Resumo: nenhum valor de design em `src/app/globals.css` (só `var(...)`); valores moram no `theme.css` de cada
+tema; vocabulário de cor único = shadcn (`bg-card`, `text-muted-foreground`, `border-border`…), cores em `oklch`;
+`venore-slime` é o fallback e nunca é removido; `src/components/ui/**` não é editado. Contrato de tema 8.0.0,
+gate `npm run theme:check`, tabela de migração dos tokens antigos e o resto: `.claude/rules/css-tokens.md`
+(carregado automaticamente ao mexer em `*.tsx`, `*.css`, temas, kit ou `platform/theme-*`).
 
 ## 4. Mobile First
 
@@ -306,11 +182,12 @@ logBuffer.push({ message, level });
 | `npm run db:migrate:plugins` | Migrations pendentes de cada plugin **já instalado** (`scripts/migrate-installed-plugins.ts`). Roda no `prebuild` depois das do core (mesmas exceções de preview) — bump de tag de plugin com migration nova se aplica sozinho no deploy da Vercel, sem `db:update`. Falha de migration derruba o build (o deploy anterior continua no ar). A **primeira** migration de um plugin continua rodando no install (`/admin/plugins` → `platform/plugin-engine/run-plugin-migrations.ts`); plugin nunca instalado é pulado |
 | `npm run db:update` | **Rodar depois de todo `git merge upstream/main`.** Consolida migrations do core + `ensureBaseRbacDataSeeded` (papéis/permissions base do "admin", cobre qualquer chave nova em `contracts/base-role-permissions.ts` sem precisar de script próprio) + `registerPlugins` + migrations de cada plugin com schema já resolvido no registro. Idempotente — seguro rodar mesmo sem nada novo pra aplicar (`scripts/update-instance.ts`). Substituiu os antigos `db:seed:<permission>` pontuais (removidos) — uma permission nova só precisa entrar em `contracts/base-role-permissions.ts`, nunca de um script novo. |
 | `npm run db:bootstrap-superadmin` | Promove usuário existente a `superadmin` (alternativa ao `/setup` com `SETUP_TOKEN`) |
-| `npm run test:plugins` | Testes dos plugins instalados no branch (`vitest.plugins.config.ts`, procura em `../venore-plugin-<nome>`) |
+| `npm run test:plugins` | Testes dos plugins da instância (`VENORE_INSTANCE`; vazio = todos) (`vitest.plugins.config.ts`, procura em `../venore-plugin-<nome>`) |
 | `npm run test:e2e` | Playwright (`e2e/`) — setup + login num banco vazio; exige build, `DATABASE_URL`, `AUTH_SECRET`, `SETUP_TOKEN` |
 
-O CI (`.github/workflows/ci.yml`) roda em todo branch (inclusive os de instância) e em PR. O job
-`check` roda `lint` → `typecheck` → `test`, sem banco; `plugins` roda `test:plugins` com os pacotes
+O CI (`.github/workflows/ci.yml`) roda em todo branch e em PR, no "venore vanilla" (seção 8). O job
+`check` roda `lint` → `typecheck` → `test`, sem banco; `instances` roda codegen estrito + typecheck de
+cada `instances/*.json`; `plugins` roda `test:plugins` com os pacotes
 de `node_modules/@venore/plugin-*`; `integration` sobe um Postgres e roda `test:integration`;
 `smoke` e `e2e` fazem o build e sobem o app. Nenhum substitui o `check`.
 
@@ -325,8 +202,8 @@ de verdade (login, cadastro, setup) entra na lista `PUBLIC_ACTIONS` do teste, co
   com mensagem clara em vez de rodar contra o banco de desenvolvimento.
 - `vitest.integration.config.ts` aplica, via `globalSetup` (`src/test-support/integration/global-
   setup.ts`), o core (`drizzle/`) e depois a árvore `migrations/` de **cada plugin do
-  `PLUGIN_REGISTRY` que declara `migrationsPath` no manifesto** (em `main` o registro é vazio —
-  os plugins entram pelos branches de instância, seção 8) — a lista é derivada do registro, não
+  `PLUGIN_REGISTRY` que declara `migrationsPath` no manifesto** (no CI, o registro "vanilla" com
+  todos os plugins do `package.json`, seção 8) — a lista é derivada do registro, não
   hardcode. Troca `DATABASE_URL` para `TEST_DATABASE_URL` só dentro do processo de teste
   (`setup-env.ts`) —
   `infrastructure/database/client.ts` não muda.
@@ -372,93 +249,43 @@ de verdade (login, cadastro, setup) entra na lista `PUBLIC_ACTIONS` do teste, co
 
 ## 7. Known Gaps
 
-`docs/issues.md` reúne pedidos/lacunas registrados durante sessões específicas (ex: plugin
-`birthdays`), com o contexto de por que ficaram de fora e do que dependem para retomar. Esta seção
-continua sendo a lista geral, derivada da leitura do código:
+Lista em `docs/known-gaps.md` (ler quando a tarefa tocar uma área listada lá); pedidos por sessão em
+`docs/issues.md`. Divergência entre doc e código vira entrada nova lá, não correção silenciosa.
 
-- **Radius/espaçamento sem enforcement mecânico.** O contrato de tokens proíbe `rounded-lg`/`p-3`
-  hardcoded, mas `eslint.config.mjs` só tem `no-restricted-syntax` para cor. Nada bloqueia
-  raio/espaçamento cru hoje.
-- ~~TODOs de `assign-default-role/service.ts`, `resolve-theme-slot-props.ts` e `UserMenu.tsx`~~ —
-  resolvidos (2026-09-30): papel padrão de cadastro virou a setting
-  `auth.registration_default_role` (`/admin/settings`, lida em `platform/registration`, com a env
-  `RBAC_DEFAULT_REGISTRATION_ROLE_KEY` como fallback e `superadmin` sempre recusado); header-nav vem
-  do menu de location `header` do CMS; o link `/account` do `UserMenu` já existe.
-- ~~**Permission com escopo dentro de um recurso** (RBAC granular por seção/instância do CMS)~~ —
-  **implementado (fases A–D, `docs/rbac-scoped-roles.md`, 2026-08-28):** `rbac.role_assignment_scopes`
-  (vínculo usuário × papel), `authorizeActor(perm, scope?)` + `resolveScope`, recorte por
-  `cms.category` nos `service.ts` de escrita do CMS (helper `contexts/cms/shared/scoped-authorization`).
-  "Admin de seção" ficou como papel custom, sem `scopeType` próprio (Fase D / D7).
-- ~~**Rate limiting e controle de acesso a arquivos de mídia**~~ — implementados: rate limit em
-  Postgres (`src/infrastructure/rate-limit`, login/cadastro/setup/upload/feed) e mídia não pública
-  servida só por `/api/media/asset/[id]` com autorização por asset ou URL assinada.
-- **Auditoria parcial.** Auditoria de
-  ações sensíveis existe desde a sessão do log de eventos legível (`src/observability/audit-log.ts`
-  + tabela `audit.security_audit_events`), mas só é chamada explicitamente pelas ações já
-  migradas (ver `src/observability/features/clear-events/service.ts` e os `service.ts` apontados
-  no comentário de `src/observability/origin-registry.ts`); a maioria das ~130 outras chamadas de
-  `beginOperation`/`endOperation` no projeto ainda só gera log operacional, não auditoria — expandir
-  a lista de ações que chamam `recordAuditEvent` é trabalho incremental, não builtin automático.
-- **Pendências da avaliação de 27/09/2026** (detalhe em `docs/melhorias-e-recursos.md`, seção
-  "Situação da implementação"): cache de página pública (layout depende da sessão), lint de
-  fronteira nos repositórios dos plugins, imagens otimizadas, i18n, webhooks/tokens de API,
-  consentimento de cookies e retenção de uploads anônimos.
-- **`db` exposto no SDK de plugin — possibilidade futura, não urgente** (decisão de 2026-09-30).
-  Plugin guarda id de usuário como coluna simples (sem FK entre schemas) e lê dados de outro
-  domínio só pelo SDK/barrel de outro plugin; o `db` compartilhado permite, por erro, ler/escrever
-  fora do próprio schema. Isolar de verdade (um role Postgres por plugin, com GRANT só no schema
-  dele) custa um pool de conexão por plugin e provisionamento no Neon — só compensa se plugins de
-  terceiros passarem a ser aceitos. Até lá, a proteção é o lint de fronteira + revisão.
-- **Docs com trechos anteriores à saída dos plugins do core (2026-09-02) e à 0.6.0** (levantado
-  em 2026-09-30, conferido contra o código):
-  - `docs/implementation-roadmap.md` e `docs/issues.md` descrevem plugins (academy, birthdays,
-    broadcast…) como se morassem em `src/plugins/`; em `main` não há plugin nenhum — o código
-    deles está nos repositórios `venore-plugin-*`. Fase 7 (Academy) e IE2 do roadmap pertencem
-    a esses repositórios, não ao core.
-  - Roadmap: agendamento/flush descritos com `setInterval` em processo — hoje é
-    `/api/cron/tick` + `platform/scheduled-jobs` (o `setInterval` só sobra em self-host, via
-    `IN_PROCESS_JOBS`). P3 ("quem tem `cms.entries.manage` continua publicando") foi revogado
-    pela D6 de `docs/rbac-scoped-roles.md`.
-  - ~~Cron sem configuração no repositório~~ — `.github/workflows/cron.yml` (2026-09-30) chama
-    `/api/cron/tick` de cada instância a cada 5 min (secret `CRON_TARGETS`); cada projeto na
-    Vercel precisa da env `CRON_SECRET`. Sem isso, nada agendado roda em serverless.
-  - `docs/themes/temas-como-pacotes-plano.md` (status "não iniciado", 7 temas) descreve estado
-    anterior ao atual — os temas extras já são pacotes `@venore/theme-*` (seção 3).
-  - `docs/melhorias-e-recursos.md` pede scrypt N=2^17; o implementado é N=2^15
-    (`password-hashing.ts`, CHANGELOG 0.6.0).
-- **Estratégia de teste por camada não documentada** além do que a seção 5/6 deste arquivo já
-  descreve — o documento de arquitetura lista isso como não coberto.
-- **Plugin `birthdays` — escopo de `settings.manage`, impressão/identidade visual e importação
-  CSV** ficaram fora da sessão que criou o plugin (ativação/desativação já foi resolvida pelo G1;
-  o block `birthdays-month-list` já foi implementado e revisado — ver `docs/issues.md` G6). O
-  plugin mora hoje em repositório próprio; detalhado com contexto e dependências em
-  `docs/issues.md`.
+## 8. Instâncias: um branch só (`main`) + `instances/<nome>.json`
 
-## 8. Branches: `main` (core) vs branches de instância
+Um branch só (`main`); cada projeto da Vercel escolhe o subconjunto de plugins/temas pela env `VENORE_INSTANCE`
+(`instances/<nome>.json`); vazio = "venore vanilla", com tudo (é o que roda no CI). Nada de
+`if (VENORE_INSTANCE === "x")` em `src/`. Fluxos (nova instância, bump, ligar/desligar pacote):
+`.claude/rules/instancias.md` (carregado ao mexer em `instances/**`, `package.json`, `scripts/**`, workflows).
 
-`main` é o branch canônico do **core** do Venore Docks — toda atualização de core (contexts,
-platform, themes/registry padrão, `AGENTS.md`/docs) entra por `main` primeiro, nunca direto num
-branch de instância. Uma feature ou fix só nasce fora de `main` quando é genuinamente específico
-de uma instância (ver abaixo); qualquer coisa que faria sentido em qualquer deploy do Venore Docks
-é core e vai pra `main`.
+## 9. Economia de tokens nas sessões
 
-Um branch de instância (`broadcast-fem`, `aprenda-musica`, `erasto-league`, `nestpro`, etc.)
-diverge de `main` **só** no conjunto de pacotes `@venore/plugin-*`/`@venore/theme-*` que declara em
-`package.json` (`git+https://...#vX.Y.Z`) — nunca em código de `src/`. `broadcast-fem`, por
-exemplo, existe só porque instala `@venore/plugin-broadcast`, `@venore/plugin-scoreboard` e
-`@venore/theme-fearless`; todo o resto do branch é `main`. Um commit de instância legítimo é
-sempre um bump de versão desses pacotes (`chore(<plugin>): bump @venore/plugin-<nome> para
-vX.Y.Z`) — nunca um `.ts`/`.tsx` de `src/` fora de `package.json`/`package-lock.json`.
+Cada chamada ao modelo relê o contexto inteiro da sessão: numa sessão com 500 mil tokens, cada passo custa
+dez vezes o de uma com 50 mil. Nas sessões medidas em out/2026, reler contexto foi ~87–93% do consumo.
 
-**Direção do merge é sempre `main` → instância, nunca instância → `main`.** Um fix ou feature de
-core encontrado enquanto o checkout está num branch de instância não é commitado ali: troca pra
-`main`, commita/push lá, e só depois faz `git merge main` de volta no branch de instância pra
-propagar. Nunca faz o caminho inverso (commit na instância + merge/cherry-pick pra `main`) — isso
-inverteria a direção de propagação e faria `main` depender do histórico de uma instância
-específica. Se um fix de core acabar commitado por engano direto num branch de instância (antes de
-notar o erro), a correção é: cherry-pick o commit pra `main`, dar `git revert` dele na instância, e
-então `git merge main` na instância — igual ao fluxo normal, só com um passo a mais pra desfazer o
-commit fora de lugar.
+- **Uma sessão por tarefa.** Entregou, encerra. Assunto novo = sessão nova (na nuvem não existe `/clear`). O
+  que precisa sobreviver vai para a passagem de sessão (skill `passagem-de-sessao`), nunca para "a mesma
+  sessão continua amanhã".
+- **Effort pela tarefa:** medium para bump, doc, ajuste de teste e fix pequeno; high para feature; xhigh só para
+  arquitetura nova ou bug que resistiu a uma tentativa.
+- **Bump de plugin/tema não precisa de sessão longa.** Use a skill `bump-plugin` numa sessão curta (medium); para
+  iterar num plugin, aponte o core para o clone local (`npm pkg set "dependencies.@venore/plugin-X=file:../venore-plugin-X"`,
+  sem commitar) e só faça bump no marco.
+- **Anexe só os repositórios que vão mudar.** Para consultar outro, use o subagente `explorador` ou leia o arquivo
+  pontual pelo GitHub.
+- **Busca ampla e log grande vão para subagente** (`.claude/agents/explorador.md`, `leitor-de-ci.md`): só a
+  conclusão volta para o contexto principal.
+- **Higiene de saída** — nunca despejar o que não vai ser lido:
+  - ferramentas do GitHub com `fields`/`minimal_output`/`perPage` pequeno; log de job com `tail_lines` ≤ 150;
+  - `git log --oneline -n 20`, `git diff --stat` antes do diff completo;
+  - `npx vitest run <arquivo> --reporter=dot`, `npm ci --no-audit --no-fund --loglevel=error`;
+  - ler arquivo grande por faixa (`offset`/`limit`) ou com `grep -n`, não inteiro;
+  - não reler arquivo que você acabou de editar.
+- **Não ler `docs/` inteiro por precaução.** Os docs citados aqui são para quando a tarefa toca a área; as regras
+  de `.claude/rules/` já carregam sozinhas quando um arquivo casado é lido ou editado.
+- `AGENTS.md` tem orçamento de tamanho (`src/test-support/claude-config.test.ts`): conteúdo detalhado novo vai
+  para uma regra com `paths:` em `.claude/rules/`, não para cá.
 
 ## Preferências de UI: nav-mode (cookie) vs color-mode (localStorage) — assimetria intencional
 `nav-mode` (`src/platform/nav-mode`) continua em cookie porque o servidor precisa saber qual

@@ -12,7 +12,10 @@ export const getSession = cache(async () => {
   return auth();
 });
 
-export async function findAvatarMediaId(userId: string): Promise<string | null> {
+// cache() pelo mesmo motivo de getSession: getCurrentUser() é chamado por vários pontos do mesmo
+// render (gate de admin, props de slot, outlets, authorizeActor, páginas) e cada chamada fazia
+// um SELECT próprio. Fora de um render React (Server Action, route handler) não memoiza.
+export const findAvatarMediaId = cache(async (userId: string): Promise<string | null> => {
   const [row] = await db.select({ avatarMediaId: users.avatarMediaId }).from(users).where(eq(users.id, userId)).limit(1);
   return row?.avatarMediaId ?? null;
-}
+});

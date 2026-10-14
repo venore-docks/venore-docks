@@ -1,13 +1,13 @@
-import Link from "next/link";
+import { renderState } from "@/platform/theme-rendering/render-state";
+import { resolveTemplateContext } from "@/platform/theme-rendering/render-template";
 
-export default function UnauthorizedPage() {
-  return (
-    <div className="mx-auto max-w-md space-y-4 rounded-panel border border-border bg-card p-8 text-center shadow-panel">
-      <h1 className="text-lg font-semibold text-foreground">Acesso não autorizado</h1>
-      <p className="text-sm text-muted-foreground">Você não tem permissão para acessar esta página.</p>
-      <Link href="/login" className="text-sm text-primary underline">
-        Ir para o login
-      </Link>
-    </div>
-  );
+// Estado "forbidden" do tema (spec v8 §7.9) — o kit desenha a mesma moldura de antes da v8.
+export default async function UnauthorizedPage() {
+  const context = await resolveTemplateContext();
+  return renderState(context.theme, "forbidden", {
+    ...context.common,
+    title: "Acesso não autorizado",
+    message: "Você não tem permissão para acessar esta página.",
+    action: { href: "/login", label: "Ir para o login" },
+  });
 }

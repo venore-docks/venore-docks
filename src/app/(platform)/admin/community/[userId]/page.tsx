@@ -18,6 +18,7 @@ import { RevokeSessionsButton } from "../_components/revoke-sessions-button";
 import { ResetMfaButton } from "../_components/reset-mfa-button";
 import { USER_STATUS_BADGE_CLASS, USER_STATUS_LABEL } from "../_components/users-table";
 import { ResetPasswordDialog } from "./_components/reset-password-dialog";
+import { DEFAULT_DATE_LOCALE, formatDate } from "@/shared/format-date";
 
 export default async function CommunityUserProfilePage({ params }: { params: Promise<{ userId: string }> }) {
   const gate = await getCommunityPageData();
@@ -77,11 +78,11 @@ export default async function CommunityUserProfilePage({ params }: { params: Pro
           </div>
           <div>
             <p className="text-xs font-medium text-muted-foreground">Criado em</p>
-            <p className="text-sm text-foreground">{user.createdAt.toLocaleString("pt-BR")}</p>
+            <p className="text-sm text-foreground">{formatDate(user.createdAt, DEFAULT_DATE_LOCALE, "dateTimeSeconds")}</p>
           </div>
           <div>
             <p className="text-xs font-medium text-muted-foreground">Último login</p>
-            <p className="text-sm text-foreground">{user.lastLoginAt ? user.lastLoginAt.toLocaleString("pt-BR") : "Nunca"}</p>
+            <p className="text-sm text-foreground">{formatDate(user.lastLoginAt, DEFAULT_DATE_LOCALE, "dateTimeSeconds") ?? "Nunca"}</p>
           </div>
           <div>
             <p className="text-xs font-medium text-muted-foreground">Papéis</p>
@@ -134,7 +135,7 @@ export default async function CommunityUserProfilePage({ params }: { params: Pro
               {activity.data.entries.map((entry) => (
                 <li key={entry.id} className="py-3">
                   <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground/56">
-                    <span className="whitespace-nowrap">{entry.occurredAt.toLocaleString("pt-BR")}</span>
+                    <span className="whitespace-nowrap">{formatDate(entry.occurredAt, DEFAULT_DATE_LOCALE, "dateTimeSeconds")}</span>
                     <Badge variant={entry.outcome === "success" ? "secondary" : "destructive"}>
                       {entry.outcome === "success" ? "sucesso" : "falha"}
                     </Badge>

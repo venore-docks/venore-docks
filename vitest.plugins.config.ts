@@ -1,7 +1,8 @@
-import { readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { loadEnv } from "vite";
 import { configDefaults, defineConfig } from "vitest/config";
+import { resolveInstancePackages } from "./scripts/lib/instance-packages";
 
 // `npm test` (vitest.config.ts) só inclui "src/**" — os testes de um plugin instalado como git
 // dependency (git+https://.../venore-plugin-X.git) vivem em node_modules/@venore/plugin-X/**, fora
@@ -9,20 +10,21 @@ import { configDefaults, defineConfig } from "vitest/config";
 // real observado: "testes passando" em rounds inteiros de trabalho num plugin nunca rodou a lógica
 // do próprio plugin, só o test suite do host. `npm run test:plugins` fecha esse buraco.
 //
-// O include é montado a partir das dependencies "@venore/plugin-*" do package.json DESTE checkout
-// (não um glob fixo tipo "../venore-plugin-*") — de propósito: um plugin cujo repo-irmão existe em
-// disco mas NÃO é dependency da branch atual (ex: academy, birthdays, num checkout que só tem
-// broadcast) nunca teve suas próprias deps instaladas aqui (abcjs, etc.) e falharia por motivo
-// nenhum relacionado ao código. Rodar só o que está de fato instalado é o que garante um resultado
-// que significa alguma coisa.
+// O include é montado a partir das dependencies "@venore/plugin-*" do package.json filtradas pela
+// instância (VENORE_INSTANCE; vazio = todas — scripts/lib/instance-packages.ts), não um glob fixo
+// tipo "../venore-plugin-*": um repo-irmão em disco que não é dependency do core nunca teve suas
+// próprias deps instaladas aqui e falharia por motivo nenhum relacionado ao código. Rodar só o que
+// está de fato instalado é o que garante um resultado que significa alguma coisa.
 function pluginTestIncludes(): string[] {
-  const pkg = JSON.parse(readFileSync(fileURLToPath(new URL("./package.json", import.meta.url)), "utf-8")) as {
-    dependencies?: Record<string, string>;
-  };
-  const pluginNames = Object.keys(pkg.dependencies ?? {})
-    .filter((name) => name.startsWith("@venore/plugin-"))
-    .map((name) => name.replace("@venore/plugin-", ""));
-  return pluginNames.map((name) => `../venore-plugin-${name}/**/*.{test,spec}.{ts,tsx}`);
+  const root = fileURLToPath(new URL(".", import.meta.url));
+  const pluginNames = resolveInstancePackages(root, "plugin").packages.map((name) => name.replace("@venore/plugin-", ""));
+  // Repo-irmão em disco (desenvolvimento do plugin) tem prioridade; sem ele (CI, checkout só do
+  // core), roda os testes que o próprio pacote instalado em node_modules publica.
+  return pluginNames.map((name) =>
+    existsSync(fileURLToPath(new URL(`../venore-plugin-${name}`, import.meta.url)))
+      ? `../venore-plugin-${name}/**/*.{test,spec}.{ts,tsx}`
+      : `node_modules/@venore/plugin-${name}/**/*.{test,spec}.{ts,tsx}`,
+  );
 }
 
 export default defineConfig({
@@ -32,6 +34,10 @@ export default defineConfig({
       { find: /^@venore\/plugin-sdk\/(.*)$/, replacement: fileURLToPath(new URL("./src/sdk/", import.meta.url)) + "$1.ts" },
       { find: /^@venore\/theme-sdk$/, replacement: fileURLToPath(new URL("./src/theme-sdk/index.ts", import.meta.url)) },
       { find: /^@venore\/theme-sdk\/(.*)$/, replacement: fileURLToPath(new URL("./src/theme-sdk/", import.meta.url)) + "$1.ts" },
+      {
+        find: /^server-only$/,
+        replacement: fileURLToPath(new URL("./src/test-support/stubs/server-only.ts", import.meta.url)),
+      },
       {
         find: /^next-auth$/,
         replacement: fileURLToPath(new URL("./src/test-support/stubs/next-auth.ts", import.meta.url)),
@@ -50,6 +56,7 @@ export default defineConfig({
       ...configDefaults.exclude.filter((p) => p !== "**/node_modules/**"),
       "**/node_modules/**/node_modules/**",
       "../venore-plugin-*/**/*.integration.test.{ts,tsx}",
+      "node_modules/@venore/plugin-*/**/*.integration.test.{ts,tsx}",
     ],
     passWithNoTests: true,
     env: loadEnv("", process.cwd(), ""),

@@ -18,6 +18,7 @@ export * from "@/components/ui/alert-dialog";
 export * from "@/components/ui/switch";
 export * from "@/components/ui/dropdown-menu";
 export * from "@/components/ui/slider";
+export * from "@/components/ui/popover";
 
 // --- componentes compartilhados do core ---
 export * from "@/components/empty-state";

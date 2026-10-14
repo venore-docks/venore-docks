@@ -11,6 +11,8 @@ export { listCategoriesForAdminHandler as listCategoriesForAdmin } from "./featu
 export { getCategoryBySlugHandler as getCategoryBySlug } from "./features/categories/get-category-by-slug/handler";
 export { createEntryHandler as createEntry } from "./features/entries/create-entry/handler";
 export { updateEntryHandler as updateEntry } from "./features/entries/update-entry/handler";
+// Layout por página (v8, spec §4.5) — use case de W5.
+export { updateEntryLayoutHandler as updateEntryLayout } from "./features/entries/update-entry-layout/handler";
 export {
   updateEntryCompositionHandler as updateEntryComposition,
 } from "./features/entries/update-entry-composition/handler";
@@ -77,6 +79,14 @@ export { recordEntryView, flushEntryViews } from "./view-tracking";
 // Transição automática scheduled -> published/archived. Sem authorizeActor (processo de sistema) —
 // chamada só pelo agendador (platform/scheduled-jobs) e pelo timer em processo de ./scheduling.
 export { processScheduledEntries } from "./scheduling";
+// Texto das entries publicadas e públicas, para a leitura em voz alta. Sem authorizeActor (só
+// conteúdo que qualquer visitante lê) — chamado por platform/speech/sync-cms-entry-speech.ts.
+export {
+  listPublishedEntryTexts,
+  filterEntryIdsKeepingSpeech,
+} from "./features/entries/list-published-entry-texts/service";
+export type { PublishedEntryText } from "./features/entries/list-published-entry-texts/types";
+export { extractEntryPlainText } from "./contracts/entry-text";
 
 export { cmsAdminNavigationItems } from "./admin-navigation";
 export {
@@ -100,7 +110,7 @@ export type {
 } from "./contracts/types";
 export type { ResolvedMenuItem, AdminResolvedMenuItem, AdminMenuItemStatus } from "./menu-resolution";
 export { MAX_MENU_ITEM_DEPTH } from "./menu-tree";
-export { getEntryBody, getEntryComposition as extractEntryComposition } from "./contracts/entry-body";
+export { getEntryBody, getEntryComposition as extractEntryComposition, isEntrySpeechEnabled } from "./contracts/entry-body";
 export type { Block, Area, Composition } from "./contracts/block";
 export { blockSchema, areaSchema, compositionSchema } from "./contracts/block";
 export { validateComposition } from "./validate-composition";
@@ -130,6 +140,8 @@ export type {
 } from "./features/categories/get-category-by-slug/types";
 export type { CreateEntryInput, CreateEntryResult } from "./features/entries/create-entry/types";
 export type { UpdateEntryInput, UpdateEntryResult } from "./features/entries/update-entry/types";
+export type { UpdateEntryLayoutInput, UpdateEntryLayoutResult } from "./features/entries/update-entry-layout/types";
+export type { PageLayout } from "./contracts/page-layout";
 export type {
   UpdateEntryCompositionInput,
   UpdateEntryCompositionResult,

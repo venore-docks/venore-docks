@@ -51,4 +51,28 @@ describe("updateMenu", () => {
     });
     expect(updateMenuFields).not.toHaveBeenCalled();
   });
+
+  it("normalizes a new contextual scopePath before the conflict check and the write (B2)", async () => {
+    findMenuById.mockResolvedValue({ id: "menu-1", key: "ctx", name: "Ctx", location: "contextual", scopePath: "/academy" });
+    updateMenuFields.mockResolvedValue({ id: "menu-1", key: "ctx", name: "Ctx", location: "contextual", scopePath: "/rh" });
+
+    const { updateMenu } = await import("./service");
+    const result = await updateMenu({ id: "menu-1", scopePath: "RH/", actorId: "actor-1" });
+
+    expect(result.success).toBe(true);
+    expect(findMenuByScopePath).toHaveBeenCalledWith("/rh");
+    expect(updateMenuFields).toHaveBeenCalledWith("menu-1", { name: undefined, scopePath: "/rh" });
+  });
+
+  it("treats a legacy un-normalized scopePath equal to the new one as unchanged (no self-conflict)", async () => {
+    findMenuById.mockResolvedValue({ id: "menu-1", key: "ctx", name: "Ctx", location: "contextual", scopePath: "/RH/" });
+    updateMenuFields.mockResolvedValue({ id: "menu-1", key: "ctx", name: "Ctx", location: "contextual", scopePath: "/rh" });
+
+    const { updateMenu } = await import("./service");
+    const result = await updateMenu({ id: "menu-1", scopePath: "/rh", actorId: "actor-1" });
+
+    expect(result.success).toBe(true);
+    expect(findMenuByScopePath).not.toHaveBeenCalled();
+    expect(updateMenuFields).toHaveBeenCalledWith("menu-1", { name: undefined, scopePath: "/rh" });
+  });
 });

@@ -8,6 +8,7 @@ import { useActionToast } from "@/hooks/use-action-toast";
 import type { ContentFeedConnectionRecord } from "@/contexts/content-feed";
 import { deleteConnectionAction, type ContentFeedActionState } from "../actions";
 import { MaskedKey } from "./masked-key";
+import { DEFAULT_DATE_LOCALE, formatDate } from "@/shared/format-date";
 
 const initialState: ContentFeedActionState = { error: null };
 
@@ -54,7 +55,7 @@ function ConnectionRow({
           )}
         </div>
         {connection.lastUsedAt && (
-          <p className="text-xs text-muted-foreground">Último acesso: {connection.lastUsedAt.toLocaleString("pt-BR")}</p>
+          <p className="text-xs text-muted-foreground">Último acesso: {formatDate(connection.lastUsedAt, DEFAULT_DATE_LOCALE, "dateTimeSeconds")}</p>
         )}
       </div>
 

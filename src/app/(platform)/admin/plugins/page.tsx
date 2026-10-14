@@ -1,6 +1,7 @@
 import { getPluginsPageData } from "@/platform/admin-shell/get-plugins-page-data";
 import { previewPluginDisable } from "@/platform/plugin-engine/preview-plugin-disable";
 import { registerPlugins } from "@/platform/plugin-engine/register-plugins";
+import { getActiveThemeOutletDiagnostics } from "@/platform/theme-rendering/outlet-diagnostics";
 import { EmptyState } from "@/components/empty-state";
 import { Blocks } from "lucide-react";
 import { InstallPluginControl } from "./_components/install-plugin-control";
@@ -51,6 +52,11 @@ export default async function PluginsAdminPage() {
         .filter((entry) => entry.manifest && entry.status !== "available")
         .map(async (entry) => [entry.key, await previewPluginDisable(entry.key)] as const),
     ),
+  );
+
+  // Outlets de tema declarados por plugins que o tema ativo não renderiza (spec v8 §7.4).
+  const outletDiagnostics = await getActiveThemeOutletDiagnostics(
+    Object.fromEntries(report.entries.filter((entry) => entry.manifest).map((entry) => [entry.key, entry.manifest!])),
   );
 
   return (
@@ -131,6 +137,31 @@ export default async function PluginsAdminPage() {
             </li>
           ))}
         </ul>
+      )}
+
+      {outletDiagnostics.items.length > 0 && (
+        <section
+          aria-labelledby="plugin-outlet-diagnostics"
+          className="rounded-panel border border-warning-border bg-warning-soft ui-panel-padding-roomy"
+        >
+          <h2 id="plugin-outlet-diagnostics" className="text-sm font-semibold text-warning">
+            Outlets que o tema ativo não exibe
+          </h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            O tema &ldquo;{outletDiagnostics.themeName}&rdquo; não renderiza estes pontos de extensão — a contribuição do
+            plugin existe, mas não aparece no site enquanto este tema estiver ativo.
+          </p>
+          <ul className="mt-3 space-y-1">
+            {outletDiagnostics.items.map((item) => (
+              <li key={`${item.pluginKey}:${item.key}:${item.outlet}`} className="text-xs text-foreground">
+                <span className="font-medium">{item.pluginKey}</span> · {item.key} →{" "}
+                <code className="font-mono">{item.outlet}</code>
+                {item.reason === "unknown-outlet" ? " (outlet desconhecido)" : ""}
+                {item.source === "manifest" ? " · declarado no manifesto" : ""}
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
     </div>
   );

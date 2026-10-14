@@ -2,7 +2,15 @@ import { getSetting, setSetting } from "@/contexts/settings";
 import type { ColorPalette, PaletteColorToken, PaletteColorTokens } from "@/contexts/themes";
 import type { OperationResult } from "@/shared/types";
 import { CUSTOM_COLOR_PALETTE_ID } from "./custom-color-palette-id";
-import { contrastRatio, MIN_CUSTOM_PALETTE_CONTRAST } from "./contrast";
+import { REGION_TOKEN_ROLES, type ThemePaletteRules } from "@/contexts/themes/contracts/v8";
+import {
+  checkRegionContrast,
+  contrastRatio,
+  describeRegionContrastProblem,
+  MIN_CUSTOM_PALETTE_CONTRAST,
+  REGION_CONTRAST_PAIRS,
+} from "./contrast";
+import { regionTokenName, THEME_TOKEN_REGIONS } from "./token-values";
 import { isValidHexColor } from "./oklch-color";
 
 export { CUSTOM_COLOR_PALETTE_ID };
@@ -47,47 +55,92 @@ export const CUSTOM_COLOR_TOKENS: readonly PaletteColorToken[] = [
   "app-bg-end",
 ];
 
-export type CustomColorPaletteInput = { light: PaletteColorTokens; dark: PaletteColorTokens };
+// Os 25 tokens tier-2 + tier-3 de região (CUSTOM_REGION_TOKENS), todos #rrggbb.
+export type CustomColorPaletteInput = { light: CustomPaletteTokens; dark: CustomPaletteTokens };
+export type CustomPaletteTokens = PaletteColorTokens | Readonly<Record<string, string>>;
 
 type StoredCustomColorPalette = { light: PaletteColorTokens; dark: PaletteColorTokens };
+
+// Tier-3 (spec v8 §2.4/§3): o gerador com regras de região (palette/generate-theme-palette.ts)
+// devolve `region-<região>-<papel>` junto dos 25 tokens — a paleta personalizada guarda os dois.
+export const CUSTOM_REGION_TOKENS: readonly string[] = THEME_TOKEN_REGIONS.flatMap((region) =>
+  REGION_TOKEN_ROLES.map((role) => regionTokenName(region, role)),
+);
+const ACCEPTED_TOKENS = new Set<string>([...CUSTOM_COLOR_TOKENS, ...CUSTOM_REGION_TOKENS]);
 
 // <input type="color"> do client só produz #rrggbb, mas isValidHexColor (oklch-color.ts) é a
 // defesa de verdade contra payload malformado batendo direto no FormData (ver aviso em
 // app/layout.tsx sobre dangerouslySetInnerHTML: cor arbitrária de admin exige validação antes de
 // virar CSS).
-function hasOnlyValidHexTokens(tokens: PaletteColorTokens): boolean {
+function hasOnlyValidHexTokens(tokens: Readonly<Record<string, string | undefined>>): boolean {
   return Object.entries(tokens).every(
-    ([token, value]) =>
-      CUSTOM_COLOR_TOKENS.includes(token as PaletteColorToken) && typeof value === "string" && isValidHexColor(value),
+    ([token, value]) => ACCEPTED_TOKENS.has(token) && typeof value === "string" && isValidHexColor(value),
   );
 }
 
-// Pares texto/fundo que precisam de contraste mínimo — foreground/background é o mais óbvio, mas
-// card e popover são as superfícies mais comuns na prática (todo painel usa --card).
-const CONTRAST_PAIRS: { fg: PaletteColorToken; bg: PaletteColorToken; label: string }[] = [
-  { fg: "foreground", bg: "background", label: "texto/fundo" },
+// Pares texto/superfície fora das regiões — card e popover são as superfícies mais comuns na
+// prática (todo painel usa --card). Os pares por região (fg/bg e muted-fg/bg em header, rail,
+// contextual, content e footer) vêm de checkRegionContrast (contrast.ts).
+const SURFACE_PAIRS: { fg: string; bg: string; label: string }[] = [
   { fg: "card-foreground", bg: "card", label: "texto/card" },
   { fg: "popover-foreground", bg: "popover", label: "texto/popover" },
 ];
 
+export type CustomPaletteContrastProblem = { regions: string[]; message: string };
+
 // Só checa um par quando os DOIS tokens existem naquele modo — um modo que só mexe em `primary`
-// não é barrado. Retorna a mensagem de erro do primeiro par com problema, ou null se está tudo ok.
-function contrastProblem(tokens: PaletteColorTokens, modeLabel: string): string | null {
-  for (const pair of CONTRAST_PAIRS) {
-    const fg = tokens[pair.fg];
-    const bg = tokens[pair.bg];
-    if (!fg || !bg) continue;
-    const ratio = contrastRatio(fg, bg);
-    if (ratio < MIN_CUSTOM_PALETTE_CONTRAST) {
-      return `Contraste ${pair.label} no ${modeLabel} é ${ratio.toFixed(1)}:1 — mínimo ${MIN_CUSTOM_PALETTE_CONTRAST}:1 pra legibilidade.`;
+// não é barrado (a paleta personalizada é override parcial; o resto vem do theme.css, já testado
+// em theme-contrast.test.ts). Bloqueia só pares de TEXTO (4.5 ou o minContrast da região): os
+// não-textuais (ring/accent, 3:1) são reportados pelo gerador e pela galeria, não barram o save —
+// sementes claras do "1 cor de marca" geram accent/ring abaixo de 3:1 desde sempre.
+export function findCustomPaletteContrastProblem(
+  input: { light: Readonly<Record<string, string | undefined>>; dark: Readonly<Record<string, string | undefined>> },
+  rules?: ThemePaletteRules,
+): CustomPaletteContrastProblem | null {
+  for (const mode of ["light", "dark"] as const) {
+    const tokens = Object.fromEntries(
+      Object.entries(input[mode]).filter((entry): entry is [string, string] => typeof entry[1] === "string"),
+    );
+    const modeLabel = mode === "light" ? "modo claro" : "modo escuro";
+    for (const pair of SURFACE_PAIRS) {
+      const fg = tokens[pair.fg];
+      const bg = tokens[pair.bg];
+      if (!fg || !bg) continue;
+      const ratio = contrastRatio(fg, bg);
+      if (ratio < MIN_CUSTOM_PALETTE_CONTRAST) {
+        return {
+          regions: [],
+          message: `Contraste ${pair.label} no ${modeLabel} é ${ratio.toFixed(1)}:1 — mínimo ${MIN_CUSTOM_PALETTE_CONTRAST}:1 pra legibilidade.`,
+        };
+      }
     }
   }
-  return null;
+
+  const problems = checkRegionContrast(
+    { light: definedOnly(input.light), dark: definedOnly(input.dark) },
+    { regions: rules?.regions, surfaces: "tokens" },
+  ).filter((problem) => REGION_CONTRAST_PAIRS.find((pair) => pair.pair === problem.pair)?.kind === "text");
+  if (problems.length === 0) return null;
+  const regions = [...new Set(problems.map((problem) => problem.region))];
+  return {
+    regions,
+    message: `${describeRegionContrastProblem(problems[0])} Regiões com contraste insuficiente: ${regions.join(", ")}.`,
+  };
 }
+
+// Pares por região só com os tokens que a paleta declara: sem fundo OU sem texto, o par é pulado
+// (checkRegionContrast pula token que não resolve).
+function definedOnly(tokens: Readonly<Record<string, string | undefined>>): Record<string, string> {
+  return Object.fromEntries(Object.entries(tokens).filter((entry): entry is [string, string] => typeof entry[1] === "string"));
+}
+
+// Código do spec §7.14 (antes `theme-engine.custom_color_palette.low_contrast`).
+export const PALETTE_LOW_CONTRAST = "theme-engine.palette.low_contrast";
 
 export async function setCustomColorPalette(
   themeKey: string,
   input: CustomColorPaletteInput,
+  rules?: ThemePaletteRules,
 ): Promise<OperationResult<{ id: string }>> {
   if (!hasOnlyValidHexTokens(input.light) || !hasOnlyValidHexTokens(input.dark)) {
     return {
@@ -99,12 +152,9 @@ export async function setCustomColorPalette(
     };
   }
 
-  const contrastError = contrastProblem(input.light, "modo claro") ?? contrastProblem(input.dark, "modo escuro");
+  const contrastError = findCustomPaletteContrastProblem(input, rules);
   if (contrastError) {
-    return {
-      success: false,
-      error: { code: "theme-engine.custom_color_palette.low_contrast", message: contrastError },
-    };
+    return { success: false, error: { code: PALETTE_LOW_CONTRAST, message: contrastError.message } };
   }
 
   const stored: StoredCustomColorPalette = { light: input.light, dark: input.dark };

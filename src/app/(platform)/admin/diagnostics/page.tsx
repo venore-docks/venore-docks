@@ -17,6 +17,7 @@ import { LevelBadge } from "./_components/level-badge";
 import { RefreshEventsButton } from "./_components/refresh-events-button";
 import { ClearEventsButton } from "./_components/clear-events-button";
 import { getErrorGuidance } from "./_components/error-guidance";
+import { DEFAULT_DATE_LOCALE, formatDate } from "@/shared/format-date";
 
 type DiagnosticsSearchParams = {
   level?: string;
@@ -212,7 +213,7 @@ export default async function DiagnosticsAdminPage({
                     }
                   >
                     <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground/56">
-                      <span className="whitespace-nowrap">{entry.occurredAt.toLocaleString("pt-BR")}</span>
+                      <span className="whitespace-nowrap">{formatDate(entry.occurredAt, DEFAULT_DATE_LOCALE, "dateTimeSeconds")}</span>
                       <LevelBadge level={entry.level} />
                       <span>{entry.origin}</span>
                       {entry.actorId && (

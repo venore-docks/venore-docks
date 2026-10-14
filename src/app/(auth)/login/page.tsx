@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { signInWithPasswordAction, signInWithProviderAction, signUpWithPasswordAction } from "../actions";
 import { PasswordInput } from "@/components/password-input";
+import { renderTemplate, resolveTemplateContext, resolveTemplateVariant } from "@/platform/theme-rendering/render-template";
 
 // Só mensagens conhecidas, por código — antes `?error=` aceitava texto livre e qualquer um montava
 // um link de login oficial com a mensagem que quisesse (content spoofing).
@@ -33,8 +34,7 @@ const ERROR_MESSAGES: Record<string, string> = {
 };
 
 const NOTICE_MESSAGES: Record<string, string> = {
-  "registration-received":
-    "Cadastro recebido. Se ele for aprovado por um administrador, você poderá entrar com seu e-mail e senha.",
+  "registration-received": "Cadastro recebido. Se ele for aprovado por um administrador, você poderá entrar com seu e-mail e senha.",
   "password-reset": "Senha redefinida. Entre com a nova senha.",
   "invitation-accepted": "Conta criada. Entre com seu e-mail e a senha que você escolheu.",
 };
@@ -60,123 +60,105 @@ export default async function LoginPage({
   const errorMessage = error ? (ERROR_MESSAGES[error] ?? "Não foi possível entrar. Tente de novo.") : null;
   const noticeMessage = notice ? (NOTICE_MESSAGES[notice] ?? null) : null;
 
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background px-4 text-foreground">
-      <div className="w-full max-w-sm space-y-6 rounded-panel border border-border bg-card p-8 shadow-panel">
-        <div className="space-y-3 text-center">
-          {aesthetics.mode === "text" ? (
-            <span className="block text-lg font-semibold text-foreground">{brand.siteName}</span>
-          ) : aesthetics.mode === "png" ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={brand.logoUrl} alt={brand.siteName} className="mx-auto h-12 w-auto object-contain" />
-          ) : (
-            <span
-              role="img"
-              aria-label={brand.siteName}
-              className="mx-auto block h-12 w-48 bg-foreground"
-              style={{
-                maskImage: `url('${brand.logoUrl}')`,
-                WebkitMaskImage: `url('${brand.logoUrl}')`,
-                maskRepeat: "no-repeat",
-                WebkitMaskRepeat: "no-repeat",
-                maskPosition: "center",
-                WebkitMaskPosition: "center",
-                maskSize: "contain",
-                WebkitMaskSize: "contain",
-              }}
-            />
-          )}
-          <div className="space-y-1">
-            <h1 className="text-lg font-semibold">Entrar</h1>
-            <p className="text-sm text-muted-foreground">Acesse com uma das opções abaixo.</p>
-          </div>
-        </div>
+  const context = await resolveTemplateContext();
+  const form = (
+    <>
+      {showBootstrapNotice ? (
+        <p className="rounded-control border border-border bg-accent/14 px-3 py-2 text-xs text-foreground">
+          Configuração inicial pendente.{" "}
+          <Link href="/setup" className="underline">
+            Concluir configuração
+          </Link>
+        </p>
+      ) : null}
 
-        {showBootstrapNotice ? (
-          <p className="rounded-control border border-border bg-accent/14 px-3 py-2 text-xs text-foreground">
-            Configuração inicial pendente.{" "}
-            <Link href="/setup" className="underline">
-              Concluir configuração
-            </Link>
-          </p>
-        ) : null}
+      {noticeMessage ? (
+        <p className="rounded-control border border-border bg-accent/14 px-3 py-2 text-xs text-foreground">{noticeMessage}</p>
+      ) : null}
 
-        {noticeMessage ? (
-          <p className="rounded-control border border-border bg-accent/14 px-3 py-2 text-xs text-foreground">
-            {noticeMessage}
-          </p>
-        ) : null}
+      {errorMessage ? (
+        <p className="rounded-control border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">{errorMessage}</p>
+      ) : null}
 
-        {errorMessage ? (
-          <p className="rounded-control border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
-            {errorMessage}
-          </p>
-        ) : null}
-
-        <div className="space-y-2">
-          {oauthProviders.map((provider) => (
-            <form key={provider.key} action={signInWithProviderAction}>
-              <input type="hidden" name="provider" value={provider.key} />
-              {callbackUrl ? <input type="hidden" name="callbackUrl" value={callbackUrl} /> : null}
-              <Button type="submit" variant="outline" className="w-full gap-2">
-                {provider.iconUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={provider.iconUrl} alt="" aria-hidden="true" className="h-4 w-4" />
-                ) : null}
-                Entrar com {provider.label}
-              </Button>
-            </form>
-          ))}
-        </div>
-
-        {passwordProvider ? (
-          <form action={signInWithPasswordAction} className="space-y-2">
+      <div className="space-y-2">
+        {oauthProviders.map((provider) => (
+          <form key={provider.key} action={signInWithProviderAction}>
+            <input type="hidden" name="provider" value={provider.key} />
             {callbackUrl ? <input type="hidden" name="callbackUrl" value={callbackUrl} /> : null}
-            <div className="space-y-2">
-              <Input name="username" placeholder="Email ou usuário" autoComplete="username" required />
-              <PasswordInput name="password" placeholder="Senha" autoComplete="current-password" required />
-              <Input
-                name="otp"
-                placeholder="Código de verificação (se ativado)"
-                autoComplete="one-time-code"
-                inputMode="text"
-                maxLength={12}
-              />
-            </div>
-            <Button type="submit" className="w-full">
-              Entrar com senha
+            <Button type="submit" variant="outline" className="w-full gap-2">
+              {provider.iconUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={provider.iconUrl} alt="" aria-hidden="true" className="h-4 w-4" />
+              ) : null}
+              Entrar com {provider.label}
             </Button>
-            {isPasswordResetAvailable() ? (
-              <Link href="/forgot-password" className="block text-center text-xs font-medium text-primary">
-                Esqueci minha senha
-              </Link>
-            ) : null}
           </form>
-        ) : null}
-
-        {passwordProvider && selfRegistrationEnabled ? (
-          <details className="text-sm">
-            <summary className="cursor-pointer text-muted-foreground">Criar conta</summary>
-            <form action={signUpWithPasswordAction} className="mt-3 space-y-2">
-              <Input name="name" placeholder="Nome" autoComplete="name" required />
-              <Input name="email" type="email" placeholder="Email" autoComplete="email" required />
-              <PasswordInput
-                name="password"
-                placeholder="Senha (mín. 8 caracteres)"
-                autoComplete="new-password"
-                required
-                minLength={8}
-              />
-              <Button type="submit" variant="outline" className="w-full">
-                Criar conta
-              </Button>
-              <p className="text-xs text-muted-foreground">
-                O acesso fica pendente até um administrador aprovar.
-              </p>
-            </form>
-          </details>
-        ) : null}
+        ))}
       </div>
-    </main>
+
+      {passwordProvider ? (
+        <form action={signInWithPasswordAction} className="space-y-2">
+          {callbackUrl ? <input type="hidden" name="callbackUrl" value={callbackUrl} /> : null}
+          <div className="space-y-2">
+            <Input name="username" placeholder="Email ou usuário" autoComplete="username" required />
+            <PasswordInput name="password" placeholder="Senha" autoComplete="current-password" required />
+            <Input
+              name="otp"
+              placeholder="Código de verificação (se ativado)"
+              autoComplete="one-time-code"
+              inputMode="text"
+              maxLength={12}
+            />
+          </div>
+          <Button type="submit" className="w-full">
+            Entrar com senha
+          </Button>
+          {isPasswordResetAvailable() ? (
+            <Link href="/forgot-password" className="block text-center text-xs font-medium text-primary">
+              Esqueci minha senha
+            </Link>
+          ) : null}
+        </form>
+      ) : null}
+
+      {passwordProvider && selfRegistrationEnabled ? (
+        <details className="text-sm">
+          <summary className="cursor-pointer text-muted-foreground">Criar conta</summary>
+          <form action={signUpWithPasswordAction} className="mt-3 space-y-2">
+            <Input name="name" placeholder="Nome" autoComplete="name" required />
+            <Input name="email" type="email" placeholder="Email" autoComplete="email" required />
+            <PasswordInput name="password" placeholder="Senha (mín. 8 caracteres)" autoComplete="new-password" required minLength={8} />
+            <Button type="submit" variant="outline" className="w-full">
+              Criar conta
+            </Button>
+            <p className="text-xs text-muted-foreground">O acesso fica pendente até um administrador aprovar.</p>
+          </form>
+        </details>
+      ) : null}
+    </>
+  );
+
+  // Moldura (cartão, marca, título) é o template "login" do tema; o formulário e as mensagens
+  // continuam do core — ações com autorização e rate limit próprios.
+  return renderTemplate(
+    context.theme,
+    "login",
+    {
+      ...context.common,
+      brand: {
+        name: brand.siteName,
+        mode: aesthetics.mode,
+        size: aesthetics.size,
+        scrolledSize: aesthetics.scrolledSize,
+        position: aesthetics.position,
+        logoUrl: brand.logoUrl,
+        scrolledLogoUrl: brand.scrolledLogoUrl,
+      },
+      form,
+      footer: null,
+      jsonLd: null,
+      outlets: { before: null, after: null },
+    },
+    { variant: resolveTemplateVariant("login", { section: context.section }) },
   );
 }

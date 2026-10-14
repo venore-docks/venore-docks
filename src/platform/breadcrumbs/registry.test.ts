@@ -17,6 +17,7 @@ vi.mock("@/contexts/cms", () => ({ cmsBreadcrumbSegments: [seg("cms.entries", ["
 vi.mock("@/contexts/rbac", () => ({ rbacBreadcrumbSegments: [] }));
 vi.mock("@/contexts/media", () => ({ mediaBreadcrumbSegments: [] }));
 vi.mock("@/contexts/settings", () => ({ settingsBreadcrumbSegments: [] }));
+vi.mock("@/contexts/speech", () => ({ speechBreadcrumbSegments: [] }));
 vi.mock("@/contexts/themes", () => ({ themesBreadcrumbSegments: [] }));
 vi.mock("@/observability", () => ({ observabilityBreadcrumbSegments: [] }));
 // Segmentos de plugin agora vêm de PLUGIN_CONTRIBUTIONS (src/plugins/contributions.generated.ts).

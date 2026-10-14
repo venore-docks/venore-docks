@@ -11,8 +11,8 @@ vi.mock("@/contexts/themes", () => ({
 // simular um tema mal registrado sem precisar de um tema quebrado de verdade em src/themes/.
 vi.mock("@/themes/registry", () => ({
   THEME_REGISTRY: {
-    "venore-slime": { manifest: { key: "venore-slime", name: "Venore Slime", version: "0.1.0", themeContractVersion: "6.0.0" }, Shell: () => null },
-    "broken-theme": { manifest: { key: "broken-theme", name: "Broken", version: "0.1.0", themeContractVersion: "6.0.0" } },
+    "venore-slime": { manifest: { key: "venore-slime", name: "Venore Slime", version: "0.1.0", themeContractVersion: "6.0.0" }, contract: 7, Shell: () => null },
+    "broken-theme": { manifest: { key: "broken-theme", name: "Broken", version: "0.1.0", themeContractVersion: "6.0.0" }, contract: 7 },
   },
 }));
 
@@ -32,7 +32,7 @@ describe("resolveActiveTheme", () => {
     const entry = await resolveActiveTheme();
 
     expect(entry.manifest.key).toBe("venore-slime");
-    expect(typeof entry.Shell).toBe("function");
+    expect(entry.contract === 7 && typeof entry.Shell).toBe("function");
   });
 
   it("throws explicitly instead of falling back silently when the resolved theme has no Shell", async () => {

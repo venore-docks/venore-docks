@@ -7,6 +7,7 @@ import { DeleteMediaButton } from "../_components/delete-media-button";
 import { VisibilityToggle } from "./_components/visibility-toggle";
 import { CategorySelect } from "./_components/category-select";
 import { UsageList } from "./_components/usage-list";
+import { DEFAULT_DATE_LOCALE, formatDate } from "@/shared/format-date";
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -47,7 +48,7 @@ export default async function MediaDetailPage({ params }: { params: Promise<{ id
         <div>
           <h1 className="text-xl font-semibold text-foreground">{media.filename}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {formatSize(media.size)} · {media.contentType} · enviado em {media.createdAt.toLocaleDateString("pt-BR")}
+            {formatSize(media.size)} · {media.contentType} · enviado em {formatDate(media.createdAt, DEFAULT_DATE_LOCALE, "short")}
           </p>
         </div>
         <Link href="/admin/media" className="text-xs font-medium text-muted-foreground outline-none hover:underline">
