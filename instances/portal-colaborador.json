@@ -2,8 +2,8 @@
   "plugins": [
     "birthdays",
     "calendar",
-    "disc",
     "photo-gallery",
+    "tests",
     "vagas"
   ],
   "themes": [

@@ -3,14 +3,14 @@ import { eq } from "drizzle-orm";
 import { db } from "@/infrastructure/database/client";
 import { accounts as authAccounts, users as authUsers } from "@/contexts/auth/database/schema";
 import {
-  discInstances,
-  discReports,
-  discTeamMembers,
-  discTeams,
-} from "@venore/plugin-disc/database/schema";
+  testInstances,
+  testResults,
+  testTeamMembers,
+  testTeams,
+} from "@venore/plugin-tests/database/schema";
 
 // Migração ÚNICA da base de produção do NestPro (nestpro/db/schema.ts) para o schema novo do
-// plugin @venore/plugin-disc. Não roda como parte do install do plugin (run-plugin-migrations.ts)
+// plugin @venore/plugin-tests (módulo DISC). Não roda como parte do install do plugin (run-plugin-migrations.ts)
 // — é uma ferramenta operacional de site, de uso único, por isso mora em scripts/ do core (só o
 // core pode importar @/contexts/auth/database/schema direto; um plugin nunca pode).
 //
@@ -57,11 +57,6 @@ const PROVIDER_REMAP: Record<string, string> = { "azure-ad": "microsoft-entra-id
 function readDatasetProfile(dataset: unknown, side: "more" | "less"): string {
   const value = (dataset as Record<string, { profile?: unknown }> | null)?.[side]?.profile;
   return typeof value === "string" ? value : "";
-}
-
-function readDatasetStress(dataset: unknown): string {
-  const value = (dataset as { stress?: unknown } | null)?.stress;
-  return value === undefined || value === null ? "" : String(value);
 }
 
 // Slug curto de convite pro histórico migrado — instâncias do NestPro nunca tiveram link curto,
@@ -163,7 +158,7 @@ async function main() {
       counts.teams++;
       if (APPLY) {
         await db
-          .insert(discTeams)
+          .insert(testTeams)
           .values({
             id: team.teamid,
             ownerUserId: team.ownerid,
@@ -180,14 +175,14 @@ async function main() {
       counts.teamMembers++;
       if (APPLY) {
         await db
-          .insert(discTeamMembers)
+          .insert(testTeamMembers)
           .values({
             id: member.id,
             teamId: member.teamid,
             userId: member.userid,
             // NestPro guardava papel como texto livre ("Administrador", etc.) — só o dono da
             // equipe original vira "admin" aqui; o resto entra como "member" (o novo modelo não
-            // tem papéis intermediários, ver contracts/types.ts DiscTeamMemberRole).
+            // tem papéis intermediários, ver contracts/types.ts TestTeamMemberRole).
             role: sourceTeams.some((t) => t.teamid === member.teamid && t.ownerid === member.userid) ? "admin" : "member",
             createdAt: member.created,
           })
@@ -203,11 +198,15 @@ async function main() {
       counts.instances++;
       if (APPLY) {
         await db
-          .insert(discInstances)
+          .insert(testInstances)
           .values({
             id: instance.instanceid,
+            testId: "disc",
             teamId: instance.teamid,
-            environmentLabel,
+            contextLabel: environmentLabel,
+            // No NestPro quem respondia estava sempre logado: mantém exigindo login e mostrando o resultado.
+            identityMode: "login",
+            showResultToParticipant: true,
             shareSlug: generateShortSlug(),
             createdByUserId: instance.teamid
               ? sourceTeams.find((t) => t.teamid === instance.teamid)?.ownerid ?? "unknown"
@@ -238,16 +237,18 @@ async function main() {
       counts.reports++;
       if (APPLY) {
         await db
-          .insert(discReports)
+          .insert(testResults)
           .values({
             id: report.reportid,
+            testId: "disc",
+            // Banco de perguntas + fórmula originais do NestPro = versão 1.0.0 do módulo disc.
+            testVersion: "1.0.0",
             userId: report.userid,
             instanceId: report.instanceid,
-            environmentLabel,
+            contextLabel: environmentLabel,
             dataset: report.dataset,
-            profileKey,
-            profileKeySecondary,
-            stress: readDatasetStress(report.dataset),
+            headline: profileKey,
+            headlineSecondary: profileKeySecondary,
             createdAt: report.created,
           })
           .onConflictDoNothing();
