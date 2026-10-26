@@ -14,7 +14,6 @@
 export {
   uploadMediaAsset,
   uploadAvatarMediaAsset,
-  uploadReservedCategoryAsset,
   listMediaAssets,
   getMediaAsset,
   getMediaAssetUrls,
@@ -92,6 +91,11 @@ export type {
 // plugin que importa explicitamente "@venore/plugin-sdk/media" paga esse grafo, sem ciclo com o
 // contributions.ts dos plugins que só usam o entry raiz.
 export { deleteMediaSafely, type DeleteMediaSafelyInput } from "@/platform/media-lifecycle/delete-media-safely";
+
+// Upload COM SESSÃO numa categoria reservada do plugin — passa pela regra de
+// manifest.restrictedUploadCategories na hora do envio (arquivo já nasce "restricted"). Ver
+// platform/media-lifecycle/upload-reserved-category-asset-gated.ts.
+export { uploadReservedCategoryAssetGated as uploadReservedCategoryAsset } from "@/platform/media-lifecycle/upload-reserved-category-asset-gated";
 
 // Upload SEM SESSÃO — único caminho pro plugin aceitar arquivo de quem ainda não tem conta (ex:
 // currículo de candidatura em vagas). Gateado por manifest.anonymousUploadCategories: o plugin
