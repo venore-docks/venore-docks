@@ -44,6 +44,11 @@ build. Recomendado no modo worker: `SPEECH_WORKER_GITHUB_TOKEN` (o app chama o w
 
 ### Added
 
+- **Plugin Listas de materiais no `portal-colaborador`** (`@venore/plugin-listas-materiais`):
+  listas de material escolar por segmento e ano, com fluxo coordenação → direção → marketing e PDF
+  final (capas + seções geradas) feito no servidor com Chromium headless. Depois do deploy:
+  instalar em `/admin/plugins` marcando "Popular com dados de exemplo" (traz as listas de 2026) e
+  criar os papéis Coordenação/Direção/Marketing em `/admin/rbac` (README do plugin).
 - **Painel de áudios e produção visível** (`/admin/speech`, Editorial → **Áudios**): a
   configuração da leitura em voz alta sai de `/admin/settings` e ganha a fila — uma linha por
   conteúdo com título e link do editor (`source` no `syncSpeechAudio`), barra de produção com as
@@ -139,6 +144,10 @@ build. Recomendado no modo worker: `SPEECH_WORKER_GITHUB_TOKEN` (o app chama o w
 
 ### Fixed
 
+- **Arquivo enviado logado numa categoria restrita nascia privado até o próximo deploy.**
+  `uploadReservedCategoryAsset` do SDK agora aplica `manifest.restrictedUploadCategories` na hora
+  do envio (`platform/media-lifecycle/upload-reserved-category-asset-gated.ts`, igual ao caminho
+  anônimo): antes só o dono lia o arquivo até o prebuild rodar `applyRestrictedUploadCategories`.
 - **`/api/csp-report` consumia a maior parte do CPU ativo em produção.** O `script-src` usava
   `'strict-dynamic'`, mas o Next 16 (Turbopack) não põe nonce nas tags `<script src>` dos chunks,
   então cada chunk virava violação (dezenas de POSTs por página) e `CSP_MODE=enforce` quebraria o
