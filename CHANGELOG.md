@@ -144,6 +144,11 @@ build. Recomendado no modo worker: `SPEECH_WORKER_GITHUB_TOKEN` (o app chama o w
 
 ### Fixed
 
+- **Upload no Vercel Blob dava "Access denied" com `BLOB_STORE_ID` no projeto.** O
+  `@vercel/blob` 2.6 prefere o OIDC do projeto quando essa variável existe e ignora o
+  `BLOB_READ_WRITE_TOKEN` — com um store de outra conta/time, toda gravação era recusada. O adapter
+  (`infrastructure/storage/vercel-blob-adapter.ts`) agora passa o token explicitamente em toda
+  chamada sempre que ele está definido.
 - **Arquivo enviado logado numa categoria restrita nascia privado até o próximo deploy.**
   `uploadReservedCategoryAsset` do SDK agora aplica `manifest.restrictedUploadCategories` na hora
   do envio (`platform/media-lifecycle/upload-reserved-category-asset-gated.ts`, igual ao caminho

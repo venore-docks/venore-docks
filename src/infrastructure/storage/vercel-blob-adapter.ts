@@ -23,6 +23,15 @@ function blobAccess(): "public" | "private" {
   return process.env.MEDIA_BLOB_ACCESS === "private" ? "private" : "public";
 }
 
+// Token explícito em toda chamada: o @vercel/blob 2.6 PREFERE OIDC (VERCEL_OIDC_TOKEN, que a Vercel
+// injeta sozinha) sempre que existe BLOB_STORE_ID — e ignora o BLOB_READ_WRITE_TOKEN. Com um store de
+// outra conta/time, o OIDC do projeto não tem acesso e toda gravação volta "Access denied". O app
+// também deriva a URL pública do store a partir deste token (resolveUrl), então os dois têm de bater.
+function auth(): { token?: string } {
+  const token = process.env.BLOB_READ_WRITE_TOKEN?.trim();
+  return token ? { token } : {};
+}
+
 // Nenhum tipo de @vercel/blob escapa deste arquivo — o resto do domínio só conhece StoragePort
 // (blob-spec seção 2).
 export class VercelBlobAdapter implements StoragePort {
@@ -32,12 +41,13 @@ export class VercelBlobAdapter implements StoragePort {
       contentType: input.contentType,
       addRandomSuffix: false,
       allowOverwrite: input.allowOverwrite ?? false,
+      ...auth(),
     });
     return { key: blob.pathname, url: blob.url, size: input.data.byteLength };
   }
 
   async remove(key: string): Promise<void> {
-    await del(key);
+    await del(key, auth());
   }
 
   resolveUrl(key: string): string {
@@ -66,7 +76,7 @@ export class VercelBlobAdapter implements StoragePort {
 
   async stat(key: string): Promise<StoredObjectInfo | null> {
     try {
-      const info = await head(key);
+      const info = await head(key, auth());
       return { size: info.size, contentType: info.contentType };
     } catch {
       return null;
@@ -76,6 +86,7 @@ export class VercelBlobAdapter implements StoragePort {
   async read(key: string, range?: ByteRange | null): Promise<StoredObjectBody | null> {
     const result = await get(key, {
       access: blobAccess(),
+      ...auth(),
       headers: range ? { Range: `bytes=${range.start}-${range.end}` } : undefined,
     });
     if (!result || result.statusCode !== 200) return null;
@@ -94,7 +105,7 @@ export class VercelBlobAdapter implements StoragePort {
   }
 
   async listObjects(prefix?: string): Promise<RemoteObjectSummary[]> {
-    const { blobs } = await list({ prefix });
+    const { blobs } = await list({ prefix, ...auth() });
     return blobs.map((blob) => ({ key: blob.pathname, size: blob.size, uploadedAt: blob.uploadedAt }));
   }
 }
