@@ -16,10 +16,12 @@ export async function findSessionVersion(userId: string): Promise<number | null>
   return row?.sessionVersion ?? null;
 }
 
-// Uma leitura por request no callback session (status + versão juntos).
-export async function findSessionState(userId: string): Promise<{ status: string; sessionVersion: number } | null> {
+// Uma leitura por request no callback session (status + versão + nome juntos).
+export async function findSessionState(
+  userId: string,
+): Promise<{ status: string; sessionVersion: number; name: string | null } | null> {
   const [row] = await db
-    .select({ status: users.status, sessionVersion: users.sessionVersion })
+    .select({ status: users.status, sessionVersion: users.sessionVersion, name: users.name })
     .from(users)
     .where(eq(users.id, userId))
     .limit(1);

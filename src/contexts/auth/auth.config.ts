@@ -96,6 +96,10 @@ export const { handlers, auth, signIn, signOut, unstable_update: updateSession }
         session.user.status =
           state && state.sessionVersion === tokenVersion ? (state.status as UserRegistrationStatus) : undefined;
         session.user.provider = typeof token.provider === "string" ? token.provider : undefined;
+        // O nome vem do banco a cada request: token.name é congelado no login (no login por senha,
+        // sem nome gravado, caía no e-mail) e editar o nome em /account só grava no banco — sem isto
+        // o header seguiria mostrando o e-mail até o próximo login.
+        if (state?.name) session.user.name = state.name;
       }
       return session;
     },
