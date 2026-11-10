@@ -2,10 +2,12 @@
   "plugins": [
     "birthdays",
     "calendar",
+    "calendarios",
     "listas-materiais",
     "photo-gallery",
     "tests",
-    "vagas"
+    "vagas",
+    "zammad"
   ],
   "themes": [
     "academy",
