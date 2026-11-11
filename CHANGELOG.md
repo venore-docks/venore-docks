@@ -44,6 +44,17 @@ build. Recomendado no modo worker: `SPEECH_WORKER_GITHUB_TOKEN` (o app chama o w
 
 ### Added
 
+- **Galeria em modo "mural" com lightbox** (`core.layout.gallery`, campos novos e opcionais
+  `variant: "grid" | "mural"`, `lightbox`, `aspect: "auto" | "10-9" | "4-3" | "1-1"`; galerias antigas
+  não mudam). O mural renderiza cartões com borda, `shadow-panel`, elevação no hover (sem
+  `prefers-reduced-motion`), imagem `loading="lazy"` e grade mobile-first (2 colunas → 3 → `columns`,
+  até 4). As URLs vêm em lote (`getMediaAssetUrls`: a variante pequena pro cartão e o original pro
+  lightbox) em vez de um `getMediaAsset` por imagem. Com `lightbox: true` o clique abre um Dialog com
+  a imagem grande, legenda (`alt`), contador, anterior/próximo, setas ← →, swipe e Esc; o foco volta
+  ao cartão (`gallery-lightbox-client.tsx`, `gallery-mural-card.tsx`, `gallery-layout.ts`).
+- **Abas com muitas opções**: a lista de abas rola na horizontal (com snap) em vez de quebrar, a aba
+  ativa ganha o fundo `primary`, e `core.layout.tabs-item` aceita o campo opcional `badge` (contador
+  ao lado do rótulo, ex.: "25"). A área de conteúdo de uma aba passa a aceitar a galeria.
 - **Bloco `core.content.entry-feed` ("Publicações recentes")**: lista dinâmica das últimas N entries
   de uma categoria (campos: `title`, `categorySlug` — default `noticias` —, `limit` de 1 a 12 —
   default 3 — e `viewAllLabel`, o link opcional para a rota da categoria). Respeita a visibilidade

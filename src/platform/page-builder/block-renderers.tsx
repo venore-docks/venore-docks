@@ -6,7 +6,7 @@ import remarkGfm from "remark-gfm";
 import { hasRichTextContent, renderRichTextContent, RICH_TEXT_INLINE_CLASSES } from "./rich-text/render";
 import type { LucideIcon } from "lucide-react";
 import type { Block, Composition } from "@/contexts/cms";
-import { getMediaAsset } from "@/contexts/media";
+import { getMediaAsset, getMediaAssetUrls } from "@/contexts/media";
 import { NAV_ICON_BY_KEY } from "@/platform/nav-icons/registry";
 import { Button, type buttonVariants } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardFooter, CardContent } from "@/components/ui/card";
@@ -35,6 +35,10 @@ import { HERO_BLOCK_KEY } from "./blocks/hero";
 import { CTA_BLOCK_KEY } from "./blocks/cta";
 import { GALLERY_BLOCK_KEY } from "./blocks/gallery";
 import { CAROUSEL_BLOCK_KEY } from "./blocks/carousel";
+import { IMAGE_BLOCK_KEY } from "./blocks/image";
+import { GalleryLightboxClient } from "./gallery-lightbox-client";
+import { MURAL_CARD_CLASSES, MuralCardContent, PLAIN_CARD_CLASSES, type GalleryMuralItem } from "./gallery-mural-card";
+import { GALLERY_ASPECT_CLASSES, MURAL_COLUMN_CLASSES, MURAL_GAP_CLASSES, MURAL_THUMB_DISPLAY_WIDTH, resolveGalleryOptions } from "./gallery-layout";
 import { ENTRY_FEED_BLOCK_KEY } from "./blocks/entry-feed";
 
 // Link absoluto (http/https) sai do site: abre em nova aba, sem vazar window.opener nem referrer.
@@ -660,13 +664,28 @@ async function TabsBlock({ block, renderBlocks }: BlockRendererProps) {
     <Card className="shadow-panel">
       <CardContent>
         <Tabs defaultValue={children[0].id} className="w-full">
-          <TabsList className="w-full">
-            {children.map((child) => (
-              <TabsTrigger key={child.id} value={child.id}>
-                {readString(child.data, "label", "Aba")}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+          {/* Muitas abas (ex.: um mês por aba) não quebram linha: a lista rola na horizontal, com snap,
+              e a aba ativa ganha o fundo de destaque (tokens primary). O Radix só monta o conteúdo da
+              aba ativa, então imagens das outras não carregam. */}
+          <div className="-mx-1 overflow-x-auto px-1 pb-1 snap-x snap-proximity [scrollbar-width:thin]">
+            <TabsList className="w-max min-w-full justify-start gap-1 group-data-horizontal/tabs:h-10">
+              {children.map((child) => {
+                const badge = readString(child.data, "badge");
+                return (
+                  <TabsTrigger
+                    key={child.id}
+                    value={child.id}
+                    className="h-8 flex-none snap-start px-3 data-active:bg-primary data-active:text-primary-foreground dark:data-active:border-transparent dark:data-active:bg-primary dark:data-active:text-primary-foreground"
+                  >
+                    {readString(child.data, "label", "Aba")}
+                    {badge && (
+                      <span className="ms-1.5 rounded-full bg-current/15 px-1.5 text-[0.7rem] leading-5 font-semibold tabular-nums">{badge}</span>
+                    )}
+                  </TabsTrigger>
+                );
+              })}
+            </TabsList>
+          </div>
           <div className="pt-4">{content}</div>
         </Tabs>
       </CardContent>
@@ -793,16 +812,74 @@ function CTABlock({ block, presentation }: BlockRendererProps) {
   );
 }
 
+// getMediaAssetUrls aceita até 200 ids por chamada — galerias maiores vão em lotes.
+const MEDIA_URL_BATCH = 200;
+
+async function loadMediaUrls(ids: string[], displayWidth?: number): Promise<Record<string, string>> {
+  const urls: Record<string, string> = {};
+  for (let index = 0; index < ids.length; index += MEDIA_URL_BATCH) {
+    const result = await getMediaAssetUrls({ ids: ids.slice(index, index + MEDIA_URL_BATCH), displayWidth });
+    if (result.success) Object.assign(urls, result.data);
+  }
+  return urls;
+}
+
 async function GalleryBlock({ block, renderBlocks, presentation }: BlockRendererProps) {
-  const requestedColumns = Number(block.data.columns) || 3;
-  const columns = CARD_GRID_COLUMN_CLASSES[requestedColumns] ? requestedColumns : 3;
-  const gap = GAP_CLASSES[readString(block.data, "gap", "md")] ?? GAP_CLASSES.md;
+  const options = resolveGalleryOptions(block.data);
   const area = readArea(block, "items");
-  const content = area ? await renderBlocks(area.blocks) : [];
+
+  // Grade simples sem lightbox: o caminho de sempre (cada filho é um bloco de imagem).
+  if (options.variant === "grid" && !options.lightbox) {
+    const gap = GAP_CLASSES[options.gap] ?? GAP_CLASSES.md;
+    const content = area ? await renderBlocks(area.blocks) : [];
+    return (
+      <div id={block.htmlId ?? undefined} {...presentationAttributes(block, presentation)} className={cn("grid", CARD_GRID_COLUMN_CLASSES[options.columns], gap)}>
+        {content}
+      </div>
+    );
+  }
+
+  // Mural e/ou lightbox: URLs resolvidas em lote (uma consulta pra variante pequena do cartão, outra
+  // pro original do lightbox) em vez de um getMediaAsset por imagem — o mural tem dezenas de cartões.
+  const imageBlocks = (area?.blocks ?? []).filter((child) => child.key === IMAGE_BLOCK_KEY);
+  const ids = [...new Set(imageBlocks.map((child) => readString(child.data, "mediaId")).filter(Boolean))];
+  const [thumbs, fulls] = await Promise.all([loadMediaUrls(ids, MURAL_THUMB_DISPLAY_WIDTH), loadMediaUrls(ids)]);
+  const items: GalleryMuralItem[] = imageBlocks.flatMap((child) => {
+    const mediaId = readString(child.data, "mediaId");
+    const thumbUrl = thumbs[mediaId];
+    const fullUrl = fulls[mediaId];
+    if (!thumbUrl || !fullUrl) return [];
+    return [{ id: child.id, thumbUrl, fullUrl, alt: readString(child.data, "alt"), caption: readString(child.data, "caption") }];
+  });
+  if (items.length === 0) return null;
+
+  const aspectClass = GALLERY_ASPECT_CLASSES[options.aspect];
+  const mural = options.variant === "mural";
+  const gridClassName = mural
+    ? cn("grid", MURAL_COLUMN_CLASSES[options.columns], MURAL_GAP_CLASSES[options.gap])
+    : cn("grid", CARD_GRID_COLUMN_CLASSES[options.columns], GAP_CLASSES[options.gap] ?? GAP_CLASSES.md);
+  const attributes = presentationAttributes(block, presentation);
+
+  if (options.lightbox) {
+    return (
+      <GalleryLightboxClient
+        items={items}
+        gridClassName={gridClassName}
+        cardClassName={mural ? MURAL_CARD_CLASSES : PLAIN_CARD_CLASSES}
+        aspectClass={aspectClass}
+        htmlId={block.htmlId}
+        dataAttributes={attributes}
+      />
+    );
+  }
 
   return (
-    <div id={block.htmlId ?? undefined} {...presentationAttributes(block, presentation)} className={cn("grid", CARD_GRID_COLUMN_CLASSES[columns], gap)}>
-      {content}
+    <div id={block.htmlId ?? undefined} {...attributes} className={gridClassName}>
+      {items.map((item) => (
+        <figure key={item.id} className={cn(MURAL_CARD_CLASSES, aspectClass)}>
+          <MuralCardContent item={item} aspectClass={aspectClass} />
+        </figure>
+      ))}
     </div>
   );
 }

@@ -24,7 +24,7 @@ import { createTabsItemBlockDefinition } from "./blocks/tabs-item";
 import { cardGridBlockDefinition } from "./blocks/card-grid";
 import { heroBlockDefinition } from "./blocks/hero";
 import { ctaBlockDefinition } from "./blocks/cta";
-import { galleryBlockDefinition } from "./blocks/gallery";
+import { GALLERY_BLOCK_KEY, galleryBlockDefinition } from "./blocks/gallery";
 import { carouselBlockDefinition } from "./blocks/carousel";
 import { embedBlockDefinition } from "./blocks/embed";
 import { tableBlockDefinition } from "./blocks/table";
@@ -124,7 +124,7 @@ const leafBlockKeys = leafBlocks.map((block) => block.key);
 // 2) accordion-item/tabs-item — área de conteúdo aceita só leaf/plugin (sem blocos estruturais
 // aninhados nesta primeira versão, ver comentário em accordion-item.ts).
 const accordionItemBlockDefinition = createAccordionItemBlockDefinition(leafBlockKeys);
-const tabsItemBlockDefinition = createTabsItemBlockDefinition(leafBlockKeys);
+const tabsItemBlockDefinition = createTabsItemBlockDefinition([...leafBlockKeys, GALLERY_BLOCK_KEY]);
 
 // 3) accordion/tabs/card-grid — allowedBlockKeys fixo (só aceitam seu próprio bloco-item), não
 // precisam de fábrica.

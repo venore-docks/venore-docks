@@ -12,7 +12,7 @@ export const galleryBlockDefinition: BlockDefinition = {
   category: "estrutura",
   structure: "areas",
   allowedInRoot: true,
-  defaultData: { columns: 3, gap: "md" },
+  defaultData: { columns: 3, gap: "md", variant: "grid", lightbox: false, aspect: "auto" },
   editorFields: [
     {
       name: "columns",
@@ -32,6 +32,27 @@ export const galleryBlockDefinition: BlockDefinition = {
         { value: "sm", label: "Pequeno" },
         { value: "md", label: "Médio" },
         { value: "lg", label: "Grande" },
+      ],
+    },
+    {
+      name: "variant",
+      type: "select",
+      label: "Estilo",
+      options: [
+        { value: "grid", label: "Grade simples" },
+        { value: "mural", label: "Mural (cartões com sombra e hover)" },
+      ],
+    },
+    { name: "lightbox", type: "boolean", label: "Ampliar a imagem ao clicar (lightbox)" },
+    {
+      name: "aspect",
+      type: "select",
+      label: "Proporção dos cartões (mural)",
+      options: [
+        { value: "auto", label: "Original" },
+        { value: "10-9", label: "10:9" },
+        { value: "4-3", label: "4:3" },
+        { value: "1-1", label: "Quadrado" },
       ],
     },
   ],

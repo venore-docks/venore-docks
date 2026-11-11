@@ -18,7 +18,10 @@ export function createTabsItemBlockDefinition(contentBlockKeys: string[]): Block
     defaultData: { label: "Aba" },
     requiredDataFields: ["label"],
     missingConfigMessage: "Sem rótulo definido",
-    editorFields: [{ name: "label", type: "text", label: "Rótulo" }],
+    editorFields: [
+      { name: "label", type: "text", label: "Rótulo" },
+      { name: "badge", type: "text", label: "Contador (opcional, ex.: 25)" },
+    ],
     areaDefinitions,
   };
 }
