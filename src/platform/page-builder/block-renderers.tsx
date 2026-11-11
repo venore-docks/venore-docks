@@ -169,6 +169,14 @@ const ALERT_TONE_CLASSNAMES: Partial<Record<AlertVariant, string>> = {
   info: "border-border bg-secondary text-secondary-foreground *:data-[slot=alert-description]:text-secondary-foreground/90",
 };
 
+// Botão opcional dentro do aviso: herda a identidade (borda/texto/fundo) da variante do card.
+const ALERT_BUTTON_CLASSNAMES: Partial<Record<AlertVariant, string>> = {
+  warning: "border-warning-border bg-warning/15 text-warning hover:bg-warning/25 hover:text-warning",
+  success: "border-success-border bg-success/15 text-success hover:bg-success/25 hover:text-success",
+  info: "border-border bg-secondary text-secondary-foreground hover:bg-secondary/80",
+  destructive: "border-destructive/40 bg-destructive/15 text-destructive hover:bg-destructive/25 hover:text-destructive",
+};
+
 function toNativeAlertVariant(tone: AlertVariant): "default" | "destructive" {
   return tone === "destructive" ? "destructive" : "default";
 }
@@ -451,6 +459,8 @@ function AlertBlockRenderer({ block }: BlockRendererProps) {
   const iconName = readString(block.data, "icon");
   const IconComponent = iconName ? NAV_ICON_BY_KEY[iconName] : null;
   const titleAlign = readString(block.data, "titleAlign", "start");
+  const href = readString(block.data, "href");
+  const buttonLabel = readString(block.data, "buttonLabel", "Saiba mais");
 
   return (
     <Alert variant={toNativeAlertVariant(tone)} className={ALERT_TONE_CLASSNAMES[tone]}>
@@ -459,6 +469,13 @@ function AlertBlockRenderer({ block }: BlockRendererProps) {
       </IconTitleRow>
       {hasRichTextContent(description) && (
         <AlertDescription className={RICH_TEXT_INLINE_CLASSES}>{renderRichTextContent(description)}</AlertDescription>
+      )}
+      {href && (
+        <div className="mt-3">
+          <Button asChild size="sm" variant={ALERT_BUTTON_CLASSNAMES[tone] ? "outline" : "default"} className={ALERT_BUTTON_CLASSNAMES[tone]}>
+            <Link href={href} {...externalLinkProps(href)}>{buttonLabel}</Link>
+          </Button>
+        </div>
       )}
     </Alert>
   );

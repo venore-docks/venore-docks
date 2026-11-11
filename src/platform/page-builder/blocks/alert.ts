@@ -7,7 +7,7 @@ export const alertBlockDefinition: BlockDefinition = {
   category: "conteúdo",
   structure: "leaf",
   allowedInRoot: false,
-  defaultData: { title: "Aviso", description: "", variant: "default", icon: "", titleAlign: "start" },
+  defaultData: { title: "Aviso", description: "", variant: "default", icon: "", titleAlign: "start", href: "", buttonLabel: "" },
   requiredDataFields: ["title"],
   missingConfigMessage: "Sem título definido",
   editorFields: [
@@ -36,6 +36,8 @@ export const alertBlockDefinition: BlockDefinition = {
       label: "Ícone (opcional)",
       options: [{ value: "", label: "Nenhum" }, ...NAV_ICON_KEYS.map((name) => ({ value: name, label: name }))],
     },
+    { name: "href", type: "url", label: "Link do botão (opcional)" },
+    { name: "buttonLabel", type: "text", label: "Texto do botão (opcional)" },
     {
       // No desktop o ícone fica ao lado do título (linha); no mobile fica acima (coluna) — este
       // campo controla o alinhamento do par ícone+título nos dois casos (ver AlertBlockRenderer).

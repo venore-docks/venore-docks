@@ -14,6 +14,11 @@ continuam propagando por merge.
 
 ## [Unreleased]
 
+## [0.7.2] - 2026-11-11
+
+### Added
+- **Bloco Aviso com botão opcional.** `core.content.alert` ganha `href` + `buttonLabel`; o botão renderiza dentro do card, com a identidade (borda/fundo/texto) da variante do aviso.
+
 ## [0.7.1] - 2026-11-11
 
 ### Added
