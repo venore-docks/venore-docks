@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { defaultThemeConfigDocument, themeConfigDocumentSchema } from "@/contexts/themes/contracts/v8";
-import { currentPaletteChoice, setCustomToken, toCustomChoice, toPickerHex, withPaletteChoice } from "./palette-draft";
+import { currentPaletteChoice, PALETTE_PANEL_TOKENS, setCustomToken, toCustomChoice, toPickerHex, withPaletteChoice } from "./palette-draft";
 
 describe("palette-draft", () => {
   const draft = defaultThemeConfigDocument("venore-slime");
@@ -30,6 +30,14 @@ describe("palette-draft", () => {
     expect(edited.light).toEqual({ primary: "#3366cc", background: "#ffffff" });
     expect(seed.generated.light).toEqual({ primary: "#3366cc" }); // não muta
     expect(setCustomToken(edited, "light", "primary", null).light).toEqual({ background: "#ffffff" });
+  });
+
+  it("painel expõe alerta (warning) e a escolha personalizada com ele é um documento válido", () => {
+    const tokens: readonly string[] = PALETTE_PANEL_TOKENS.map((entry) => entry.token);
+    expect(tokens).toEqual(expect.arrayContaining(["warning", "warning-foreground"]));
+    const choice = setCustomToken(setCustomToken({ mode: "default" }, "dark", "warning", "#b45309"), "dark", "warning-foreground", "#ffffff");
+    expect(choice.dark).toEqual({ warning: "#b45309", "warning-foreground": "#ffffff" });
+    expect(themeConfigDocumentSchema.safeParse({ ...draft, ...withPaletteChoice(draft, "venore-slime", choice) }).success).toBe(true);
   });
 
   it("toPickerHex converte oklch e ignora o resto", () => {

@@ -9,8 +9,10 @@ import { oklchToHex, parseCssColor } from "@/platform/theme-engine/oklch-color";
 export type PaletteMode = ThemePaletteChoice["mode"];
 type CustomChoice = Extract<ThemePaletteChoice, { mode: "custom" }>;
 
-// Tokens editáveis à mão no modo "Personalizada" — o essencial de superfície/texto/marca. O resto
-// continua vindo do theme.css (override parcial).
+// Tokens editáveis à mão no modo "Personalizada" — o essencial de superfície/texto/marca, mais o
+// alerta (`warning`, que também deriva `warning-soft`/`warning-border` via color-mix no theme.css).
+// Cor semântica NÃO é gerada pela semente de marca (não deve seguir a marca): só muda aqui, por
+// escolha explícita do admin. O resto continua vindo do theme.css (override parcial).
 export const PALETTE_PANEL_TOKENS = [
   { token: "background", label: "Fundo" },
   { token: "foreground", label: "Texto" },
@@ -20,6 +22,8 @@ export const PALETTE_PANEL_TOKENS = [
   { token: "primary-foreground", label: "Texto sobre primária" },
   { token: "accent", label: "Destaque" },
   { token: "border", label: "Borda" },
+  { token: "warning", label: "Alerta" },
+  { token: "warning-foreground", label: "Texto sobre alerta" },
 ] as const;
 
 export function currentPaletteChoice(draft: ThemeConfigDocument, themeKey: string): ThemePaletteChoice {
