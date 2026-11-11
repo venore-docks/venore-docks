@@ -14,7 +14,7 @@ const returnTo = "/admin/settings/brand";
 // headerMode/position/size/scrolledSize saíram daqui (T2 — migraram pro tema ativo, ver
 // ThemeManifest.brandAesthetics); comportamento do header saiu daqui pra /admin/themes (pedido
 // desta sessão — junto das demais configurações do tema ativo); só sobra conteúdo (nome/logos/
-// favicon/descrição).
+// favicon/ícone do app/imagem de compartilhamento/descrição).
 export async function updateBrandSettingsAction(
   _prevState: BrandSettingsActionState,
   formData: FormData,
@@ -24,6 +24,8 @@ export async function updateBrandSettingsAction(
     { key: BRAND_SETTING_KEYS.logoMediaId, value: String(formData.get("logoMediaId") ?? "") },
     { key: BRAND_SETTING_KEYS.logoScrolledMediaId, value: String(formData.get("logoScrolledMediaId") ?? "") },
     { key: BRAND_SETTING_KEYS.faviconMediaId, value: String(formData.get("faviconMediaId") ?? "") },
+    { key: BRAND_SETTING_KEYS.pwaIconMediaId, value: String(formData.get("pwaIconMediaId") ?? "") },
+    { key: BRAND_SETTING_KEYS.ogImageMediaId, value: String(formData.get("ogImageMediaId") ?? "") },
     { key: BRAND_SETTING_KEYS.footerDescription, value: String(formData.get("footerDescription") ?? "") },
   ];
 

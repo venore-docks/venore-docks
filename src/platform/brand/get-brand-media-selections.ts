@@ -8,6 +8,8 @@ export type BrandMediaSelections = {
   logo: BrandMediaSelection;
   logoScrolled: BrandMediaSelection;
   favicon: BrandMediaSelection;
+  pwaIcon: BrandMediaSelection;
+  ogImage: BrandMediaSelection;
 };
 
 async function resolveSelection(key: string): Promise<BrandMediaSelection> {
@@ -28,11 +30,13 @@ async function resolveSelection(key: string): Promise<BrandMediaSelection> {
 // getBrandConfig() já resolve pra URL final (caminho quente do header), este aqui resolve pro
 // registro completo que o picker precisa pra exibir a seleção atual.
 export async function getBrandMediaSelections(): Promise<BrandMediaSelections> {
-  const [logo, logoScrolled, favicon] = await Promise.all([
+  const [logo, logoScrolled, favicon, pwaIcon, ogImage] = await Promise.all([
     resolveSelection(BRAND_SETTING_KEYS.logoMediaId),
     resolveSelection(BRAND_SETTING_KEYS.logoScrolledMediaId),
     resolveSelection(BRAND_SETTING_KEYS.faviconMediaId),
+    resolveSelection(BRAND_SETTING_KEYS.pwaIconMediaId),
+    resolveSelection(BRAND_SETTING_KEYS.ogImageMediaId),
   ]);
 
-  return { logo, logoScrolled, favicon };
+  return { logo, logoScrolled, favicon, pwaIcon, ogImage };
 }

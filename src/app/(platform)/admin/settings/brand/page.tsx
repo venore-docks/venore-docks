@@ -24,7 +24,7 @@ export default async function BrandSettingsPage() {
       <div>
         <h1 className="text-xl font-semibold text-foreground">Identidade do site</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Marca do site: nome, logo, favicon e descrição do rodapé. Modo de exibição, tamanho, posição, cor da
+          Marca do site: nome, logos, favicon, ícone do app (PWA), imagem de compartilhamento e descrição do rodapé. Modo de exibição, tamanho, posição, cor da
           marca e comportamento do header agora são definidos pelo tema ativo (
           <span className="font-medium">/admin/themes</span>), não mais aqui.
         </p>

@@ -68,6 +68,28 @@ export function BrandSettingsForm({
         />
         <MediaPickerField name="faviconMediaId" label="Favicon" initialMedia={media.favicon} />
 
+        <div className="space-y-4 border-t border-border pt-4">
+          <div>
+            <p className="text-sm font-medium text-foreground">Imagens de identidade</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Valem para o site todo e têm prioridade sobre o que o tema configura em /admin/themes/customize.
+            </p>
+          </div>
+          <div className="space-y-1">
+            <MediaPickerField name="pwaIconMediaId" label="Ícone do app (PWA)" initialMedia={media.pwaIcon} />
+            <p className="text-xs text-muted-foreground">
+              Aparece quando o site é instalado no celular (tela inicial) e como ícone do iOS. Use um PNG quadrado de 512 × 512 px que
+              preencha toda a imagem. Sem ele, usa o ícone do tema e, por fim, o padrão do Venore Docks.
+            </p>
+          </div>
+          <div className="space-y-1">
+            <MediaPickerField name="ogImageMediaId" label="Imagem de compartilhamento" initialMedia={media.ogImage} />
+            <p className="text-xs text-muted-foreground">
+              Prévia do link no WhatsApp e nas redes sociais. Use 1200 × 630 px (JPG ou PNG). Páginas com imagem própria usam a delas.
+            </p>
+          </div>
+        </div>
+
         <Button type="submit" disabled={pending}>
           Salvar
         </Button>

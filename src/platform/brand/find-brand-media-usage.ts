@@ -6,6 +6,8 @@ const FIELDS: { key: string; label: string }[] = [
   { key: BRAND_SETTING_KEYS.logoMediaId, label: "Logo do cabeçalho" },
   { key: BRAND_SETTING_KEYS.logoScrolledMediaId, label: "Logo (com scroll)" },
   { key: BRAND_SETTING_KEYS.faviconMediaId, label: "Favicon" },
+  { key: BRAND_SETTING_KEYS.pwaIconMediaId, label: "Ícone do app (PWA)" },
+  { key: BRAND_SETTING_KEYS.ogImageMediaId, label: "Imagem de compartilhamento" },
 ];
 
 // Provider de uso de mídia do domínio brand (docs/venore-docks.md — regra 12/14): brand guarda

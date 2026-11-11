@@ -9,7 +9,7 @@ import { getSiteOrigin } from "./site-origin";
 // imagem padrão de Open Graph do tema/config e o noindex do modo manutenção (quem não é admin vê
 // o aviso com status 200 — sem noindex, o aviso entraria no índice no lugar do conteúdo).
 export async function resolveThemeMetadataDefaults(): Promise<Metadata> {
-  const [{ siteName, footerDescription, faviconUrl }, origin, ogImages, maintenance] = await Promise.all([
+  const [{ siteName, footerDescription, faviconUrl, pwaIconUrl }, origin, ogImages, maintenance] = await Promise.all([
     getBrandConfig(),
     getSiteOrigin(),
     resolveDefaultOgImage(),
@@ -32,7 +32,8 @@ export async function resolveThemeMetadataDefaults(): Promise<Metadata> {
     icons: {
       icon: faviconUrl,
       shortcut: faviconUrl,
-      apple: "/icons/apple-touch-icon.png",
+      // Ícone da tela inicial do iOS: o do app definido na identidade do site; sem ele, o padrão do core.
+      apple: pwaIconUrl ?? "/icons/apple-touch-icon.png",
     },
     ...(ogImages ? { openGraph: { siteName, images: ogImages } } : {}),
     ...(maintenance ? { robots: { index: false, follow: false } } : {}),

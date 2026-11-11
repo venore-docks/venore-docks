@@ -7,6 +7,8 @@ import { normalizeThemeDefinition } from "@/platform/theme-rendering/normalize-e
 // cores/ícones do tema e lang/dir do documento, imagem padrão de Open Graph.
 vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
 vi.mock("@/platform/theme-rendering/document-model", () => ({ resolveDocumentModel: async () => ({}) }));
+// og-image.ts e web-manifest.ts leem a identidade do site (que puxa settings/mídia, ou seja, banco): fora do escopo daqui.
+vi.mock("@/platform/brand/get-brand-config", () => ({ getBrandConfig: async () => ({}) }));
 
 const { CHROME_DARK, colorToHex, resolveThemeChromeColors } = await import("./theme-color");
 const { buildViewport } = await import("./viewport");
@@ -72,9 +74,13 @@ describe("web manifest", () => {
     expect(manifest).toMatchObject({ name: "S", lang: "ar", dir: "rtl", theme_color: "#123456", background_color: "#123456" });
   });
 
-  it("ícones: mídia da config → assets do tema → os do core", () => {
+  it("ícones: ícone do site/config → assets do tema → os do core", () => {
     expect(pickManifestIcons(slime, null)).toEqual(DEFAULT_MANIFEST_ICONS);
-    expect(pickManifestIcons(slime, "/media/i.png")).toEqual([{ src: "/media/i.png", sizes: "any", purpose: "any" }]);
+    // Uma mídia só é declarada em 192 e 512: sem os dois tamanhos o navegador não oferece instalar.
+    expect(pickManifestIcons(slime, "/media/i.png")).toEqual([
+      { src: "/media/i.png", sizes: "192x192", purpose: "any" },
+      { src: "/media/i.png", sizes: "512x512", purpose: "any" },
+    ]);
     const themed = { assets: { icon192: image("/_next/a.png", 192), maskable512: image("/_next/m.png", 512) } };
     expect(pickManifestIcons(themed, null)).toEqual([
       { src: "/_next/a.png", sizes: "192x192", type: "image/png", purpose: "any" },
@@ -85,6 +91,17 @@ describe("web manifest", () => {
 
 describe("imagem padrão de Open Graph", () => {
   const mediaUrls = async (ids: string[]) => Object.fromEntries(ids.map((id) => [id, `/media/${id}.jpg`]));
+
+  it("imagem da identidade do site vence a do tema e a da config, sempre absoluta", async () => {
+    const theme = { assets: { ogImage: image("/_next/og.png", 1200) } };
+    expect(
+      await pickDefaultOgImage({ config: { assets: { ogImageMediaId: "m1" } }, theme, origin: "https://s.test", brandUrl: "/media/marca.jpg", mediaUrls }),
+    ).toEqual([{ url: "https://s.test/media/marca.jpg" }]);
+    // brandUrl nulo = não definida: cai na cadeia de antes.
+    expect(await pickDefaultOgImage({ config: { assets: { ogImageMediaId: "m1" } }, theme, origin: "https://s.test", brandUrl: null, mediaUrls })).toEqual([
+      { url: "https://s.test/media/m1.jpg" },
+    ]);
+  });
 
   it("config.assets.ogImageMediaId → asset do tema → nenhuma, sempre absoluta", async () => {
     const theme = { assets: { ogImage: image("/_next/og.png", 1200) } };

@@ -16,13 +16,20 @@ export const DEFAULT_MANIFEST_ICONS: ManifestIcon[] = [
   { src: "/icons/icon-maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
 ];
 
-// Ícones do PWA (spec §7.7): mídia da config do tema (config.assets.iconMediaId) → assets do
-// pacote (icon192/icon512/maskable512) → os ícones do core de hoje.
+// Ícones do PWA (spec §7.7): ícone da identidade do site (/admin/settings/brand) → mídia da config do tema
+// (config.assets.iconMediaId) → assets do pacote (icon192/icon512/maskable512) → os ícones do core de hoje.
+// Uma mídia só (sem tamanhos próprios) é declarada em 192 e 512: o navegador só oferece instalar se o manifest
+// tiver esses dois tamanhos, e reduz/amplia a mesma imagem.
 export function pickManifestIcons(
   theme: Pick<ResolvedThemeDefinition, "assets">,
   configIconUrl: string | null,
 ): ManifestIcon[] {
-  if (configIconUrl) return [{ src: configIconUrl, sizes: "any", purpose: "any" }];
+  if (configIconUrl) {
+    return [
+      { src: configIconUrl, sizes: "192x192", purpose: "any" },
+      { src: configIconUrl, sizes: "512x512", purpose: "any" },
+    ];
+  }
   const { icon192, icon512, maskable512 } = theme.assets;
   if (!icon192 && !icon512 && !maskable512) return DEFAULT_MANIFEST_ICONS;
   const icon = (src: { src: string; width: number; height: number }, purpose: "any" | "maskable"): ManifestIcon => ({
@@ -73,11 +80,12 @@ async function configIconUrl(config: Pick<ThemeConfigDocument, "assets">): Promi
 
 // Web App Manifest (spec §7.7): cores e ícones do tema (W4), lang/dir do locale do documento (W8).
 export async function buildWebManifest(): Promise<MetadataRoute.Manifest> {
-  const [{ siteName }, doc] = await Promise.all([getBrandConfig(), resolveDocumentModel()]);
+  const [brand, doc] = await Promise.all([getBrandConfig(), resolveDocumentModel()]);
+  const { siteName } = brand;
   return composeWebManifest({
     siteName,
     colors: resolveThemeChromeColors(doc.theme, documentPaletteChoice(doc)),
-    icons: pickManifestIcons(doc.theme, await configIconUrl(doc.config)),
+    icons: pickManifestIcons(doc.theme, brand.pwaIconUrl ?? (await configIconUrl(doc.config))),
     locale: doc.locale,
     dir: doc.dir,
   });

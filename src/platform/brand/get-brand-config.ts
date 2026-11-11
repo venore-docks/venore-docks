@@ -11,6 +11,10 @@ export type BrandConfig = {
   logoUrl: string;
   scrolledLogoUrl: string;
   faviconUrl: string;
+  // Ícone do app instalável (PWA) e imagem de compartilhamento (Open Graph): `null` = não definido na
+  // identidade do site — quem consome cai no que o tema configura (config.assets) e depois no padrão.
+  pwaIconUrl: string | null;
+  ogImageUrl: string | null;
   footerDescription: string;
 };
 
@@ -19,6 +23,8 @@ const KEYS = {
   logoMediaId: "brand.logoMediaId",
   logoScrolledMediaId: "brand.logoScrolledMediaId",
   faviconMediaId: "brand.faviconMediaId",
+  pwaIconMediaId: "brand.pwaIconMediaId",
+  ogImageMediaId: "brand.ogImageMediaId",
   footerDescription: "brand.footerDescription",
 } as const;
 
@@ -33,6 +39,8 @@ const DEFAULTS = {
   logoMediaId: "",
   logoScrolledMediaId: "",
   faviconMediaId: "",
+  pwaIconMediaId: "",
+  ogImageMediaId: "",
   // Frase de exemplo NEUTRA (não carrega identidade de tenant, mesma regra do siteName) — sem
   // ela o rodapé fica só com a marca solta num painel vazio. O admin ajusta em
   // /admin/settings/brand; registerDefaultSetting persiste esta na primeira leitura, então ela
@@ -66,24 +74,36 @@ async function resolveMediaUrl(mediaId: string, fallback: string): Promise<strin
   return result.data.url;
 }
 
+// Imagem opcional da identidade: sem mídia escolhida (ou mídia que não resolve), `null` — sem fallback fixo,
+// porque o padrão certo depende de quem consome (manifest, Open Graph, ícone do iOS).
+async function resolveOptionalMediaUrl(mediaId: string): Promise<string | null> {
+  if (!mediaId) return null;
+  const result = await getMediaAsset({ id: mediaId });
+  return result.success && result.data ? result.data.url : null;
+}
+
 // `mode` vem do tema ativo (BrandAesthetics.mode, T2) — só é usado aqui pra escolher a extensão
 // certa do fallback de logo quando nenhuma mídia foi selecionada; default "svg" cobre os
 // chamadores que não precisam de precisão de fallback (ex: layout.tsx só lê faviconUrl).
 export async function getBrandConfig(mode: HeaderBrandMode = "svg"): Promise<BrandConfig> {
-  const [siteName, logoMediaId, logoScrolledMediaId, faviconMediaId, footerDescription] = await Promise.all([
+  const [siteName, logoMediaId, logoScrolledMediaId, faviconMediaId, pwaIconMediaId, ogImageMediaId, footerDescription] = await Promise.all([
     readStringSetting(KEYS.siteName, DEFAULTS.siteName),
     readStringSetting(KEYS.logoMediaId, DEFAULTS.logoMediaId),
     readStringSetting(KEYS.logoScrolledMediaId, DEFAULTS.logoScrolledMediaId),
     readStringSetting(KEYS.faviconMediaId, DEFAULTS.faviconMediaId),
+    readStringSetting(KEYS.pwaIconMediaId, DEFAULTS.pwaIconMediaId),
+    readStringSetting(KEYS.ogImageMediaId, DEFAULTS.ogImageMediaId),
     readStringSetting(KEYS.footerDescription, DEFAULTS.footerDescription),
   ]);
 
   const fallbackLogo = mode === "png" ? FALLBACK_LOGO_PNG : FALLBACK_LOGO_SVG;
 
-  const [logoUrl, scrolledLogoUrl, faviconUrl] = await Promise.all([
+  const [logoUrl, scrolledLogoUrl, faviconUrl, pwaIconUrl, ogImageUrl] = await Promise.all([
     resolveMediaUrl(logoMediaId, fallbackLogo),
     resolveMediaUrl(logoScrolledMediaId, FALLBACK_LOGO_SCROLLED_PNG),
     resolveMediaUrl(faviconMediaId, FALLBACK_FAVICON),
+    resolveOptionalMediaUrl(pwaIconMediaId),
+    resolveOptionalMediaUrl(ogImageMediaId),
   ]);
 
   return {
@@ -91,6 +111,8 @@ export async function getBrandConfig(mode: HeaderBrandMode = "svg"): Promise<Bra
     logoUrl,
     scrolledLogoUrl,
     faviconUrl,
+    pwaIconUrl,
+    ogImageUrl,
     footerDescription: footerDescription.trim() || DEFAULTS.footerDescription,
   };
 }
