@@ -10,6 +10,8 @@ import { DefaultRoleForm } from "./_components/default-role-form";
 import { RegistrationApprovalToggleForm } from "./_components/registration-approval-toggle-form";
 import { LocaleForm } from "./_components/locale-form";
 import { MaintenanceForm } from "./_components/maintenance-form";
+import { MembersOnlyForm } from "./_components/members-only-form";
+import { readMembersOnlySetting } from "@/platform/site-access/members-only";
 
 export default async function SettingsAdminPage() {
   const gate = await getSettingsPageData();
@@ -31,6 +33,7 @@ export default async function SettingsAdminPage() {
   // Mesmo fallback de handle-user-registered.ts: setting ausente ou com valor inesperado = aprovação exigida.
   const record = settingResult.data;
   const approvalRequired = !record || typeof record.value !== "boolean" ? true : record.value;
+  const membersOnly = await readMembersOnlySetting();
   const [selfRegistration, defaultRoleKey, rolesResult] = await Promise.all([
     isSelfRegistrationEnabled(),
     getDefaultRegistrationRoleKey(),
@@ -77,6 +80,17 @@ export default async function SettingsAdminPage() {
       {/* v8 (spec §9): cada formulário tem dono e action próprios — idioma (W8), manutenção (W4). */}
       <LocaleForm />
       <MaintenanceForm />
+
+      <section className="rounded-panel border border-border bg-card ui-panel-padding-roomy">
+        <h2 className="text-sm font-semibold text-foreground">Acesso ao site</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Ligado, quem não está logado é levado direto para a tela de login e volta à página pedida depois de entrar. Telas
+          de login, rotas /api e /ext (TV, quiosque, embeds) continuam abertas; liste abaixo qualquer outro caminho público.
+        </p>
+        <div className="mt-3">
+          <MembersOnlyForm enabled={membersOnly.enabled} openPaths={membersOnly.openPaths} />
+        </div>
+      </section>
     </div>
   );
 }

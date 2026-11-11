@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
-import { getCurrentUserRegistrationStatus } from "@/contexts/auth";
+import { getCurrentUser, getCurrentUserRegistrationStatus } from "@/contexts/auth";
+import { BREADCRUMB_PATHNAME_HEADER } from "@/platform/breadcrumbs/pathname-header";
+import { isPathOpen, readMembersOnlySetting } from "@/platform/site-access/members-only";
 import { RouteChangeRefresher } from "@/platform/breadcrumbs/route-change-refresher";
 import { HeaderOffsetSync } from "@/platform/header-behavior/header-offset-sync";
 import { resolveThemeRenderModel } from "@/platform/theme-rendering/render-model";
@@ -38,6 +40,18 @@ export default async function PlatformLayout({
   const [registrationStatus, requestHeaders] = await Promise.all([getCurrentUserRegistrationStatus(), headers()]);
   if (registrationStatus.success && registrationStatus.data === "pending") {
     redirect("/pending-approval");
+  }
+
+  // Site só para logados (/admin/settings → "Acesso ao site"): sem sessão vai direto ao login.
+  const membersOnly = await readMembersOnlySetting();
+  if (membersOnly.enabled) {
+    const pathname = requestHeaders.get(BREADCRUMB_PATHNAME_HEADER) ?? "/";
+    if (!isPathOpen(pathname, membersOnly.openPaths)) {
+      const currentUser = await getCurrentUser();
+      if (!(currentUser.success && currentUser.data)) {
+        redirect(`/login?callbackUrl=${encodeURIComponent(pathname)}`);
+      }
+    }
   }
 
   const model = await modelPromise;
