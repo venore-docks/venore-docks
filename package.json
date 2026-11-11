@@ -64,7 +64,7 @@
     "@venore/plugin-scoreboard": "git+https://github.com/venore-docks/venore-plugin-scoreboard.git#v1.2.0",
     "@venore/plugin-tests": "git+https://github.com/venore-docks/venore-plugin-tests.git#v0.3.1",
     "@venore/plugin-vagas": "github:venore-docks/venore-plugin-vagas#v1.3.0",
-    "@venore/plugin-zammad": "git+https://github.com/venore-docks/venore-plugin-zammad.git#v0.4.0",
+    "@venore/plugin-zammad": "git+https://github.com/venore-docks/venore-plugin-zammad.git#v0.5.0",
     "@venore/theme-academy": "github:venore-docks/venore-theme-academy#v1.1.4",
     "@venore/theme-aurora": "github:venore-docks/venore-theme-aurora#v0.2.1",
     "@venore/theme-druids": "github:venore-docks/venore-theme-druids#v2.0.2",
