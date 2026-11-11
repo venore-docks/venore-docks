@@ -15,6 +15,7 @@ import { listBlockDefinition } from "./blocks/list";
 import { progressBlockDefinition } from "./blocks/progress";
 import { cardBlockDefinition } from "./blocks/card";
 import { audioBlockDefinition } from "./blocks/audio";
+import { entryFeedBlockDefinition } from "./blocks/entry-feed";
 import { createSectionBlockDefinition } from "./blocks/section";
 import { accordionBlockDefinition } from "./blocks/accordion";
 import { createAccordionItemBlockDefinition } from "./blocks/accordion-item";
@@ -60,6 +61,7 @@ const CORE_LEAF_BLOCKS: BlockDefinition[] = [
   markdownBlockDefinition,
   statsBlockDefinition,
   timelineBlockDefinition,
+  entryFeedBlockDefinition,
   contactFormBlockDefinition,
 ];
 

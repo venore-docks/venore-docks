@@ -35,6 +35,7 @@ import { HERO_BLOCK_KEY } from "./blocks/hero";
 import { CTA_BLOCK_KEY } from "./blocks/cta";
 import { GALLERY_BLOCK_KEY } from "./blocks/gallery";
 import { CAROUSEL_BLOCK_KEY } from "./blocks/carousel";
+import { ENTRY_FEED_BLOCK_KEY } from "./blocks/entry-feed";
 
 type ButtonVariant = NonNullable<VariantProps<typeof buttonVariants>["variant"]>;
 
@@ -1055,6 +1056,14 @@ function ContactFormBlock({ block, mode }: BlockRendererProps) {
   );
 }
 
+// "Publicações recentes" lê CMS + mídia + sessão (@/contexts/auth -> next-auth). Import dinâmico pelo
+// mesmo motivo dos renderers de plugin (abaixo): esse grafo não entra no import estático deste
+// módulo, que também é carregado por quem só precisa dos blocos puros.
+async function EntryFeedBlockLazy(props: BlockRendererProps) {
+  const { EntryFeedBlock } = await import("./entry-feed/entry-feed-block");
+  return <EntryFeedBlock {...props} />;
+}
+
 const CORE_BLOCK_RENDERERS: Record<string, BlockRendererComponent> = {
   [ROW_BLOCK_KEY]: RowBlock,
   "core.content.heading": HeadingBlock,
@@ -1090,6 +1099,7 @@ const CORE_BLOCK_RENDERERS: Record<string, BlockRendererComponent> = {
   "core.content.stats": StatsBlock,
   "core.content.timeline": TimelineBlock,
   [CONTACT_FORM_BLOCK_KEY]: ContactFormBlock,
+  [ENTRY_FEED_BLOCK_KEY]: EntryFeedBlockLazy,
 };
 
 // Renderers de plugin vêm de PLUGIN_CONTRIBUTIONS[key].blockRenderers — um LOADER preguiçoso

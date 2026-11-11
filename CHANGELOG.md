@@ -44,6 +44,16 @@ build. Recomendado no modo worker: `SPEECH_WORKER_GITHUB_TOKEN` (o app chama o w
 
 ### Added
 
+- **Bloco `core.content.entry-feed` ("Publicações recentes")**: lista dinâmica das últimas N entries
+  de uma categoria (campos: `title`, `categorySlug` — default `noticias` —, `limit` de 1 a 12 —
+  default 3 — e `viewAllLabel`, o link opcional para a rota da categoria). Respeita a visibilidade
+  por entry (visitante sem sessão só vê `public`) e só publicadas; o card aparece sozinho quando a
+  entry é publicada. Cartão inteiro clicável, sem botão "Ler": capa 16/10 com zoom leve e gradiente
+  por token, categoria em badge, data, título e resumo em 2 linhas, seta que desliza no hover; com
+  exatamente 3 publicações o primeiro card vira destaque (2×2 no desktop). Só tokens shadcn,
+  mobile-first, animações desligadas com `motion-reduce`. Código em
+  `platform/page-builder/entry-feed/`.
+
 - **Plugin Listas de materiais no `portal-colaborador`** (`@venore/plugin-listas-materiais`):
   listas de material escolar por segmento e ano, com fluxo coordenação → direção → marketing e PDF
   final (capas + seções geradas) feito no servidor com Chromium headless. Depois do deploy:
@@ -141,6 +151,17 @@ build. Recomendado no modo worker: `SPEECH_WORKER_GITHUB_TOKEN` (o app chama o w
 - **Editar o escopo de um menu contextual** em `/admin/cms/menus` (antes só dava para criar).
 - **Permission por namespace para settings de plugin (G5):** uma setting `<plugin>.*` também pode
   ser gravada com `<plugin>.settings.manage`, se o plugin declarar essa permission.
+
+### Changed
+
+- **Listagem de categoria (ex.: `/noticias`) com rolagem infinita.** O botão "Mais antigos" abria
+  outra página e perdia os cards da primeira; agora um `IntersectionObserver` busca o próximo lote
+  em `GET /api/category-entries?category=<slug>&page=<n>` e anexa aos cards já exibidos (estado de
+  carregando, erro com "Tentar de novo", sem duplicar). Mesma regra de visibilidade da página
+  (visitante sem sessão só vê `public`, filtrado no banco antes da paginação): o carregador é um só
+  (`platform/category-listing`). Sem JavaScript, o link de paginação continua em `<noscript>` e
+  `?page=N` segue valendo. Novas chaves i18n `category.loadingMore`, `category.loadError` e
+  `category.retry`.
 
 ### Fixed
 
