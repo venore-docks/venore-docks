@@ -14,6 +14,8 @@ continuam propagando por merge.
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-11
+
 **Ao atualizar uma instância:** nada obrigatório. Opcional: escolher o papel padrão de novas
 contas em `/admin/settings` (sem escolha, continua valendo `RBAC_DEFAULT_REGISTRATION_ROLE_KEY` ou
 `member`) e criar um menu de location "Cabeçalho (header)" em `/admin/cms/menus`. Depois do
@@ -44,6 +46,7 @@ build. Recomendado no modo worker: `SPEECH_WORKER_GITHUB_TOKEN` (o app chama o w
 
 ### Added
 
+- **Site só para logados** (`/admin/settings` → "Acesso ao site", setting `platform.members_only`): ligado, quem não tem sessão vai direto para `/login?callbackUrl=<página>` e volta depois de entrar. `/login`, `/api/*` e `/ext/*` continuam abertos; outros caminhos públicos (ex.: `/calendarios`) entram na lista "Caminhos que continuam abertos". Desligado por padrão; sem migration.
 - **Galeria em modo "mural" com lightbox** (`core.layout.gallery`, campos novos e opcionais
   `variant: "grid" | "mural"`, `lightbox`, `aspect: "auto" | "10-9" | "4-3" | "1-1"`; galerias antigas
   não mudam). O mural renderiza cartões com borda, `shadow-panel`, elevação no hover (sem
