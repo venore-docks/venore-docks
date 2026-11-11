@@ -154,6 +154,9 @@ build. Recomendado no modo worker: `SPEECH_WORKER_GITHUB_TOKEN` (o app chama o w
 
 ### Changed
 
+- **Links absolutos (`http`/`https`) em botão, card, hero e CTA do page-builder abrem em nova aba**
+  (`target="_blank"` + `rel="noopener noreferrer"`); links internos continuam na mesma aba
+  (`block-renderers.tsx`).
 - **Listagem de categoria (ex.: `/noticias`) com rolagem infinita.** O botão "Mais antigos" abria
   outra página e perdia os cards da primeira; agora um `IntersectionObserver` busca o próximo lote
   em `GET /api/category-entries?category=<slug>&page=<n>` e anexa aos cards já exibidos (estado de

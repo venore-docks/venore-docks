@@ -37,6 +37,11 @@ import { GALLERY_BLOCK_KEY } from "./blocks/gallery";
 import { CAROUSEL_BLOCK_KEY } from "./blocks/carousel";
 import { ENTRY_FEED_BLOCK_KEY } from "./blocks/entry-feed";
 
+// Link absoluto (http/https) sai do site: abre em nova aba, sem vazar window.opener nem referrer.
+function externalLinkProps(href: string): { target?: "_blank"; rel?: string } {
+  return /^https?:\/\//i.test(href) ? { target: "_blank", rel: "noopener noreferrer" } : {};
+}
+
 type ButtonVariant = NonNullable<VariantProps<typeof buttonVariants>["variant"]>;
 
 // "edit": bloco não configurado vira placeholder visível (o editor precisa mostrar que o botão
@@ -534,7 +539,7 @@ async function CardBlock({ block, presentation }: BlockRendererProps) {
       {href && (
         <CardFooter>
           <Button asChild size="sm" variant="outline">
-            <Link href={href}>{buttonLabel}</Link>
+            <Link href={href} {...externalLinkProps(href)}>{buttonLabel}</Link>
           </Button>
         </CardFooter>
       )}
@@ -693,7 +698,7 @@ function ButtonBlock({ block }: BlockRendererProps) {
 
   return (
     <Button asChild variant={variant}>
-      <Link href={href}>{label}</Link>
+      <Link href={href} {...externalLinkProps(href)}>{label}</Link>
     </Button>
   );
 }
@@ -747,12 +752,12 @@ async function HeroBlock({ block, presentation }: BlockRendererProps) {
           <div className="mt-2 flex flex-wrap gap-3">
             {primaryLabel && primaryHref && (
               <Button asChild size="lg">
-                <Link href={primaryHref}>{primaryLabel}</Link>
+                <Link href={primaryHref} {...externalLinkProps(primaryHref)}>{primaryLabel}</Link>
               </Button>
             )}
             {secondaryLabel && secondaryHref && (
               <Button asChild size="lg" variant={onMedia ? "secondary" : "outline"}>
-                <Link href={secondaryHref}>{secondaryLabel}</Link>
+                <Link href={secondaryHref} {...externalLinkProps(secondaryHref)}>{secondaryLabel}</Link>
               </Button>
             )}
           </div>
@@ -782,7 +787,7 @@ function CTABlock({ block, presentation }: BlockRendererProps) {
         )}
       </div>
       <Button asChild size="lg" variant={onPrimary ? "secondary" : "default"} className="shrink-0">
-        <Link href={buttonHref}>{buttonLabel}</Link>
+        <Link href={buttonHref} {...externalLinkProps(buttonHref)}>{buttonLabel}</Link>
       </Button>
     </div>
   );
