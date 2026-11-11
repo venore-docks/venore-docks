@@ -3,7 +3,7 @@ import { entryFeedGridClasses, isFeaturedLayout, parseEntryFeedData } from "./en
 
 describe("parseEntryFeedData", () => {
   it("aplica os padrões quando o bloco está vazio", () => {
-    expect(parseEntryFeedData({})).toEqual({ title: "", categorySlug: "noticias", limit: 3, viewAllLabel: "" });
+    expect(parseEntryFeedData({})).toEqual({ title: "", categorySlug: "noticias", typeKey: null, limit: 3, viewAllLabel: "" });
   });
 
   it("normaliza o slug (aceita barras nas pontas e espaços)", () => {
@@ -23,9 +23,17 @@ describe("parseEntryFeedData", () => {
     expect(parseEntryFeedData({ title: 5, viewAllLabel: {}, categorySlug: null })).toEqual({
       title: "",
       categorySlug: "noticias",
+      typeKey: null,
       limit: 3,
       viewAllLabel: "",
     });
+  });
+
+  it("lê o tipo (content type) opcional: normaliza e rejeita formato inválido", () => {
+    expect(parseEntryFeedData({ typeKey: " Campanhas " }).typeKey).toBe("campanhas");
+    expect(parseEntryFeedData({ typeKey: "" }).typeKey).toBeNull();
+    expect(parseEntryFeedData({ typeKey: "../x" }).typeKey).toBeNull();
+    expect(parseEntryFeedData({ typeKey: 7 }).typeKey).toBeNull();
   });
 });
 

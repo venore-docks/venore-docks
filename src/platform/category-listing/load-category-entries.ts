@@ -1,4 +1,4 @@
-import { extractEntryComposition, listEntries } from "@/contexts/cms";
+import { countCategoryEntriesByType, extractEntryComposition, listContentTypes, listEntries } from "@/contexts/cms";
 import type { EntryRecord } from "@/contexts/cms";
 import { getMediaAssetUrls } from "@/contexts/media";
 import type { ThemeEntryView } from "@/contexts/themes/contracts/v8";
@@ -11,11 +11,18 @@ export const CATEGORY_LIST_PAGE_SIZE = 12;
 
 export type CategoryRef = { id: string; name: string; slug: string };
 
+// Opção do filtro por tipo (content type) da listagem: só tipos com ao menos 1 entry visível.
+export type CategoryTypeOption = { key: string; label: string; count: number };
+
 export type CategoryEntriesPage = {
   // Registros crus do lote (a página usa pra montar o JSON-LD só com o que é público).
   records: EntryRecord[];
   entries: ThemeEntryView[];
   hasNextPage: boolean;
+  // Tipo realmente aplicado (key já validada contra os content types existentes); null = sem filtro.
+  activeTypeKey: string | null;
+  // Só preenchido com `includeTypeOptions` (a página precisa; a rota de rolagem infinita não).
+  typeOptions: CategoryTypeOption[];
 };
 
 function toIso(date: Date | null | undefined): string | null {
@@ -28,11 +35,36 @@ export async function loadCategoryEntries(input: {
   category: CategoryRef;
   page: number;
   viewerIsAuthenticated: boolean;
+  // Key de content type (?tipo=). Chave que não existe é ignorada (listagem sem filtro).
+  typeKey?: string | null;
+  includeTypeOptions?: boolean;
 }): Promise<CategoryEntriesPage> {
   const { category, page, viewerIsAuthenticated } = input;
+  const visibility = viewerIsAuthenticated ? undefined : ("public" as const);
+
+  let contentTypeId: string | undefined;
+  let activeTypeKey: string | null = null;
+  if (input.typeKey) {
+    const typesResult = await listContentTypes();
+    const match = typesResult.success ? typesResult.data.find((type) => type.key === input.typeKey) : undefined;
+    if (match) {
+      contentTypeId = match.id;
+      activeTypeKey = match.key;
+    }
+  }
+
+  let typeOptions: CategoryTypeOption[] = [];
+  if (input.includeTypeOptions) {
+    const countsResult = await countCategoryEntriesByType({ categoryId: category.id, ...(visibility ? { visibility } : {}) });
+    typeOptions = countsResult.success
+      ? countsResult.data.filter((row) => row.count > 0).map((row) => ({ key: row.key, label: row.name, count: row.count }))
+      : [];
+  }
+
   const entriesResult = await listEntries({
     categoryId: category.id,
-    ...(viewerIsAuthenticated ? {} : { visibility: "public" as const }),
+    ...(contentTypeId ? { contentTypeId } : {}),
+    ...(visibility ? { visibility } : {}),
     limit: CATEGORY_LIST_PAGE_SIZE + 1,
     offset: (page - 1) * CATEGORY_LIST_PAGE_SIZE,
   });
@@ -59,5 +91,5 @@ export async function loadCategoryEntries(input: {
     };
   });
 
-  return { records, entries, hasNextPage };
+  return { records, entries, hasNextPage, activeTypeKey, typeOptions };
 }

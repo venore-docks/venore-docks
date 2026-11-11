@@ -30,6 +30,7 @@ export type { ListEntryRevisionsResult } from "./features/entries/list-entry-rev
 export type { ApplyEntryRevisionResult } from "./features/entries/apply-entry-revision/types";
 export { deleteEntryHandler as deleteEntry } from "./features/entries/delete-entry/handler";
 export { listEntriesHandler as listEntries } from "./features/entries/list-entries/handler";
+export { countCategoryEntriesByTypeHandler as countCategoryEntriesByType } from "./features/entries/count-category-entries-by-type/handler";
 export { searchPublishedEntriesHandler as searchPublishedEntries } from "./features/entries/search-published-entries/handler";
 export type { SearchPublishedEntriesQuery, SearchPublishedEntriesResult } from "./features/entries/search-published-entries/types";
 export { listEntriesForAdminHandler as listEntriesForAdmin } from "./features/entries/list-entries-for-admin/handler";
@@ -156,6 +157,11 @@ export type { EntryRevisionSummary, EntryRevisionKind, EntryProposalStatus } fro
 export type { ArchiveEntryInput, ArchiveEntryResult } from "./features/entries/archive-entry/types";
 export type { DeleteEntryInput, DeleteEntryResult } from "./features/entries/delete-entry/types";
 export type { ListEntriesQuery, ListEntriesResult } from "./features/entries/list-entries/types";
+export type {
+  CategoryTypeCount,
+  CountCategoryEntriesByTypeQuery,
+  CountCategoryEntriesByTypeResult,
+} from "./features/entries/count-category-entries-by-type/types";
 export type {
   ListEntriesForAdminQuery,
   ListEntriesForAdminResult,

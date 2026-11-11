@@ -19,6 +19,7 @@ import type { ThemeEntryView } from "@/contexts/themes/contracts/v8";
 import { BlockRenderer } from "@/components/page-builder/block-renderer";
 import { PageLayoutMarker } from "@/platform/page-builder/page-layout-marker";
 import { getAdminPageData } from "@/platform/admin-shell/get-admin-page-data";
+import { categoryHref, parseTypeKey } from "@/platform/category-listing/category-href";
 import { loadCategoryEntries } from "@/platform/category-listing/load-category-entries";
 import { extractExcerpt } from "@/platform/seo/entry-excerpt";
 import { getSiteOrigin } from "@/platform/seo/site-origin";
@@ -156,11 +157,21 @@ function parsePage(value: string | string[] | undefined): number {
 // Uma consulta de entries (a página pedida + 1, pra saber se há próxima), uma de mídia pra todas
 // as capas, e o resumo vem do `data` que a listagem já trouxe. O desenho é o template "category"
 // do tema (spec v8 §2.7); o dado continua resolvido aqui.
-async function renderCategoryBlogroll(category: { id: string; name: string; slug: string; description: string | null }, page: number) {
+async function renderCategoryBlogroll(
+  category: { id: string; name: string; slug: string; description: string | null },
+  page: number,
+  requestedTypeKey: string | null,
+) {
   const [viewerIsAuthenticated, context] = await Promise.all([isViewerAuthenticated(), resolveTemplateContext()]);
   // Mesmo carregador da rota de scroll infinito (/api/category-entries): ordem, visibilidade (C7) e
   // formato do card idênticos entre o 1º lote e os seguintes.
-  const { records: pageEntries, entries, hasNextPage } = await loadCategoryEntries({ category, page, viewerIsAuthenticated });
+  const {
+    records: pageEntries,
+    entries,
+    hasNextPage,
+    activeTypeKey,
+    typeOptions,
+  } = await loadCategoryEntries({ category, page, viewerIsAuthenticated, typeKey: requestedTypeKey, includeTypeOptions: true });
   const categoryPath = `/${category.slug}`;
 
   // JSON-LD só lista o que é público — mesmo para quem tem sessão e vê itens "authenticated" (C7).
@@ -199,9 +210,22 @@ async function renderCategoryBlogroll(category: { id: string; name: string; slug
       pagination: {
         page,
         pageCount: hasNextPage ? page + 1 : page,
-        prevHref: page > 1 ? (page === 2 ? categoryPath : `${categoryPath}?page=${page - 1}`) : null,
-        nextHref: hasNextPage ? `${categoryPath}?page=${page + 1}` : null,
+        prevHref: page > 1 ? categoryHref(categoryPath, { page: page - 1, typeKey: activeTypeKey }) : null,
+        nextHref: hasNextPage ? categoryHref(categoryPath, { page: page + 1, typeKey: activeTypeKey }) : null,
       },
+      // Chips de tipo só quando há mais de um tipo com conteúdo visível (com 0/1 não há o que filtrar).
+      typeFilter:
+        typeOptions.length > 1
+          ? {
+              typeKey: activeTypeKey,
+              allHref: categoryPath,
+              options: typeOptions.map((option) => ({
+                ...option,
+                href: categoryHref(categoryPath, { typeKey: option.key }),
+                active: option.key === activeTypeKey,
+              })),
+            }
+          : null,
       sort: { current: "recent", options: [] },
       empty,
       jsonLd: <CoreJsonLd data={jsonLd} nonce={context.nonce} />,
@@ -248,7 +272,8 @@ export default async function CatchAllPage({ params, searchParams }: CatchAllPro
     // existir.
     const categoryResult = await getCachedCategoryBySlug(segments[0]);
     if (categoryResult.success && categoryResult.data) {
-      return renderCategoryBlogroll(categoryResult.data, parsePage((await searchParams).page));
+      const query = await searchParams;
+      return renderCategoryBlogroll(categoryResult.data, parsePage(query.page), parseTypeKey(query.tipo));
     }
 
     entryResult = await getCachedPublishedEntryBySlug(null, segments[0]);

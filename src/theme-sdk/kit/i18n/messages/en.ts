@@ -41,6 +41,8 @@ export const KIT_MESSAGES_EN: Readonly<Record<KitMessageKey, string>> = {
   "category.newer": "Newer",
   "category.older": "Older",
   "category.paginationLabel": "Pagination",
+  "category.allTypes": "All",
+  "category.typeFilterLabel": "Filter by type",
   "category.loadingMore": "Loading more posts…",
   "category.loadError": "Could not load more posts.",
   "category.retry": "Try again",

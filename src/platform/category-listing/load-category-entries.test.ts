@@ -1,10 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const listEntries = vi.fn();
+const listContentTypes = vi.fn();
+const countCategoryEntriesByType = vi.fn();
 const getMediaAssetUrls = vi.fn();
 
 vi.mock("@/contexts/cms", () => ({
   listEntries: (query: unknown) => listEntries(query),
+  listContentTypes: () => listContentTypes(),
+  countCategoryEntriesByType: (query: unknown) => countCategoryEntriesByType(query),
   extractEntryComposition: () => [],
 }));
 vi.mock("@/contexts/media", () => ({ getMediaAssetUrls: (query: unknown) => getMediaAssetUrls(query) }));
@@ -30,6 +34,15 @@ function record(index: number, mediaId: string | null = null) {
 describe("loadCategoryEntries", () => {
   beforeEach(() => {
     listEntries.mockReset();
+    listContentTypes.mockReset();
+    countCategoryEntriesByType.mockReset();
+    listContentTypes.mockResolvedValue({
+      success: true,
+      data: [
+        { id: "t-camp", key: "campanhas", name: "Campanhas", entryCount: 4 },
+        { id: "t-fem", key: "noticias-da-fem", name: "Notícias da FEM", entryCount: 6 },
+      ],
+    });
     getMediaAssetUrls.mockReset();
     getMediaAssetUrls.mockResolvedValue({ success: true, data: { m1: "https://cdn.test/capa.jpg" } });
   });
@@ -84,6 +97,42 @@ describe("loadCategoryEntries", () => {
   it("falha na consulta vira lista vazia, sem lançar", async () => {
     listEntries.mockResolvedValue({ success: false, error: { code: "x", message: "y" } });
     const page = await loadCategoryEntries({ category, page: 1, viewerIsAuthenticated: false });
-    expect(page).toEqual({ records: [], entries: [], hasNextPage: false });
+    expect(page).toEqual({ records: [], entries: [], hasNextPage: false, activeTypeKey: null, typeOptions: [] });
+  });
+  it("com ?tipo= existente filtra pelo content type no banco (antes da paginação)", async () => {
+    listEntries.mockResolvedValue({ success: true, data: [] });
+    const page = await loadCategoryEntries({ category, page: 2, viewerIsAuthenticated: false, typeKey: "campanhas" });
+    expect(listEntries).toHaveBeenCalledWith(
+      expect.objectContaining({ categoryId: "cat-1", contentTypeId: "t-camp", visibility: "public", offset: CATEGORY_LIST_PAGE_SIZE }),
+    );
+    expect(page.activeTypeKey).toBe("campanhas");
+  });
+
+  it("?tipo= desconhecido é ignorado (sem filtro, sem erro)", async () => {
+    listEntries.mockResolvedValue({ success: true, data: [] });
+    const page = await loadCategoryEntries({ category, page: 1, viewerIsAuthenticated: true, typeKey: "nao-existe" });
+    expect(listEntries.mock.calls[0][0]).not.toHaveProperty("contentTypeId");
+    expect(page.activeTypeKey).toBeNull();
+  });
+
+  it("includeTypeOptions: conta por tipo com a mesma visibilidade do visitante e descarta tipos vazios", async () => {
+    listEntries.mockResolvedValue({ success: true, data: [] });
+    countCategoryEntriesByType.mockResolvedValue({
+      success: true,
+      data: [
+        { contentTypeId: "t-camp", key: "campanhas", name: "Campanhas", count: 3 },
+        { contentTypeId: "t-x", key: "vazio", name: "Vazio", count: 0 },
+      ],
+    });
+    const page = await loadCategoryEntries({ category, page: 1, viewerIsAuthenticated: false, includeTypeOptions: true });
+    expect(countCategoryEntriesByType).toHaveBeenCalledWith({ categoryId: "cat-1", visibility: "public" });
+    expect(page.typeOptions).toEqual([{ key: "campanhas", label: "Campanhas", count: 3 }]);
+  });
+
+  it("sem includeTypeOptions não consulta contagem (rota de rolagem infinita)", async () => {
+    listEntries.mockResolvedValue({ success: true, data: [] });
+    const page = await loadCategoryEntries({ category, page: 2, viewerIsAuthenticated: true });
+    expect(countCategoryEntriesByType).not.toHaveBeenCalled();
+    expect(page.typeOptions).toEqual([]);
   });
 });

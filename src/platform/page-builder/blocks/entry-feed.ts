@@ -17,6 +17,7 @@ export const entryFeedBlockDefinition: BlockDefinition = {
   editorFields: [
     { name: "title", type: "text", label: "Título (opcional)" },
     { name: "categorySlug", type: "text", label: "Categoria (slug da rota, ex.: noticias)" },
+    { name: "typeKey", type: "text", label: "Tipo de notícia (key do tipo de conteúdo, ex.: campanhas; vazio = todos)" },
     { name: "limit", type: "number", label: "Quantidade de publicações (1 a 12)" },
     { name: "viewAllLabel", type: "text", label: 'Texto do link "Ver todas" (vazio = sem link)' },
   ],

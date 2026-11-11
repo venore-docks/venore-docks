@@ -165,6 +165,16 @@ build. Recomendado no modo worker: `SPEECH_WORKER_GITHUB_TOKEN` (o app chama o w
 
 ### Changed
 
+- **Listagem de categoria com filtro por tipo (content type).** `/noticias?tipo=campanhas` mostra só
+  as entries daquele tipo dentro da categoria (filtro no banco, antes da paginação, respeitando a
+  visibilidade). Acima da lista aparecem os chips "Todas | <tipo> (n) …", só com tipos que têm
+  conteúdo visível para o visitante e só quando há mais de um tipo; são links reais (funcionam sem
+  JavaScript) e o scroll infinito repassa o `tipo` ao `/api/category-entries`. `tipo` inexistente é
+  ignorado. Nova feature `cms/entries/count-category-entries-by-type` (contagem por tipo, cache de
+  60 s); `CategoryTemplateProps.typeFilter` é opcional — tema que não o desenha só ignora.
+- **Bloco `core.content.entry-feed` ganha o campo `typeKey`** (key do tipo de conteúdo; vazio =
+  todos). Tipo que não existe deixa o feed vazio (no editor mostra o aviso) e o link "Ver todas" já
+  leva filtrado (`?tipo=`).
 - **Links absolutos (`http`/`https`) em botão, card, hero e CTA do page-builder abrem em nova aba**
   (`target="_blank"` + `rel="noopener noreferrer"`); links internos continuam na mesma aba
   (`block-renderers.tsx`).

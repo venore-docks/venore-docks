@@ -9,6 +9,8 @@ type Labels = { readMore: string; loadingMore: string; loadError: string; retry:
 type Props = {
   // Slug da categoria (rota /api/category-entries?category=<slug>&page=<n>).
   categorySlug: string;
+  // Tipo (content type) ativo no filtro — repassado ao endpoint pra os lotes seguintes respeitarem.
+  typeKey?: string | null;
   initialEntries: ThemeEntryView[];
   // Página já carregada (a rota recebe `?page=N` no fallback sem JS).
   initialPage: number;
@@ -24,7 +26,7 @@ type LoadState = "idle" | "loading" | "error";
 
 // Lista de cards com carregamento automático: um IntersectionObserver na sentinela do fim da lista
 // busca o próximo lote e ANEXA aos cards já exibidos (nada de trocar de página).
-export function CategoryEntryList({ categorySlug, initialEntries, initialPage, initialHasNext, locale, labels, fallbackNav }: Props) {
+export function CategoryEntryList({ categorySlug, typeKey = null, initialEntries, initialPage, initialHasNext, locale, labels, fallbackNav }: Props) {
   const [entries, setEntries] = useState(initialEntries);
   const [page, setPage] = useState(initialPage);
   const [hasNext, setHasNext] = useState(initialHasNext);
@@ -37,7 +39,8 @@ export function CategoryEntryList({ categorySlug, initialEntries, initialPage, i
     inFlight.current = true;
     setState("loading");
     try {
-      const response = await fetch(`/api/category-entries?category=${encodeURIComponent(categorySlug)}&page=${page + 1}`, {
+      const typeParam = typeKey ? `&tipo=${encodeURIComponent(typeKey)}` : "";
+      const response = await fetch(`/api/category-entries?category=${encodeURIComponent(categorySlug)}&page=${page + 1}${typeParam}`, {
         headers: { Accept: "application/json" },
       });
       if (!response.ok) throw new Error(String(response.status));
@@ -54,7 +57,7 @@ export function CategoryEntryList({ categorySlug, initialEntries, initialPage, i
     } finally {
       inFlight.current = false;
     }
-  }, [categorySlug, page]);
+  }, [categorySlug, typeKey, page]);
 
   useEffect(() => {
     const node = sentinelRef.current;

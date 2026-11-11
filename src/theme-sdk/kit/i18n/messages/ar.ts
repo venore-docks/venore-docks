@@ -41,6 +41,8 @@ export const KIT_MESSAGES_AR: Readonly<Record<KitMessageKey, string>> = {
   "category.newer": "الأحدث",
   "category.older": "الأقدم",
   "category.paginationLabel": "ترقيم الصفحات",
+  "category.allTypes": "الكل",
+  "category.typeFilterLabel": "التصفية حسب النوع",
   "category.loadingMore": "جارٍ تحميل المزيد من المنشورات…",
   "category.loadError": "تعذّر تحميل المزيد من المنشورات.",
   "category.retry": "حاول مرة أخرى",

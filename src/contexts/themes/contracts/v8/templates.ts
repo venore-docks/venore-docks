@@ -38,6 +38,15 @@ export type CategoryTemplateProps = TemplateCommon & {
   entries: ThemeEntryView[];
   pagination: { page: number; pageCount: number; prevHref: string | null; nextHref: string | null };
   sort: { current: "recent" | "oldest"; options: { value: "recent" | "oldest"; label: string; href: string }[] };
+  // Filtro por tipo de conteúdo (content type) dentro da categoria, ex.: /noticias?tipo=campanhas.
+  // Opcional e só presente quando a categoria tem mais de um tipo com conteúdo visível — o tema que
+  // não o desenha simplesmente ignora. `typeKey` = tipo ativo (null = "Todas"); os `href` são links
+  // reais (funciona sem JavaScript).
+  typeFilter?: {
+    typeKey: string | null;
+    allHref: string;
+    options: { key: string; label: string; count: number; href: string; active: boolean }[];
+  } | null;
   empty: ReactNode;
 };
 export type AccountTemplateProps = TemplateCommon & { title: string; subtitle?: string | null; sections: ReactNode };

@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/contexts/auth";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { formatDate } from "@/shared/format-date";
+import { categoryHref } from "@/platform/category-listing/category-href";
 import { resolveDocumentLocale } from "@/platform/theme-rendering/resolve-document-locale";
 import type { BlockRendererProps } from "../block-renderers";
 import { entryFeedGridClasses, isFeaturedLayout, parseEntryFeedData } from "./entry-feed-data";
@@ -74,7 +75,7 @@ export async function EntryFeedBlock({ block, mode }: BlockRendererProps) {
   const currentUser = await getCurrentUser();
   const viewerIsAuthenticated = currentUser.success && Boolean(currentUser.data);
   const [feed, { locale }] = await Promise.all([
-    loadEntryFeed({ categorySlug: config.categorySlug, limit: config.limit, viewerIsAuthenticated }),
+    loadEntryFeed({ categorySlug: config.categorySlug, limit: config.limit, viewerIsAuthenticated, typeKey: config.typeKey }),
     resolveDocumentLocale(),
   ]);
 
@@ -83,7 +84,11 @@ export async function EntryFeedBlock({ block, mode }: BlockRendererProps) {
     if (mode !== "edit") return null;
     return (
       <p className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
-        {feed ? "Nenhuma publicação visível nesta categoria ainda." : `Categoria "${config.categorySlug}" não encontrada.`}
+        {!feed
+          ? `Categoria "${config.categorySlug}" não encontrada.`
+          : feed.typeNotFound
+            ? `Tipo "${config.typeKey}" não encontrado.`
+            : "Nenhuma publicação visível nesta categoria ainda."}
       </p>
     );
   }
@@ -96,7 +101,7 @@ export async function EntryFeedBlock({ block, mode }: BlockRendererProps) {
           {config.title && <h2 className="text-2xl font-semibold tracking-tight text-foreground">{config.title}</h2>}
           {config.viewAllLabel && (
             <Link
-              href={feed.categoryPath}
+              href={categoryHref(feed.categoryPath, { typeKey: config.typeKey })}
               className="group/all inline-flex items-center gap-1 text-sm font-medium text-primary focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
             >
               {config.viewAllLabel}

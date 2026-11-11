@@ -48,6 +48,15 @@ describe("GET /api/category-entries", () => {
     expect(loadCategoryEntries).toHaveBeenCalledWith(expect.objectContaining({ page: 2, viewerIsAuthenticated: false }));
   });
 
+  it("repassa ?tipo= válido ao carregador e ignora formato inválido", async () => {
+    await call("?category=noticias&page=2&tipo=campanhas");
+    expect(loadCategoryEntries).toHaveBeenLastCalledWith(expect.objectContaining({ typeKey: "campanhas" }));
+    await call("?category=noticias&page=2&tipo=..%2Fx");
+    expect(loadCategoryEntries).toHaveBeenLastCalledWith(expect.objectContaining({ typeKey: null }));
+    await call("?category=noticias&page=2");
+    expect(loadCategoryEntries).toHaveBeenLastCalledWith(expect.objectContaining({ typeKey: null }));
+  });
+
   it("com sessão: viewerIsAuthenticated=true", async () => {
     getCurrentUser.mockResolvedValue({ success: true, data: { id: "u1" } });
     await call("?category=noticias&page=3");

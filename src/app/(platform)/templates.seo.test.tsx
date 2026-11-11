@@ -68,6 +68,9 @@ vi.mock("@/contexts/cms", () => ({
     return { success: true, data: null };
   },
   listEntries: async () => ({ success: true, data: state.listed }),
+  // filtro por tipo da listagem de categoria: sem tipos no cenário (sem chips, sem filtro).
+  listContentTypes: async () => ({ success: true, data: [] }),
+  countCategoryEntriesByType: async () => ({ success: true, data: [] }),
   recordEntryView: () => {},
 }));
 vi.mock("@/contexts/auth", () => ({ getCurrentUser: async () => ({ success: true, data: state.user }) }));

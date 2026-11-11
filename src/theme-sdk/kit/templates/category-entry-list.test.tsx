@@ -63,11 +63,12 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function render(hasNext: boolean) {
+function render(hasNext: boolean, typeKey: string | null = null) {
   act(() =>
     root.render(
       <CategoryEntryList
         categorySlug="noticias"
+        typeKey={typeKey}
         initialEntries={[entry("a"), entry("b")]}
         initialPage={1}
         initialHasNext={hasNext}
@@ -102,6 +103,14 @@ describe("CategoryEntryList", () => {
     expect(container.querySelectorAll("article")).toHaveLength(3);
     expect(container.textContent).toContain("Título a");
     expect(container.textContent).toContain("Título c");
+  });
+
+  it("com tipo ativo, repassa ?tipo= ao endpoint dos próximos lotes", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ entries: [], hasNextPage: false }) });
+    vi.stubGlobal("fetch", fetchMock);
+    render(true, "campanhas");
+    await intersect();
+    expect(fetchMock).toHaveBeenCalledWith("/api/category-entries?category=noticias&page=2&tipo=campanhas", expect.anything());
   });
 
   it("sem próxima página não observa nem busca", () => {

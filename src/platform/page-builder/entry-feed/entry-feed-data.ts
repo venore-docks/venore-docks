@@ -1,3 +1,5 @@
+import { parseTypeKey } from "@/platform/category-listing/category-href";
+
 // Lógica pura do bloco "Publicações recentes" (sem I/O — testada em entry-feed-data.test.ts).
 export const ENTRY_FEED_DEFAULT_CATEGORY = "noticias";
 export const ENTRY_FEED_DEFAULT_LIMIT = 3;
@@ -6,6 +8,8 @@ export const ENTRY_FEED_MAX_LIMIT = 12;
 export type EntryFeedConfig = {
   title: string;
   categorySlug: string;
+  // Key de content type (tipo de notícia) para filtrar; null = todos os tipos da categoria.
+  typeKey: string | null;
   limit: number;
   viewAllLabel: string;
 };
@@ -26,6 +30,7 @@ export function parseEntryFeedData(data: Record<string, unknown>): EntryFeedConf
   return {
     title: readText(data.title),
     categorySlug: slug || ENTRY_FEED_DEFAULT_CATEGORY,
+    typeKey: parseTypeKey(typeof data.typeKey === "string" ? data.typeKey : null),
     limit,
     viewAllLabel: readText(data.viewAllLabel),
   };

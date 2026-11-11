@@ -43,6 +43,8 @@ export const KIT_MESSAGES_PT_BR = {
   "category.newer": "Mais recentes",
   "category.older": "Mais antigos",
   "category.paginationLabel": "Paginação",
+  "category.allTypes": "Todas",
+  "category.typeFilterLabel": "Filtrar por tipo",
   "category.loadingMore": "Carregando mais publicações…",
   "category.loadError": "Não foi possível carregar mais publicações.",
   "category.retry": "Tentar de novo",
