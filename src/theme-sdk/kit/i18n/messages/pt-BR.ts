@@ -43,6 +43,9 @@ export const KIT_MESSAGES_PT_BR = {
   "category.newer": "Mais recentes",
   "category.older": "Mais antigos",
   "category.paginationLabel": "Paginação",
+  "category.loadingMore": "Carregando mais publicações…",
+  "category.loadError": "Não foi possível carregar mais publicações.",
+  "category.retry": "Tentar de novo",
   "maintenance.title": "Em manutenção",
   "maintenance.message": "O site volta em instantes.",
 } as const satisfies Record<string, string>;

@@ -6,7 +6,6 @@ import {
   getCachedCategoryBySlug,
   getCachedPublishedEntryBySlug,
   getEntryBody,
-  listEntries,
   recordEntryView,
 } from "@/contexts/cms";
 import type { EntryRecord } from "@/contexts/cms";
@@ -20,6 +19,7 @@ import type { ThemeEntryView } from "@/contexts/themes/contracts/v8";
 import { BlockRenderer } from "@/components/page-builder/block-renderer";
 import { PageLayoutMarker } from "@/platform/page-builder/page-layout-marker";
 import { getAdminPageData } from "@/platform/admin-shell/get-admin-page-data";
+import { loadCategoryEntries } from "@/platform/category-listing/load-category-entries";
 import { extractExcerpt } from "@/platform/seo/entry-excerpt";
 import { getSiteOrigin } from "@/platform/seo/site-origin";
 import { resolveDefaultOgImage } from "@/platform/seo/og-image";
@@ -146,7 +146,6 @@ const HERO_BLOCK_KEY = "core.content.hero";
 // status="published") e visibilidade por entry (C7). Capa do card vem de entry.mediaId (campo
 // dedicado de "imagem de destaque", exposto no form de edição da entry via MediaPickerField) —
 // não da composição, pra não depender de onde o autor colocou a imagem dentro do corpo.
-const BLOGROLL_PAGE_SIZE = 12;
 
 function parsePage(value: string | string[] | undefined): number {
   const raw = Array.isArray(value) ? value[0] : value;
@@ -159,35 +158,10 @@ function parsePage(value: string | string[] | undefined): number {
 // do tema (spec v8 §2.7); o dado continua resolvido aqui.
 async function renderCategoryBlogroll(category: { id: string; name: string; slug: string; description: string | null }, page: number) {
   const [viewerIsAuthenticated, context] = await Promise.all([isViewerAuthenticated(), resolveTemplateContext()]);
-  const entriesResult = await listEntries({
-    categoryId: category.id,
-    // C7: visitante sem sessão só vê "public" — filtrado no banco, antes da paginação.
-    ...(viewerIsAuthenticated ? {} : { visibility: "public" as const }),
-    limit: BLOGROLL_PAGE_SIZE + 1,
-    offset: (page - 1) * BLOGROLL_PAGE_SIZE,
-  });
-  const fetched = entriesResult.success ? entriesResult.data : [];
-  const hasNextPage = fetched.length > BLOGROLL_PAGE_SIZE;
-  const pageEntries = fetched.slice(0, BLOGROLL_PAGE_SIZE);
-
-  const coverIds = pageEntries.map((entry) => entry.mediaId).filter((id): id is string => Boolean(id));
-  const coversResult = await getMediaAssetUrls({ ids: coverIds });
-  const coverUrls = coversResult.success ? coversResult.data : {};
-
+  // Mesmo carregador da rota de scroll infinito (/api/category-entries): ordem, visibilidade (C7) e
+  // formato do card idênticos entre o 1º lote e os seguintes.
+  const { records: pageEntries, entries, hasNextPage } = await loadCategoryEntries({ category, page, viewerIsAuthenticated });
   const categoryPath = `/${category.slug}`;
-  const entries: ThemeEntryView[] = pageEntries.map((entry) => {
-    const coverUrl = entry.mediaId ? (coverUrls[entry.mediaId] ?? null) : null;
-    return {
-      id: entry.id,
-      title: entry.title,
-      excerpt: extractExcerpt(extractEntryComposition(entry.data)),
-      path: `${categoryPath}/${entry.slug}`,
-      publishedAt: toIso(entry.publishedAt),
-      updatedAt: toIso(entry.updatedAt),
-      category: { label: category.name, href: categoryPath },
-      cover: coverUrl ? { url: coverUrl, alt: "" } : null,
-    };
-  });
 
   // JSON-LD só lista o que é público — mesmo para quem tem sessão e vê itens "authenticated" (C7).
   const origin = await getSiteOrigin();

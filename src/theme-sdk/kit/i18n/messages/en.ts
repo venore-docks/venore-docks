@@ -41,6 +41,9 @@ export const KIT_MESSAGES_EN: Readonly<Record<KitMessageKey, string>> = {
   "category.newer": "Newer",
   "category.older": "Older",
   "category.paginationLabel": "Pagination",
+  "category.loadingMore": "Loading more posts…",
+  "category.loadError": "Could not load more posts.",
+  "category.retry": "Try again",
   "maintenance.title": "Under maintenance",
   "maintenance.message": "The site will be back shortly.",
 };
