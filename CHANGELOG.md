@@ -144,6 +144,12 @@ build. Recomendado no modo worker: `SPEECH_WORKER_GITHUB_TOKEN` (o app chama o w
 
 ### Fixed
 
+- **Rótulo de item filho do menu lateral aparecia cortado** (ex.: "Novos Colaboradores" dentro de
+  "Recursos Humanos"). O rótulo expandido tinha `whitespace-nowrap` com `max-w-[180px]`, mas um
+  item dentro do accordion (`ms-8`) sobra só ~150 px, então o texto era cortado pelo
+  `overflow-hidden`. O `whitespace-nowrap` agora vale só no estado colapsado/tooltip
+  (`lg:whitespace-nowrap`, `theme-sdk/kit/regions/rail/sidebar-collapse-tooltip.ts`); expandido, o
+  rótulo longo quebra em duas linhas. Snapshots de paridade do `venore-slime` atualizados.
 - **Upload no Vercel Blob dava "Access denied" com `BLOB_STORE_ID` no projeto.** O
   `@vercel/blob` 2.6 prefere o OIDC do projeto quando essa variável existe e ignora o
   `BLOB_READ_WRITE_TOKEN` — com um store de outra conta/time, toda gravação era recusada. O adapter

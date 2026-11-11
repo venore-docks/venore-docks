@@ -11,11 +11,14 @@
 // max-w-[180px]: ver comentário em SidebarNavLink.tsx sobre de onde esse número vem (não é um
 // valor solto — é o espaço que sobra dentro de --sidebar-width-expanded depois do padding do
 // frame, do padding do item e do ícone+gap, pixel a pixel igual ao protótipo de referência).
+// Sem whitespace-nowrap no estado expandido: um item filho do accordion (ms-8) tem ~32px a menos
+// que o de topo, e rótulos como "Novos Colaboradores" eram cortados pelo overflow-hidden. Expandido,
+// o rótulo quebra de linha; o nowrap só vale no estado colapsado/tooltip (COLLAPSED abaixo).
 export const SIDEBAR_COLLAPSE_TOOLTIP_LABEL_CLASSES =
-  "overflow-hidden whitespace-nowrap max-w-[180px] translate-x-0 opacity-100 ui-motion-emphasis";
+  "overflow-hidden max-w-[180px] translate-x-0 opacity-100 ui-motion-emphasis";
 
 export const SIDEBAR_COLLAPSE_TOOLTIP_COLLAPSED_CLASSES =
-  "lg:pointer-events-none lg:max-w-0 lg:-translate-x-2 lg:opacity-0 " +
+  "lg:whitespace-nowrap lg:pointer-events-none lg:max-w-0 lg:-translate-x-2 lg:opacity-0 " +
   "lg:group-[:is(:hover,:focus-visible)]/sidebar-collapse-target:pointer-events-auto " +
   "lg:group-[:is(:hover,:focus-visible)]/sidebar-collapse-target:absolute " +
   "lg:group-[:is(:hover,:focus-visible)]/sidebar-collapse-target:top-1/2 " +
