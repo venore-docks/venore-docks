@@ -281,6 +281,21 @@ button:not(:disabled),
   * {
     border-color: var(--border);
   }
+
+  /* <select> nativo abre um popup desenhado pelo navegador: sem color-scheme ele é sempre claro
+     (fundo branco), mesmo com o site no modo escuro. A classe `.dark` vem do next-themes no <html>.
+     As <option> herdam os tokens pro navegadores que ignoram color-scheme no popup. */
+  html {
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  option,
+  optgroup {
+    background-color: var(--popover);
+    color: var(--popover-foreground);
+  }
 }
 
 body {

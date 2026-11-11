@@ -14,6 +14,22 @@ continuam propagando por merge.
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-11-11
+
+### Added
+- **Paleta personalizada edita a cor de alerta.** Em `/admin/themes/customize` → Paleta →
+  "Personalizada", novos campos **Alerta** (`warning`) e **Texto sobre alerta**
+  (`warning-foreground`), nos modos claro e escuro. `--warning-soft`/`--warning-border` seguem
+  derivados de `--warning` pelo `color-mix` do tema (ex.: fundo do card "A equipe respondeu" do
+  plugin de chamados). A semente de marca continua sem gerar cor semântica.
+
+### Fixed
+- **Lista aberta dos `<select>` nativos ficava branca no modo escuro.** `globals.css` passa a
+  declarar `color-scheme` (`light`/`dark` conforme a classe `.dark` do `<html>`) e as `<option>`
+  usam `--popover`/`--popover-foreground`.
+
+**Ao atualizar uma instância:** nada obrigatório.
+
 ## [0.7.0] - 2026-11-11
 
 **Ao atualizar uma instância:** nada obrigatório. Opcional: escolher o papel padrão de novas
