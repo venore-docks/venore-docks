@@ -53,7 +53,7 @@
     "@tiptap/react": "^3.31.3",
     "@tiptap/starter-kit": "^3.31.3",
     "@tiptap/static-renderer": "^3.31.3",
-    "@venore/plugin-birthdays": "git+https://github.com/venore-docks/venore-plugin-birthdays.git#v1.0.3",
+    "@venore/plugin-birthdays": "git+https://github.com/venore-docks/venore-plugin-birthdays.git#v1.1.0",
     "@venore/plugin-broadcast": "git+https://github.com/venore-docks/venore-plugin-broadcast.git#v1.10.0",
     "@venore/plugin-calendar": "git+https://github.com/venore-docks/venore-plugin-calendar.git#v1.0.1",
     "@venore/plugin-calendarios": "git+https://github.com/venore-docks/venore-plugin-calendarios.git#v0.2.0",
