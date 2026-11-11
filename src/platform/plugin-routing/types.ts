@@ -26,9 +26,10 @@ export type PluginPageRouteEntry = {
   // literal ou :param — mesmo vocabulário de path-to-regexp/Express, um único : por segmento.
   pattern: string;
   Component: PluginPageComponent;
-  // Opcional, hoje só lido na área "public" (generateMetadata do catch-all do CMS,
-  // src/app/(platform)/[...slug]/page.tsx) — é a única área em que <head> de página serve pra
-  // alguém de fora (buscador, preview de link). Recebe os mesmos params/searchParams do Component.
+  // Opcional, lido nas áreas "public" (generateMetadata do catch-all do CMS,
+  // src/app/(platform)/[...slug]/page.tsx — <head> que serve pra alguém de fora: buscador, preview
+  // de link) e "standalone" (dispatcher /ext, src/app/ext/[...slug]/page.tsx — ex.: `manifest`
+  // próprio de uma PWA de plugin). Recebe os mesmos params/searchParams do Component.
   generateMetadata?: PluginMetadataGenerator;
 };
 
