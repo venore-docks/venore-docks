@@ -18,7 +18,7 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { serializeJsonLd } from "@/shared/json-ld";
-import { FileText } from "lucide-react";
+import { ArrowRight, FileText } from "lucide-react";
 import { parseEmbedUrl } from "./embed-providers";
 import { ContactFormClient } from "./contact-form-client";
 import { CONTACT_FORM_BLOCK_KEY } from "./blocks/contact-form";
@@ -538,6 +538,14 @@ const CARD_TONE_CLASSNAMES: Record<string, string> = {
   destructive: "bg-destructive text-white ring-0",
 };
 
+// Botão invertido: fundo na cor do texto do card, texto na cor do card (alto contraste, pílula com seta).
+const CARD_TONE_BUTTON_CLASSNAMES: Record<string, string> = {
+  primary: "border-transparent bg-primary-foreground text-primary hover:bg-primary-foreground/90",
+  warning: "border-transparent bg-warning-foreground text-warning hover:bg-warning-foreground/90",
+  success: "border-transparent bg-success-foreground text-success hover:bg-success-foreground/90",
+  default: "border-transparent bg-card text-foreground hover:bg-card/90",
+};
+
 async function CardBlock({ block, presentation }: BlockRendererProps) {
   const data = block.data;
   const mediaId = readString(data, "mediaId");
@@ -545,7 +553,8 @@ async function CardBlock({ block, presentation }: BlockRendererProps) {
   const description = data.description;
   const href = readString(data, "href");
   const buttonLabel = readString(data, "buttonLabel", "Saiba mais");
-  const toneClass = CARD_TONE_CLASSNAMES[readString(data, "tone", "default")];
+  const tone = readString(data, "tone", "default");
+  const toneClass = CARD_TONE_CLASSNAMES[tone];
 
   let mediaUrl: string | null = null;
   if (mediaId) {
@@ -572,8 +581,15 @@ async function CardBlock({ block, presentation }: BlockRendererProps) {
       {href && (
         // mt-auto: o botão fica sempre no pé do card, mesmo com descrições de alturas diferentes.
         <CardFooter className={cn("mt-auto", toneClass && "border-t-0 bg-transparent")}>
-          <Button asChild size="sm" variant="outline" className={toneClass ? "border-transparent bg-card text-foreground hover:bg-card/90" : undefined}>
-            <Link href={href} {...externalLinkProps(href)}>{buttonLabel}</Link>
+          <Button
+            asChild
+            variant={toneClass ? "outline" : "default"}
+            className={cn("rounded-full font-semibold", toneClass && (CARD_TONE_BUTTON_CLASSNAMES[tone] ?? CARD_TONE_BUTTON_CLASSNAMES.default))}
+          >
+            <Link href={href} {...externalLinkProps(href)}>
+              {buttonLabel}
+              <ArrowRight aria-hidden />
+            </Link>
           </Button>
         </CardFooter>
       )}

@@ -14,6 +14,15 @@ continuam propagando por merge.
 
 ## [Unreleased]
 
+## [0.7.5] - 2026-11-12
+
+### Changed
+- **Carrossel:** o próximo slide aparece pela metade (basis < 100%) e as setas ficam maiores, na cor primária do tema, escondendo-se nas pontas.
+- **Card:** botão em pílula com seta e cores invertidas sobre o card colorido.
+
+### Fixed
+- Seta do carrossel "pulava" ao clicar (`active:translate-y-px` do Button vs `-translate-y-1/2` de centralização).
+
 ## [0.7.4] - 2026-11-12
 
 ### Fixed
