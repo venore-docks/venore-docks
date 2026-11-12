@@ -23,6 +23,7 @@ export const cardBlockDefinition: BlockDefinition = {
       label: "Cor do card",
       options: [
         { value: "default", label: "Padrão" },
+        { value: "sidebar", label: "Igual à barra lateral" },
         { value: "primary", label: "Primária" },
         { value: "secondary", label: "Secundária" },
         { value: "accent", label: "Destaque" },

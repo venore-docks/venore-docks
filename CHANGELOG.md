@@ -14,6 +14,11 @@ continuam propagando por merge.
 
 ## [Unreleased]
 
+## [0.7.6] - 2026-11-12
+
+### Added
+- **Card "Igual à barra lateral".** Novo tom em `core.content.card` (`tone: "sidebar"`): mesmo degradê (`--sidebar-bg`), texto (`--sidebar-foreground`) e contorno (`--sidebar-border`) da barra lateral do tema, com fallback para `--region-rail-*`/primary em temas que não os declaram.
+
 ## [0.7.5] - 2026-11-12
 
 ### Changed

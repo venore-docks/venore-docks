@@ -231,8 +231,8 @@ const SECTION_PADDING_Y_CLASSES: Record<string, string> = {
   xl: "py-16 sm:py-28",
 };
 
-// px-6 é o mesmo padding horizontal usado em ContentSlot/Breadcrumbs de todos os temas — aqui só
-// configurável por seção, com a mesma escala de passos de SECTION_PADDING_Y_CLASSES.
+// A moldura de conteúdo (ContentFrame) já aplica o padding da página; o padrão da seção é "none"
+// pra não empilhar. Configurável por seção, com a mesma escala de SECTION_PADDING_Y_CLASSES.
 const SECTION_PADDING_X_CLASSES: Record<string, string> = {
   none: "",
   xs: "px-3 sm:px-4",
@@ -530,6 +530,10 @@ function ProgressBlockRenderer({ block }: BlockRendererProps) {
 // Cores chapadas do card (tokens semânticos do tema — sem cor crua). Botão sempre claro (bg-card)
 // pra contrastar com o fundo cheio; rodapé sem a faixa cinza padrão.
 const CARD_TONE_CLASSNAMES: Record<string, string> = {
+  // Mesmo fundo (degradê --sidebar-bg), texto e contorno da barra lateral do tema; os fallbacks
+  // (--region-rail-*, primary) cobrem temas que não declaram --sidebar-foreground/--sidebar-border.
+  sidebar:
+    "bg-(image:--sidebar-bg) bg-primary text-[color:var(--sidebar-foreground,var(--region-rail-foreground,var(--primary-foreground)))] ring-1 ring-[color:var(--sidebar-border,transparent)]",
   primary: "bg-primary text-primary-foreground ring-0",
   secondary: "bg-secondary text-secondary-foreground ring-0",
   accent: "bg-accent text-accent-foreground ring-0",
@@ -540,6 +544,8 @@ const CARD_TONE_CLASSNAMES: Record<string, string> = {
 
 // Botão invertido: fundo na cor do texto do card, texto na cor do card (alto contraste, pílula com seta).
 const CARD_TONE_BUTTON_CLASSNAMES: Record<string, string> = {
+  sidebar:
+    "border-transparent bg-[color:var(--sidebar-foreground,var(--primary-foreground))] text-[color:var(--sidebar-bg-end,var(--primary))] hover:bg-[color:var(--sidebar-foreground,var(--primary-foreground))]/90",
   primary: "border-transparent bg-primary-foreground text-primary hover:bg-primary-foreground/90",
   warning: "border-transparent bg-warning-foreground text-warning hover:bg-warning-foreground/90",
   success: "border-transparent bg-success-foreground text-success hover:bg-success-foreground/90",
@@ -636,8 +642,8 @@ async function SectionBlock({ block, renderBlocks, presentation }: BlockRenderer
     ? "bg-background text-foreground"
     : (SECTION_BACKGROUND_CLASSES[readString(block.data, "background", "none")] ?? "");
   const maxWidth = SECTION_MAX_WIDTH_CLASSES[readString(block.data, "maxWidth", "full")] ?? SECTION_MAX_WIDTH_CLASSES.full;
-  const paddingY = SECTION_PADDING_Y_CLASSES[readString(block.data, "paddingY", "md")] ?? SECTION_PADDING_Y_CLASSES.md;
-  const paddingX = SECTION_PADDING_X_CLASSES[readString(block.data, "paddingX", "md")] ?? SECTION_PADDING_X_CLASSES.md;
+  const paddingY = SECTION_PADDING_Y_CLASSES[readString(block.data, "paddingY", "none")] ?? SECTION_PADDING_Y_CLASSES.none;
+  const paddingX = SECTION_PADDING_X_CLASSES[readString(block.data, "paddingX", "none")] ?? SECTION_PADDING_X_CLASSES.none;
   const title = readString(block.data, "title");
   const iconName = readString(block.data, "icon");
   const IconComponent = iconName ? NAV_ICON_BY_KEY[iconName] : null;
