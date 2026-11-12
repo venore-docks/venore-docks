@@ -8,7 +8,7 @@ export const cardBlockDefinition: BlockDefinition = {
   category: "conteúdo",
   structure: "leaf",
   allowedInRoot: false,
-  defaultData: { mediaId: null, title: "", description: "", href: "", buttonLabel: "" },
+  defaultData: { mediaId: null, title: "", description: "", href: "", buttonLabel: "", tone: "default" },
   requiredDataFields: ["title"],
   missingConfigMessage: "Sem título definido",
   editorFields: [
@@ -17,5 +17,19 @@ export const cardBlockDefinition: BlockDefinition = {
     { name: "description", type: "richtext", label: "Descrição" },
     { name: "href", type: "url", label: "Link (opcional)" },
     { name: "buttonLabel", type: "text", label: "Texto do botão (opcional)" },
+    {
+      name: "tone",
+      type: "select",
+      label: "Cor do card",
+      options: [
+        { value: "default", label: "Padrão" },
+        { value: "primary", label: "Primária" },
+        { value: "secondary", label: "Secundária" },
+        { value: "accent", label: "Destaque" },
+        { value: "warning", label: "Laranja (aviso)" },
+        { value: "success", label: "Verde (sucesso)" },
+        { value: "destructive", label: "Vermelha" },
+      ],
+    },
   ],
 };

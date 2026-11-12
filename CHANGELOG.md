@@ -14,6 +14,15 @@ continuam propagando por merge.
 
 ## [Unreleased]
 
+## [0.7.3] - 2026-11-12
+
+### Added
+- **Carrossel de cards.** `core.layout.carousel` aceita blocos Card além de Imagem e ganha "Slides visíveis (desktop)" (1–4; mobile sempre 1, tablet 2).
+- **Card colorido.** `core.content.card` ganha "Cor do card" (`tone`: primária, secundária, destaque, laranja, verde, vermelha) em cor chapada com tokens do tema; botão claro sobre o fundo cheio.
+
+### Fixed
+- Botão do Card fica sempre no rodapé (`mt-auto`) e cards do carrossel esticam à altura do mais alto, mesmo com descrições de tamanhos diferentes.
+
 ## [0.7.2] - 2026-11-11
 
 ### Added

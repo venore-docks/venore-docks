@@ -527,6 +527,17 @@ function ProgressBlockRenderer({ block }: BlockRendererProps) {
   );
 }
 
+// Cores chapadas do card (tokens semânticos do tema — sem cor crua). Botão sempre claro (bg-card)
+// pra contrastar com o fundo cheio; rodapé sem a faixa cinza padrão.
+const CARD_TONE_CLASSNAMES: Record<string, string> = {
+  primary: "bg-primary text-primary-foreground ring-0",
+  secondary: "bg-secondary text-secondary-foreground ring-0",
+  accent: "bg-accent text-accent-foreground ring-0",
+  warning: "bg-warning text-warning-foreground ring-0",
+  success: "bg-success text-success-foreground ring-0",
+  destructive: "bg-destructive text-white ring-0",
+};
+
 async function CardBlock({ block, presentation }: BlockRendererProps) {
   const data = block.data;
   const mediaId = readString(data, "mediaId");
@@ -534,6 +545,7 @@ async function CardBlock({ block, presentation }: BlockRendererProps) {
   const description = data.description;
   const href = readString(data, "href");
   const buttonLabel = readString(data, "buttonLabel", "Saiba mais");
+  const toneClass = CARD_TONE_CLASSNAMES[readString(data, "tone", "default")];
 
   let mediaUrl: string | null = null;
   if (mediaId) {
@@ -544,7 +556,7 @@ async function CardBlock({ block, presentation }: BlockRendererProps) {
   }
 
   return (
-    <Card {...presentationAttributes(block, presentation)} className="h-full ui-motion-base hover:shadow-float">
+    <Card {...presentationAttributes(block, presentation)} className={cn("h-full ui-motion-base hover:shadow-float", toneClass)}>
       {mediaUrl && (
         // Card (ui/card.tsx) já trata <img> como primeiro filho: remove o padding-top e arredonda
         // o topo sozinho (has-[>img:first-child]:pt-0, *:[img:first-child]:rounded-t-xl).
@@ -554,12 +566,13 @@ async function CardBlock({ block, presentation }: BlockRendererProps) {
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         {hasRichTextContent(description) && (
-          <CardDescription className={RICH_TEXT_INLINE_CLASSES}>{renderRichTextContent(description)}</CardDescription>
+          <CardDescription className={cn(RICH_TEXT_INLINE_CLASSES, toneClass && "text-current opacity-90")}>{renderRichTextContent(description)}</CardDescription>
         )}
       </CardHeader>
       {href && (
-        <CardFooter>
-          <Button asChild size="sm" variant="outline">
+        // mt-auto: o botão fica sempre no pé do card, mesmo com descrições de alturas diferentes.
+        <CardFooter className={cn("mt-auto", toneClass && "border-t-0 bg-transparent")}>
+          <Button asChild size="sm" variant="outline" className={toneClass ? "border-transparent bg-card text-foreground hover:bg-card/90" : undefined}>
             <Link href={href} {...externalLinkProps(href)}>{buttonLabel}</Link>
           </Button>
         </CardFooter>
@@ -914,6 +927,7 @@ async function CarouselBlock({ block, renderBlocks }: BlockRendererProps) {
       autoplay={block.data.autoplay === true}
       interval={Number(block.data.interval) || 5}
       loop={block.data.loop !== false}
+      perView={Number(block.data.perView) || 1}
       showDots={block.data.showDots !== false}
       htmlId={block.htmlId}
     />
