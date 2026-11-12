@@ -14,6 +14,11 @@ continuam propagando por merge.
 
 ## [Unreleased]
 
+## [0.7.9] - 2026-11-12
+
+### Fixed
+- Botão do Card ficava transparente com texto escuro no modo escuro: a variante `outline` do Button traz `dark:bg-input/30`, que vencia o fundo do tom. Agora usa `default` e as cores do tom por cima.
+
 ## [0.7.8] - 2026-11-12
 
 ### Changed

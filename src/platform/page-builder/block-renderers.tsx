@@ -589,7 +589,9 @@ async function CardBlock({ block, presentation }: BlockRendererProps) {
         <CardFooter className={cn("mt-auto", toneClass && "border-t-0 bg-transparent")}>
           <Button
             asChild
-            variant={toneClass ? "outline" : "default"}
+            // variant "default" sempre: o "outline" traz dark:bg-input/30 que, no modo escuro, vence o
+            // bg-* do tom (botão ficava transparente com texto escuro).
+            variant="default"
             className={cn("rounded-full font-semibold", toneClass && (CARD_TONE_BUTTON_CLASSNAMES[tone] ?? CARD_TONE_BUTTON_CLASSNAMES.default))}
           >
             <Link href={href} {...externalLinkProps(href)}>
