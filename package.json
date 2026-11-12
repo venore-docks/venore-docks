@@ -57,7 +57,7 @@
     "@venore/plugin-broadcast": "git+https://github.com/venore-docks/venore-plugin-broadcast.git#v1.10.0",
     "@venore/plugin-calendar": "git+https://github.com/venore-docks/venore-plugin-calendar.git#v1.0.1",
     "@venore/plugin-calendarios": "git+https://github.com/venore-docks/venore-plugin-calendarios.git#v0.2.0",
-    "@venore/plugin-colabora": "git+https://github.com/venore-docks/venore-plugin-zammad.git#v1.0.1",
+    "@venore/plugin-colabora": "git+https://github.com/venore-docks/venore-plugin-zammad.git#v1.0.2",
     "@venore/plugin-erasto-league": "git+https://github.com/venore-docks/venore-plugin-erasto-league.git#v0.42.1",
     "@venore/plugin-listas-materiais": "git+https://github.com/venore-docks/venore-plugin-listas-materiais.git#v0.4.0",
     "@venore/plugin-novels": "github:venore-docks/venore-plugin-novels#dee9fc4ca22fedba85683aa3bb158f6ab14c1107",
