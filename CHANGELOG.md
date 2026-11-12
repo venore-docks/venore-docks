@@ -14,6 +14,11 @@ continuam propagando por merge.
 
 ## [Unreleased]
 
+## [0.7.8] - 2026-11-12
+
+### Changed
+- Botão do card "Igual à barra lateral" usa o fundo `primary` (texto `primary-foreground`).
+
 ## [0.7.7] - 2026-11-12
 
 ### Changed

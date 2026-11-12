@@ -545,7 +545,7 @@ const CARD_TONE_CLASSNAMES: Record<string, string> = {
 // Botão invertido: fundo na cor do texto do card, texto na cor do card (alto contraste, pílula com seta).
 const CARD_TONE_BUTTON_CLASSNAMES: Record<string, string> = {
   sidebar:
-    "border-transparent bg-[color:var(--sidebar-foreground,var(--primary-foreground))] text-[color:var(--sidebar-bg-end,var(--primary))] hover:bg-[color:var(--sidebar-foreground,var(--primary-foreground))]/90",
+    "border-transparent bg-primary text-primary-foreground hover:bg-primary/90",
   primary: "border-transparent bg-primary-foreground text-primary hover:bg-primary-foreground/90",
   warning: "border-transparent bg-warning-foreground text-warning hover:bg-warning-foreground/90",
   success: "border-transparent bg-success-foreground text-success hover:bg-success-foreground/90",
@@ -703,6 +703,9 @@ async function AccordionItemBlock({ block, renderBlocks }: BlockRendererProps) {
   );
 }
 
+// A partir de quantas abas a barra vira grade de tiles.
+const TABS_TILE_THRESHOLD = 6;
+
 async function TabsBlock({ block, renderBlocks }: BlockRendererProps) {
   const area = readArea(block, "items");
   const children = area?.blocks ?? [];
@@ -712,32 +715,64 @@ async function TabsBlock({ block, renderBlocks }: BlockRendererProps) {
     return null;
   }
 
+  // Muitas abas (ex.: um mês por aba) viram uma grade de "tiles": sem rolagem horizontal, todas as
+  // opções visíveis, com o contador numa barra proporcional ao maior. Poucas abas mantêm a linha de
+  // pílulas. Em ambos o Radix só monta o conteúdo da aba ativa, então as imagens das outras abas
+  // não carregam até a pessoa escolher.
+  const tiles = children.length >= TABS_TILE_THRESHOLD;
+  const counts = children.map((child) => Number(readString(child.data, "badge")));
+  const maxCount = Math.max(0, ...counts.filter((count) => Number.isFinite(count)));
+
   return (
     <Card className="shadow-panel">
       <CardContent>
         <Tabs defaultValue={children[0].id} className="w-full">
-          {/* Muitas abas (ex.: um mês por aba) não quebram linha: a lista rola na horizontal, com snap,
-              e a aba ativa ganha o fundo de destaque (tokens primary). O Radix só monta o conteúdo da
-              aba ativa, então imagens das outras não carregam. */}
-          <div className="-mx-1 overflow-x-auto px-1 pb-1 snap-x snap-proximity [scrollbar-width:thin]">
-            <TabsList className="w-max min-w-full justify-start gap-1 group-data-horizontal/tabs:h-10">
-              {children.map((child) => {
+          {tiles ? (
+            <TabsList className="grid h-auto w-full grid-cols-3 gap-2 bg-transparent p-0 group-data-horizontal/tabs:h-auto sm:grid-cols-4 lg:grid-cols-6">
+              {children.map((child, index) => {
                 const badge = readString(child.data, "badge");
+                const count = counts[index];
+                const share = maxCount > 0 && Number.isFinite(count) ? Math.max(8, Math.round((count / maxCount) * 100)) : null;
                 return (
                   <TabsTrigger
                     key={child.id}
                     value={child.id}
-                    className="h-8 flex-none snap-start px-3 data-active:bg-primary data-active:text-primary-foreground dark:data-active:border-transparent dark:data-active:bg-primary dark:data-active:text-primary-foreground"
+                    className="h-auto flex-col items-stretch justify-start gap-2 rounded-xl border-border bg-muted/50 px-3 py-2.5 text-start text-foreground hover:bg-muted data-active:border-transparent data-active:bg-primary data-active:text-primary-foreground data-active:shadow-md dark:border-border dark:data-active:border-transparent dark:data-active:bg-primary dark:data-active:text-primary-foreground"
                   >
-                    {readString(child.data, "label", "Aba")}
-                    {badge && (
-                      <span className="ms-1.5 rounded-full bg-current/15 px-1.5 text-[0.7rem] leading-5 font-semibold tabular-nums">{badge}</span>
+                    <span className="flex items-baseline justify-between gap-2">
+                      <span className="truncate text-sm font-semibold">{readString(child.data, "label", "Aba")}</span>
+                      {badge && <span className="text-sm font-semibold tabular-nums">{badge}</span>}
+                    </span>
+                    {share !== null && (
+                      <span aria-hidden="true" className="block h-1 w-full overflow-hidden rounded-full bg-current/15">
+                        <span className="block h-full rounded-full bg-current" style={{ width: `${share}%` }} />
+                      </span>
                     )}
                   </TabsTrigger>
                 );
               })}
             </TabsList>
-          </div>
+          ) : (
+            <div className="-mx-1 overflow-x-auto px-1 pb-1 snap-x snap-proximity [scrollbar-width:thin]">
+              <TabsList className="w-max min-w-full justify-start gap-1 group-data-horizontal/tabs:h-10">
+                {children.map((child) => {
+                  const badge = readString(child.data, "badge");
+                  return (
+                    <TabsTrigger
+                      key={child.id}
+                      value={child.id}
+                      className="h-8 flex-none snap-start px-3 data-active:bg-primary data-active:text-primary-foreground dark:data-active:border-transparent dark:data-active:bg-primary dark:data-active:text-primary-foreground"
+                    >
+                      {readString(child.data, "label", "Aba")}
+                      {badge && (
+                        <span className="ms-1.5 rounded-full bg-current/15 px-1.5 text-[0.7rem] leading-5 font-semibold tabular-nums">{badge}</span>
+                      )}
+                    </TabsTrigger>
+                  );
+                })}
+              </TabsList>
+            </div>
+          )}
           <div className="pt-4">{content}</div>
         </Tabs>
       </CardContent>
@@ -748,7 +783,11 @@ async function TabsBlock({ block, renderBlocks }: BlockRendererProps) {
 async function TabsItemBlock({ block, renderBlocks }: BlockRendererProps) {
   const area = readArea(block, "content");
   const content = area ? await renderBlocks(area.blocks) : null;
-  return <TabsContent value={block.id}>{content}</TabsContent>;
+  return (
+    <TabsContent value={block.id} className="data-active:animate-in data-active:fade-in-0 data-active:duration-300 motion-reduce:animate-none">
+      {content}
+    </TabsContent>
+  );
 }
 
 async function CardGridBlock({ block, renderBlocks, presentation }: BlockRendererProps) {
