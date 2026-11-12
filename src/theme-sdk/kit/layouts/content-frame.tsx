@@ -62,7 +62,7 @@ export function ContentFrame({
     <div data-sidebar-contextual={showSidebar} className="flex-1 min-w-0 bg-(image:--app-background)">
       {breadcrumbs}
       <div
-        className={`mx-auto flex max-w-6xl gap-8 px-4 py-8 sm:px-6 lg:gap-10 lg:px-8 lg:py-12 ${
+        className={`mx-auto flex max-w-(--page-width-contained,var(--container-6xl)) gap-8 px-4 py-8 sm:px-6 lg:gap-10 lg:px-8 lg:py-12 ${
           showSidebar ? (isTop ? "flex-col" : "flex-col lg:flex-row") : ""
         }`}
       >

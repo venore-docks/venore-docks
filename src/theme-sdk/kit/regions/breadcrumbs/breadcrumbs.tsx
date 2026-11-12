@@ -31,7 +31,7 @@ export function Breadcrumbs({
 
   return (
     <>
-      <nav aria-label={t(strings, "breadcrumbs.label")} data-region="breadcrumbs" className="mx-auto w-full max-w-6xl px-4 pt-5 sm:px-6 lg:px-8">
+      <nav aria-label={t(strings, "breadcrumbs.label")} data-region="breadcrumbs" className="mx-auto w-full max-w-(--page-width-contained,var(--container-6xl)) px-4 pt-5 sm:px-6 lg:px-8">
         <ol className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
           {breadcrumbs.map((item, index) => {
             const isFirst = index === 0;
