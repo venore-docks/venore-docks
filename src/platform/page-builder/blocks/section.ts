@@ -21,8 +21,8 @@ export function createSectionBlockDefinition(nestableBlockKeys: string[]): Block
     defaultData: {
       background: "none",
       maxWidth: "full",
-      paddingY: "md",
-      paddingX: "md",
+      paddingY: "none",
+      paddingX: "none",
       title: "",
       icon: "",
       titleAlign: "start",

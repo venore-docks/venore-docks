@@ -14,6 +14,12 @@ continuam propagando por merge.
 
 ## [Unreleased]
 
+## [0.7.7] - 2026-11-12
+
+### Changed
+- **Seção sem padding empilhado.** `core.layout.section` passa a ter `paddingX`/`paddingY` padrão `none` (renderer e `defaultData`): o `ContentFrame` do kit já aplica o padding da página, e o `md` da seção somava por cima (64px laterais e 96px verticais no desktop). Seções já salvas mantêm o valor gravado.
+- **Aurora 0.2.2:** footer em `max-w-6xl` (alinhado ao conteúdo) e faixa do sitemap mais compacta.
+
 ## [0.7.6] - 2026-11-12
 
 ### Added
