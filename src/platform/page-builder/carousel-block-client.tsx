@@ -64,8 +64,9 @@ export function CarouselBlockClient({
         </CarouselContent>
         <CarouselPrevious />
         <CarouselNext />
+        {/* CarouselDots usa useCarousel(): precisa ficar DENTRO do <Carousel> (fora dele o render quebra). */}
+        {showDots && <CarouselDots className="mt-3" />}
       </Carousel>
-      {showDots && <CarouselDots />}
     </div>
   );
 }

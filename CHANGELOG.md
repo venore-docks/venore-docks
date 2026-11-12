@@ -14,6 +14,11 @@ continuam propagando por merge.
 
 ## [Unreleased]
 
+## [0.7.4] - 2026-11-12
+
+### Fixed
+- **Carrossel com indicadores derrubava a página** (`useCarousel must be used within a <Carousel />`): `CarouselDots` estava fora do `<Carousel>` em `carousel-block-client.tsx`. Agora fica dentro.
+
 ## [0.7.3] - 2026-11-12
 
 ### Added
