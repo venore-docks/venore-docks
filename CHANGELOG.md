@@ -14,6 +14,11 @@ continuam propagando por merge.
 
 ## [Unreleased]
 
+## [0.7.10] - 2026-11-12
+
+### Added
+- **Largura da coluna de conteúdo por tema.** `ContentFrame` e `Breadcrumbs` do kit usam `max-w-(--page-width-contained,var(--container-6xl))`: sem o token o visual é idêntico (6xl); um tema define `--page-width-contained` no `theme.css` pra alargar. Snapshots de paridade do `venore-slime` atualizados. Aurora 0.2.3 define 90rem (monitor 1920 sobrava ~270px de margem).
+
 ## [0.7.9] - 2026-11-12
 
 ### Fixed
@@ -23,11 +28,6 @@ continuam propagando por merge.
 
 ### Changed
 - Botão do card "Igual à barra lateral" usa o fundo `primary` (texto `primary-foreground`).
-
-## [0.7.8] - 2026-11-12
-
-### Added
-- **Largura da coluna de conteúdo por tema.** `ContentFrame` e `Breadcrumbs` do kit usam `max-w-(--page-width-contained,var(--container-6xl))`: sem o token o visual é idêntico (6xl); um tema define `--page-width-contained` no `theme.css` pra alargar. Snapshots de paridade do `venore-slime` atualizados. Aurora 0.2.3 define 90rem (monitor 1920 sobrava ~270px de margem).
 
 ## [0.7.7] - 2026-11-12
 
