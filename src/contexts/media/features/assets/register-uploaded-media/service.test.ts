@@ -9,6 +9,11 @@ vi.mock("../generate-asset-variants/service", () => ({
   generateAssetVariants: (...args: unknown[]) => generateAssetVariants(...args),
 }));
 
+const normalizeAssetOriginal = vi.fn<(...args: unknown[]) => Promise<unknown>>(async () => ({ success: true, data: { changed: false, data: null } }));
+vi.mock("../normalize-asset-original/service", () => ({
+  normalizeAssetOriginal: (...args: unknown[]) => normalizeAssetOriginal(...args),
+}));
+
 vi.mock("@/observability", () => ({
   beginOperation: vi.fn(() => ({ operationId: "op-1", useCase: "test", actor: { id: "actor-1", type: "user" }, kind: "write", startedAt: new Date() })),
   endOperation: vi.fn(),
@@ -118,6 +123,37 @@ describe("registerUploadedMedia", () => {
     expect(insertAssetIfAbsent).toHaveBeenCalledWith(
       expect.objectContaining({ pathname: baseCommand.pathname, checksum: baseCommand.checksum, uploadedBy: "actor-1" }),
     );
+  });
+
+  it("ajusta o original logo depois de inserir, repassa os bytes pras variantes e devolve a linha atualizada", async () => {
+    const normalizedBytes = Buffer.from("jpeg");
+    const updatedAsset = { ...existingAsset, filename: "IMG_1.jpg", contentType: "image/jpeg", size: 4 };
+    findAssetByPathname.mockResolvedValueOnce(null).mockResolvedValueOnce(updatedAsset);
+    findActiveAssetByChecksum.mockResolvedValue(null);
+    insertAssetIfAbsent.mockResolvedValue(existingAsset);
+    normalizeAssetOriginal.mockResolvedValueOnce({ success: true, data: { changed: true, data: normalizedBytes } });
+    generateAssetVariants.mockClear();
+
+    const { registerUploadedMedia } = await import("./service");
+    const result = await registerUploadedMedia(baseCommand);
+
+    expect(normalizeAssetOriginal).toHaveBeenCalledWith({ assetId: existingAsset.id });
+    expect(generateAssetVariants).toHaveBeenCalledWith({ assetId: existingAsset.id, data: normalizedBytes });
+    expect(result).toEqual({ success: true, data: updatedAsset });
+  });
+
+  it("falha no ajuste do original não derruba o registro (variantes leem do storage)", async () => {
+    findAssetByPathname.mockResolvedValue(null);
+    findActiveAssetByChecksum.mockResolvedValue(null);
+    insertAssetIfAbsent.mockResolvedValue(existingAsset);
+    normalizeAssetOriginal.mockResolvedValueOnce({ success: false, error: { code: "media.original.failed", message: "x" } });
+    generateAssetVariants.mockClear();
+
+    const { registerUploadedMedia } = await import("./service");
+    const result = await registerUploadedMedia(baseCommand);
+
+    expect(result).toEqual({ success: true, data: existingAsset });
+    expect(generateAssetVariants).toHaveBeenCalledWith({ assetId: existingAsset.id, data: undefined });
   });
 
   it("falls back to a re-fetch by pathname when a concurrent insert wins the unique-index race", async () => {

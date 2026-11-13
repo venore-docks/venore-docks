@@ -170,3 +170,9 @@ export type {
 } from "./features/assets/request-media-upload-ticket/types";
 export type { RegisterUploadedMediaResult } from "./features/assets/register-uploaded-media/types";
 export type { ConfirmMediaUploadInput } from "./features/assets/register-uploaded-media/handler";
+
+// Contagens da biblioteca (por categoria, tipo e visibilidade) pra tela /admin/media.
+export { getMediaLibraryStatsHandler as getMediaLibraryStats } from "./features/assets/get-media-library-stats/handler";
+export type { MediaLibraryStats, GetMediaLibraryStatsResult } from "./features/assets/get-media-library-stats/types";
+export { MEDIA_KINDS, MEDIA_SORTS, UNCATEGORIZED_FILTER } from "./shared/asset-list-filters";
+export type { MediaKind, MediaSort } from "./shared/asset-list-filters";

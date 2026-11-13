@@ -18,6 +18,9 @@ describe("contentMatchesDeclaredType", () => {
     ["audio/mpeg", bytes([0xff, 0xfb, 0x90])],
     ["audio/wav", bytes("RIFF", [1, 2, 3, 4], "WAVEfmt ")],
     ["audio/ogg", bytes("OggS")],
+    ["image/heic", bytes([0, 0, 0, 0x18], "ftypheic")],
+    ["image/heic", bytes([0, 0, 0, 0x1c], "ftypheix")],
+    ["image/heif", bytes([0, 0, 0, 0x18], "ftypmif1")],
   ])("accepts real %s content", (contentType, content) => {
     expect(contentMatchesDeclaredType(contentType, content)).toBe(true);
   });
@@ -27,6 +30,8 @@ describe("contentMatchesDeclaredType", () => {
     expect(contentMatchesDeclaredType("application/pdf", bytes("MZ", [0x90, 0]))).toBe(false);
     expect(contentMatchesDeclaredType("image/svg+xml", bytes([0x89, 0x50, 0x4e, 0x47, 0]))).toBe(false);
     expect(contentMatchesDeclaredType("image/webp", bytes("RIFF", [1, 2, 3, 4], "WAVE"))).toBe(false);
+    // Vídeo MP4 também é ISO-BMFF (ftyp) — só a marca separa um do outro.
+    expect(contentMatchesDeclaredType("image/heic", bytes([0, 0, 0, 0x18], "ftypmp42"))).toBe(false);
   });
 
   it("refuses any type outside the allowlist", () => {

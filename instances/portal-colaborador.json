@@ -1,7 +1,6 @@
 {
   "plugins": [
     "birthdays",
-    "calendar",
     "calendarios",
     "listas-materiais",
     "photo-gallery",
@@ -10,15 +9,6 @@
     "colabora"
   ],
   "themes": [
-    "academy",
-    "aurora",
-    "druids",
-    "fearless",
-    "harbor",
-    "knights",
-    "nestpro",
-    "nite",
-    "sorcerers",
-    "volt"
+    "aurora"
   ]
 }

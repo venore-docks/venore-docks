@@ -14,6 +14,19 @@ continuam propagando por merge.
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-11-13
+
+### Added
+- **Foto HEIC/HEIF (iPhone) no MMS.** `image/heic` e `image/heif` entram em `MEDIA_ALLOWED_TYPES` (com conferência de bytes em `content-sniffing.ts`, marcas `ftyp heic/heix/mif1/...`) e viram JPEG no upload — fora do Safari nenhum navegador abre HEIC. Decodificação pelo `heic-decode` (libheif em WASM, sem binário nativo; o `sharp` pré-compilado não lê HEVC), em `serverExternalPackages`. Acima de 100 MP não decodifica e o arquivo fica como veio. No navegador, `.heic` com `file.type` vazio (Chrome/Edge no Windows) tem o tipo deduzido pela extensão (`src/lib/resolve-upload-content-type.ts`).
+- **Original da foto reduzido no upload** (`src/contexts/media/image-original.ts`). JPEG/WebP mais largos que 2560px ou com mais de 3 MB são reencodados no mesmo formato (qualidade 85, orientação EXIF aplicada, metadados — inclusive GPS — descartados); PNG só é reduzido acima de 2560px, sem perda. Só substitui quando fica menor. Upload server-buffered (admin, picker, categoria reservada de plugin) ajusta antes de gravar; upload direto ao Blob ajusta logo depois do registro, regravando na mesma key (`features/assets/normalize-asset-original`), e as variantes reaproveitam os mesmos bytes. Assets já existentes não são reprocessados.
+- **Biblioteca de mídia reorganizada** (`/admin/media`). Barra lateral de categorias com contagem (no mobile, faixa de pílulas rolável), filtros na URL (`?q=&kind=&visibility=&sort=&view=` — busca por nome, tipo imagem/vídeo/áudio/documento, visibilidade, ordenação, grade/lista), paginação sem `COUNT` e menu "⋯" por arquivo (mover de categoria, copiar link). O upload já pode escolher a categoria. `listMediaAssets` ganha `search`/`kind`/`visibility`/`sort`, e a nova `getMediaLibraryStats` faz as contagens num `GROUP BY` só (`features/assets/get-media-library-stats`, `shared/asset-list-filters.ts`). Arquivo "restricted" continua fora da biblioteca geral para quem não é superadmin nem dono.
+- **SDK de plugin: envio em lote pro MMS e lightbox de galeria.** `@venore/plugin-sdk/ui` passa a exportar `uploadFileToMediaLibrary(file)` (`src/components/media-library-upload.ts` — o mesmo fluxo do "Enviar agora" do `MediaPickerField`, que agora o usa: buffered até 4 MB, ticket + upload direto acima, um arquivo por chamada) e o `GalleryLightboxClient`/`MuralCardContent`/`MURAL_CARD_CLASSES`/`PLAIN_CARD_CLASSES` do bloco `core.layout.gallery`. Aditivo, sem mudança de `CORE_VERSION`. Primeiro consumidor: `@venore/plugin-photo-gallery` v2.
+
+### Changed
+- Teto de upload de PNG/JPEG/WebP sobe de 8 MB para 20 MB (HEIC/HEIF também 20 MB; GIF segue em 8 MB). Virou proteção de memória, não regra de qualidade: o original é reduzido e a página baixa as variantes.
+- `@venore/plugin-photo-gallery` v1.0.0 → **v2.0.0** (Portal do Colaborador): upload pelo MMS, capa/ordem/legenda/lightbox, fim do `next/image` com URL do Blob. Migration aditiva `0001_cover_event_date`, aplicada no deploy (`db:migrate:plugins`).
+- Instância `portal-colaborador`: só o tema `aurora` e sem o plugin `calendar` (o portal usa `calendarios`).
+
 ## [0.8.0] - 2026-11-13
 
 ### Added

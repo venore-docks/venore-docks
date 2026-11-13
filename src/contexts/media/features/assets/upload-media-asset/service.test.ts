@@ -125,7 +125,7 @@ describe("uploadMediaAsset", () => {
     const result = await uploadMediaAsset({
       filename: "huge.png",
       contentType: "image/png",
-      size: 9 * 1024 * 1024,
+      size: 21 * 1024 * 1024,
       data: Buffer.alloc(10),
       visibility: "private",
       actorId: "actor-1",

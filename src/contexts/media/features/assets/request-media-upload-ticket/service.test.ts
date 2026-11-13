@@ -29,14 +29,14 @@ describe("validateMediaUploadCandidate", () => {
 
   it("accepts a size exactly at the category limit (boundary)", async () => {
     const { validateMediaUploadCandidate } = await import("./service");
-    const maxSizeBytes = 8 * 1024 * 1024;
+    const maxSizeBytes = 20 * 1024 * 1024;
     const result = validateMediaUploadCandidate({ contentType: "image/png", size: maxSizeBytes });
     expect(result).toEqual({ success: true, data: { maxSizeBytes } });
   });
 
   it("rejects a size one byte over the category limit (boundary)", async () => {
     const { validateMediaUploadCandidate } = await import("./service");
-    const maxSizeBytes = 8 * 1024 * 1024;
+    const maxSizeBytes = 20 * 1024 * 1024;
     const result = validateMediaUploadCandidate({ contentType: "image/png", size: maxSizeBytes + 1 });
     expect(result).toEqual({ success: false, error: { code: "media.upload.file_too_large", message: expect.any(String) } });
   });

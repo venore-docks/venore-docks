@@ -1,27 +1,16 @@
 "use client";
 
-import { uploadFileDirect } from "@/lib/upload-file-direct";
 import Link from "next/link";
 import { ImageOff, Loader2, Upload } from "lucide-react";
 import { useRef, useState, useTransition } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { computeFileChecksum } from "@/lib/compute-file-checksum";
+import { uploadFileToMediaLibrary } from "./media-library-upload";
 import {
-  confirmUploadForPickerAction,
   listCategoriesForPickerAction,
   listMediaForPickerAction,
-  requestUploadTicketForPickerAction,
-  uploadMediaForPickerAction,
   type PickableCategory,
   type PickableMedia,
 } from "./media-picker-field.actions";
-
-// Acima disso, o upload sai do caminho server-buffered (server action com o arquivo inteiro em
-// memória) e vai pro fluxo de ticket + upload direto ao Blob — necessário sobretudo pra vídeo de
-// playlist do broadcast, que pode chegar a 200MB (bem acima do limite de body de uma server
-// action). Abaixo do limite, o caminho buffered é mais simples e é o único que sanitiza SVG
-// (sanitize-svg-buffer.ts só roda nesse caminho — ver assertTypeAllowedForDirectUpload).
-const SERVER_BUFFERED_MAX_BYTES = 4 * 1024 * 1024;
 
 type UploadStatus =
   | { step: "idle" }
@@ -80,52 +69,13 @@ export function MediaPickerField({
     if (!file) return;
 
     setUploadStatus({ step: "uploading" });
-    try {
-      const contentType = file.type || "application/octet-stream";
-
-      if (file.size <= SERVER_BUFFERED_MAX_BYTES) {
-        const result = await uploadMediaForPickerAction({
-          filename: file.name,
-          contentType,
-          size: file.size,
-          data: await file.arrayBuffer(),
-        });
-        if (!result.success) {
-          setUploadStatus({ step: "error", message: result.error.message });
-          return;
-        }
-        setUploadStatus({ step: "idle" });
-        selectMedia(result.data);
-        return;
-      }
-
-      const ticket = await requestUploadTicketForPickerAction({ filename: file.name, contentType, size: file.size });
-      if (!ticket.success) {
-        setUploadStatus({ step: "error", message: ticket.error.message });
-        return;
-      }
-
-      const checksum = await computeFileChecksum(file);
-      const blob = await uploadFileDirect(ticket.data, file);
-
-      const registered = await confirmUploadForPickerAction({
-        filename: file.name,
-        pathname: blob.pathname,
-        url: blob.url,
-        contentType: ticket.data.contentType,
-        size: file.size,
-        checksum,
-      });
-      if (!registered.success) {
-        setUploadStatus({ step: "error", message: registered.error.message });
-        return;
-      }
-
-      setUploadStatus({ step: "idle" });
-      selectMedia(registered.data);
-    } catch (error) {
-      setUploadStatus({ step: "error", message: error instanceof Error ? error.message : "Falha inesperada no upload." });
+    const result = await uploadFileToMediaLibrary(file);
+    if (!result.success) {
+      setUploadStatus({ step: "error", message: result.error.message });
+      return;
     }
+    setUploadStatus({ step: "idle" });
+    selectMedia(result.data);
   }
 
   return (

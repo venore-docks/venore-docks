@@ -13,6 +13,9 @@ const venorePackages = Object.keys(hostPkg.dependencies ?? {}).filter(
 
 const nextConfig: NextConfig = {
   transpilePackages: venorePackages,
+  // Decodificador de HEIC (contexts/media/image-original.ts): ~1.5 MB de WASM embutido em JS —
+  // carregado do node_modules em runtime em vez de passar pelo bundler.
+  serverExternalPackages: ["heic-decode", "libheif-js"],
   allowedDevOrigins: ["192.168.6.8"],
   experimental: {
     serverActions: {

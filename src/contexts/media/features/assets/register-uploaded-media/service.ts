@@ -3,6 +3,7 @@ import { beginOperation, endOperation } from "@/observability";
 import { resolveAssetUrl } from "../../../asset-url";
 import { attachAssetVariantsToOne } from "../../../shared/attach-asset-variants";
 import { generateAssetVariants } from "../generate-asset-variants/service";
+import { normalizeAssetOriginal } from "../normalize-asset-original/service";
 import { CONTENT_MISMATCH_ERROR, SNIFF_BYTES, contentMatchesDeclaredType } from "../../../content-sniffing";
 import { assertTypeAllowedForDirectUpload, validateMediaUploadCandidate } from "../request-media-upload-ticket/service";
 import { findActiveAssetByChecksum, findAssetByPathname, insertAssetIfAbsent } from "./store";
@@ -89,12 +90,17 @@ export async function registerUploadedMedia(command: RegisterUploadedMediaComman
   });
 
   if (inserted) {
-    // Upload direto: os bytes nunca passaram pelo servidor, então a geração lê o original do
-    // storage uma vez. Só aqui (linha recém-criada) — as chamadas repetidas (webhook depois da
-    // confirmação) saem cedo acima, sem gerar de novo. Falha não derruba o registro.
-    await generateAssetVariants({ assetId: inserted.id });
+    // Upload direto: os bytes nunca passaram pelo servidor, então o original é lido do storage uma
+    // vez — ajustado (foto reduzida, HEIC -> JPEG, normalize-asset-original) e os mesmos bytes
+    // seguem pra geração das variantes. Só aqui (linha recém-criada) — as chamadas repetidas
+    // (webhook depois da confirmação) saem cedo acima, sem processar de novo. Falha em qualquer
+    // dos dois não derruba o registro.
+    const original = await normalizeAssetOriginal({ assetId: inserted.id });
+    await generateAssetVariants({ assetId: inserted.id, data: (original.success && original.data.data) || undefined });
+    // contentType/size/filename mudam quando o original foi trocado — devolve a linha atual.
+    const current = original.success && original.data.changed ? ((await findAssetByPathname(command.pathname)) ?? inserted) : inserted;
     endOperation(handle, { success: true });
-    return { success: true, data: (await attachAssetVariantsToOne(inserted)) ?? inserted };
+    return { success: true, data: (await attachAssetVariantsToOne(current)) ?? current };
   }
 
   // Corrida: outra chamada concorrente inseriu entre o select e o insert. onConflictDoNothing

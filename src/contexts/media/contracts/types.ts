@@ -68,10 +68,18 @@ export type MediaAllowedTypeRule = {
 // assertTypeAllowedForDirectUpload em request-media-upload-ticket/service.ts). Os bytes passam
 // por sanitizeSvgBuffer (sanitize-svg-buffer.ts) antes de chegar em storagePort.store — cap de
 // tamanho bem menor que os outros formatos de imagem porque SVG é texto.
+//
+// Foto (PNG/JPEG/WebP/HEIC) tem teto de 20 MB: é só proteção de memória do servidor, não regra de
+// qualidade — o original é reduzido no upload (image-original.ts) e a página baixa as variantes
+// (image-variants.ts). Foto de celular de 48 MP passa fácil de 8 MB, e recusá-la só empurrava
+// a compressão manual pra quem publica. HEIC/HEIF (padrão do iPhone) nenhum navegador fora o
+// Safari abre: vira JPEG no upload. GIF fica em 8 MB porque não é reprocessado (animação).
 export const MEDIA_ALLOWED_TYPES: Record<string, MediaAllowedTypeRule> = {
-  "image/png": { category: "image", maxSizeBytes: 8 * 1024 * 1024 },
-  "image/jpeg": { category: "image", maxSizeBytes: 8 * 1024 * 1024 },
-  "image/webp": { category: "image", maxSizeBytes: 8 * 1024 * 1024 },
+  "image/png": { category: "image", maxSizeBytes: 20 * 1024 * 1024 },
+  "image/jpeg": { category: "image", maxSizeBytes: 20 * 1024 * 1024 },
+  "image/webp": { category: "image", maxSizeBytes: 20 * 1024 * 1024 },
+  "image/heic": { category: "image", maxSizeBytes: 20 * 1024 * 1024 },
+  "image/heif": { category: "image", maxSizeBytes: 20 * 1024 * 1024 },
   "image/gif": { category: "image", maxSizeBytes: 8 * 1024 * 1024 },
   "image/svg+xml": { category: "image", maxSizeBytes: 2 * 1024 * 1024 },
   "application/pdf": { category: "document", maxSizeBytes: 20 * 1024 * 1024 },

@@ -17,6 +17,7 @@ import {
   type RequestMediaUploadTicketResult,
 } from "@/contexts/media";
 import { authorizeActor } from "@/contexts/rbac";
+import { resolveUploadContentType } from "@/lib/resolve-upload-content-type";
 import { deleteMediaSafely } from "@/platform/media-lifecycle/delete-media-safely";
 import { collectMediaUsage } from "@/platform/media-usage/media-usage-registry";
 import type { MediaUsageReference } from "@/platform/media-usage/types";
@@ -44,13 +45,15 @@ export async function uploadMediaAction(
 
   const data = Buffer.from(await file.arrayBuffer());
   const visibility = parseVisibility(formData.get("visibility"));
+  const categoryId = String(formData.get("categoryId") ?? "") || null;
 
   const result = await uploadMediaAsset({
     filename: file.name,
-    contentType: file.type || "application/octet-stream",
+    contentType: resolveUploadContentType(file.name, file.type),
     size: file.size,
     data,
     visibility,
+    categoryId,
   });
 
   if (!result.success) {
@@ -85,8 +88,17 @@ export async function confirmMediaUploadAction(input: {
   size: number;
   checksum: string;
   visibility: MediaVisibility;
+  categoryId?: string | null;
 }): Promise<OperationResult<MediaAsset>> {
-  const result = await confirmMediaUpload(input);
+  const { categoryId, ...registration } = input;
+  const result = await confirmMediaUpload(registration);
+  if (result.success && categoryId) {
+    const categorized = await updateMediaAssetCategory({ id: result.data.id, categoryId });
+    if (!categorized.success) {
+      revalidatePath("/admin/media");
+      return { success: false, error: { code: categorized.error.code, message: `Arquivo enviado, mas a categoria não foi aplicada: ${categorized.error.message}` } };
+    }
+  }
   if (result.success) {
     revalidatePath("/admin/media");
   }

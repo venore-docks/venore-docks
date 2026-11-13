@@ -27,6 +27,9 @@ export * from "@/components/admin-page-header";
 export * from "@/components/admin-stat-tile";
 export * from "@/components/media-picker-field";
 export * from "@/components/media-picker-field.actions";
+// Envio de um arquivo do navegador pro MMS (buffered ou upload direto) — mesmo fluxo do
+// "Enviar agora" do MediaPickerField, pra plugin que envia vários arquivos (galeria de fotos).
+export { uploadFileToMediaLibrary } from "@/components/media-library-upload";
 export * from "@/components/pwa/push-toggle";
 
 // --- hooks / utils ---
@@ -39,4 +42,13 @@ export { cn } from "@/lib/utils";
 // entrypoint (`export *` arrasta o grafo inteiro). Os TIPOS de renderer (BlockRendererComponent/
 // Props/Mode) e o componente <BlockRenderer> vêm de "@venore/plugin-sdk" (entry server).
 export * from "@/platform/page-builder/block-field-panels";
+// Lightbox e cartão da galeria do page-builder (core.layout.gallery), reaproveitados por plugin
+// que renderiza a própria galeria (photo-gallery) — mesma navegação por teclado/swipe e foco.
+export { GalleryLightboxClient } from "@/platform/page-builder/gallery-lightbox-client";
+export {
+  MURAL_CARD_CLASSES,
+  PLAIN_CARD_CLASSES,
+  MuralCardContent,
+  type GalleryMuralItem,
+} from "@/platform/page-builder/gallery-mural-card";
 export type { PluginClientContributions } from "@/platform/page-builder/plugin-client-contributions";

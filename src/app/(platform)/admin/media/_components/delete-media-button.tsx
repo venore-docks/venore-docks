@@ -30,12 +30,14 @@ export function DeleteMediaButton({
   className,
   size = "sm",
   label = "Excluir",
+  ariaLabel,
   redirectTo,
 }: {
   id: string;
   className?: string;
   size?: "sm" | "icon";
-  label?: string;
+  label?: React.ReactNode;
+  ariaLabel?: string;
   // Página de detalhe passa "/admin/media": o asset excluído deixa de existir, não faz sentido
   // continuar nela. A grade não passa nada — revalidatePath já tira o item da lista no lugar.
   redirectTo?: string;
@@ -86,6 +88,7 @@ export function DeleteMediaButton({
         size={size}
         disabled={pending}
         className={className ?? "text-destructive"}
+        aria-label={ariaLabel}
         onClick={handleTriggerClick}
       >
         {label}

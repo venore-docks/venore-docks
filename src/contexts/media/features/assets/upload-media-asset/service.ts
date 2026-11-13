@@ -10,6 +10,7 @@ import { insertAsset } from "./store";
 import type { UploadMediaAssetCommand, UploadMediaAssetResult } from "./types";
 import { resolveAssetUrl } from "../../../asset-url";
 import { generateAssetVariants } from "../generate-asset-variants/service";
+import { normalizeImageOriginal, normalizedFilename } from "../../../image-original";
 import { attachAssetVariantsToOne } from "../../../shared/attach-asset-variants";
 
 const MEDIA_LIST_CACHE_PREFIX = "media:assets:";
@@ -57,18 +58,28 @@ export async function uploadMediaAsset(command: UploadMediaAssetCommand): Promis
     dataToStore = sanitized.data;
   }
 
-  const pathname = `${resolveMediaStorageFolder(command.contentType)}/${crypto.randomUUID()}-${sanitizeFilename(command.filename)}`;
-  const stored = await storagePort.store({ key: pathname, data: dataToStore, contentType: command.contentType });
+  // Foto: original reduzido e HEIC convertido pra JPEG antes de gravar (image-original.ts).
+  let contentType = command.contentType;
+  let filename = command.filename;
+  const normalized = await normalizeImageOriginal(dataToStore, contentType);
+  if (normalized) {
+    filename = normalizedFilename(filename, contentType, normalized.contentType);
+    contentType = normalized.contentType;
+    dataToStore = normalized.data;
+  }
+
+  const pathname = `${resolveMediaStorageFolder(contentType)}/${crypto.randomUUID()}-${sanitizeFilename(filename)}`;
+  const stored = await storagePort.store({ key: pathname, data: dataToStore, contentType });
   const checksum = computeSha256Hex(dataToStore);
 
   const id = crypto.randomUUID();
   const asset = await insertAsset({
     id,
-    filename: command.filename,
+    filename,
     pathname: stored.key,
     // Não público -> rota autorizada do app; público -> URL direta do storage (asset-url.ts).
     url: resolveAssetUrl({ id, pathname: stored.key, visibility: command.visibility }),
-    contentType: command.contentType,
+    contentType,
     size: stored.size,
     checksum,
     visibility: command.visibility,

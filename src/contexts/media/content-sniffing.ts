@@ -31,7 +31,19 @@ function isSvg(bytes: Uint8Array): boolean {
   return !Buffer.from(bytes.subarray(0, SNIFF_BYTES)).includes(0);
 }
 
+// HEIC/HEIF: caixa ISO-BMFF `ftyp` no byte 4 e a marca principal no byte 8. Os dois tipos aceitam
+// as mesmas marcas — o iPhone grava `heic`, mas outros apps exportam `mif1`, e o navegador rotula
+// o arquivo por extensão (.heic/.heif), não pelo conteúdo.
+const HEIF_BRANDS = new Set(["heic", "heix", "hevc", "hevx", "heim", "heis", "mif1", "msf1"]);
+
+function isHeif(bytes: Uint8Array): boolean {
+  if (!startsWith(bytes, ascii("ftyp"), 4) || bytes.length < 12) return false;
+  return HEIF_BRANDS.has(Buffer.from(bytes.subarray(8, 12)).toString("latin1"));
+}
+
 const MATCHERS: Record<string, (bytes: Uint8Array) => boolean> = {
+  "image/heic": isHeif,
+  "image/heif": isHeif,
   "image/png": (bytes) => startsWith(bytes, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
   "image/jpeg": (bytes) => startsWith(bytes, [0xff, 0xd8, 0xff]),
   "image/gif": (bytes) => startsWith(bytes, ascii("GIF87a")) || startsWith(bytes, ascii("GIF89a")),
