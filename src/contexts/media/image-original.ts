@@ -10,9 +10,9 @@ import sharp from "sharp";
 //   - HEIC/HEIF (iPhone): sempre vira JPEG — fora do Safari nenhum navegador abre HEIC, e o sharp
 //     pré-compilado não decodifica HEVC (patente), então a leitura é pelo heic-decode (libheif em
 //     WASM, sem binário nativo — roda na Vercel como está).
-//   - JPEG/WebP: reduzido a ORIGINAL_MAX_WIDTH e reencodado no mesmo formato quando é mais largo
-//     que isso ou pesa mais que REENCODE_MIN_BYTES. Abaixo dos dois, fica intacto (reencodar só
-//     perderia qualidade à toa).
+//   - JPEG/WebP: reduzido a ORIGINAL_MAX_WIDTH e reencodado (exceto se já couber nos dois limites) no mesmo formato, com qualidade
+//     adaptativa que desce até o arquivo caber em ~TARGET_BYTES (média de ~200 KB por foto, pedido
+//     do admin de mídia). Se o resultado não ficar menor, o original segue como veio.
 //   - PNG (logo, print de tela, arte): só reduzido quando passa da largura máxima, sem perda.
 // GIF (animação) e SVG (vetor) nunca são tocados. O resultado só é usado quando ficou MENOR que o
 // original (ou mudou de formato, no HEIC); senão o original segue como veio.
@@ -20,9 +20,12 @@ import sharp from "sharp";
 // Metadados: o sharp descarta EXIF por padrão — a orientação é aplicada nos pixels (rotate()) e o
 // GPS da foto de celular deixa de ir junto pro site público, o que é desejável.
 
-export const ORIGINAL_MAX_WIDTH = 2560;
-const REENCODE_MIN_BYTES = 3 * 1024 * 1024;
-const ORIGINAL_QUALITY = 85;
+// 1920px = a maior variante exibida pelo site; guardar mais que isso só ocupa Blob.
+export const ORIGINAL_MAX_WIDTH = 1920;
+// Alvo de peso por foto. Fotos comuns ficam em 150–300 KB em 1920px; cena muito detalhada pode
+// passar um pouco, pois a qualidade não desce de ORIGINAL_QUALITY_STEPS[último].
+const TARGET_BYTES = 200 * 1024;
+const ORIGINAL_QUALITY_STEPS = [78, 70, 62, 55, 48];
 // Uma foto de 48 MP decodificada ocupa ~200 MB em RGBA; 100 MP é folga pra qualquer celular atual
 // e mantém o pico de memória da função bem abaixo do limite da Vercel.
 const HEIF_MAX_PIXELS = 100_000_000;
@@ -74,16 +77,35 @@ async function readUprightWidth(data: Buffer): Promise<{ width: number; animated
 async function reencodePhoto(data: Buffer, contentType: "image/jpeg" | "image/webp"): Promise<NormalizedOriginal | null> {
   const source = await readUprightWidth(data);
   if (!source || source.animated) return null;
-  if (source.width <= ORIGINAL_MAX_WIDTH && data.byteLength <= REENCODE_MIN_BYTES) return null;
+  // Já no tamanho e dentro do alvo: reencodar só perderia qualidade à toa.
+  if (source.width <= ORIGINAL_MAX_WIDTH && data.byteLength <= TARGET_BYTES) return null;
 
-  const resized = sharp(data).rotate().resize({ width: ORIGINAL_MAX_WIDTH, withoutEnlargement: true });
-  const encoded =
-    contentType === "image/jpeg"
-      ? resized.jpeg({ quality: ORIGINAL_QUALITY, mozjpeg: true })
-      : resized.webp({ quality: ORIGINAL_QUALITY, effort: 4, smartSubsample: true });
-  const { data: output, info } = await encoded.toBuffer({ resolveWithObject: true });
+  // Redimensiona uma vez, reencoda de cima pra baixo na qualidade até caber no alvo.
+  const { data: base, info: baseInfo } = await sharp(data)
+    .rotate()
+    .resize({ width: ORIGINAL_MAX_WIDTH, withoutEnlargement: true })
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const output = await encodeUnderTarget(base, baseInfo, contentType);
   if (output.byteLength >= data.byteLength) return null;
-  return { data: output, contentType, width: info.width, height: info.height };
+  return { data: output, contentType, width: baseInfo.width, height: baseInfo.height };
+}
+
+async function encodeUnderTarget(
+  raw: Buffer,
+  info: { width: number; height: number; channels: number },
+  contentType: "image/jpeg" | "image/webp",
+): Promise<Buffer> {
+  let output = raw;
+  for (const quality of ORIGINAL_QUALITY_STEPS) {
+    const pipeline = sharp(raw, { raw: { width: info.width, height: info.height, channels: info.channels as 3 | 4 } });
+    output = await (contentType === "image/jpeg"
+      ? pipeline.jpeg({ quality, mozjpeg: true })
+      : pipeline.webp({ quality, effort: 4, smartSubsample: true })
+    ).toBuffer();
+    if (output.byteLength <= TARGET_BYTES) break;
+  }
+  return output;
 }
 
 async function shrinkPng(data: Buffer): Promise<NormalizedOriginal | null> {
@@ -112,7 +134,7 @@ async function convertHeifToJpeg(data: Buffer): Promise<NormalizedOriginal | nul
     const { data: output, info } = await sharp(raw, { raw: { width: pixels.width, height: pixels.height, channels: 4 } })
       .resize({ width: ORIGINAL_MAX_WIDTH, withoutEnlargement: true })
       .flatten({ background: "#ffffff" })
-      .jpeg({ quality: ORIGINAL_QUALITY, mozjpeg: true })
+      .jpeg({ quality: ORIGINAL_QUALITY_STEPS[0], mozjpeg: true })
       .toBuffer({ resolveWithObject: true });
     return { data: output, contentType: "image/jpeg", width: info.width, height: info.height };
   } finally {

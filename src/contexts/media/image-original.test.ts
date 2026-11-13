@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Sem fixture HEIC no repositório (nenhum encoder HEVC livre pra gerar uma): o decodificador é
 // trocado por um fake que devolve pixels RGBA. A decodificação real foi validada à mão com as
-// amostras CC0 de nokiatech/heif (8256x5504 -> JPEG 2560px).
+// amostras CC0 de nokiatech/heif (8256x5504 -> JPEG 1920px).
 const heicDispose = vi.fn();
 const heicImage = { width: 3000, height: 2000 };
 vi.mock("heic-decode", () => ({
@@ -39,13 +39,13 @@ describe("normalizeImageOriginal", () => {
     heicImage.height = 2000;
   });
 
-  it("reduz JPEG mais largo que 2560px, mantendo formato e proporção", async () => {
+  it("reduz JPEG mais largo que 1920px, mantendo formato e proporção", async () => {
     const original = await solid(4000, 3000).jpeg({ quality: 98 }).toBuffer();
     const result = await normalizeImageOriginal(original, "image/jpeg");
 
     expect(result).not.toBeNull();
     expect(result!.contentType).toBe("image/jpeg");
-    expect([result!.width, result!.height]).toEqual([2560, 1920]);
+    expect([result!.width, result!.height]).toEqual([1920, 1440]);
     expect(result!.data.byteLength).toBeLessThan(original.byteLength);
     expect((await sharp(result!.data).metadata()).format).toBe("jpeg");
   });
@@ -55,7 +55,7 @@ describe("normalizeImageOriginal", () => {
     const original = await solid(4000, 3000).jpeg({ quality: 98 }).withMetadata({ orientation: 6 }).toBuffer();
     const result = await normalizeImageOriginal(original, "image/jpeg");
 
-    expect([result!.width, result!.height]).toEqual([2560, 3413]);
+    expect([result!.width, result!.height]).toEqual([1920, 2560]);
     expect((await sharp(result!.data).metadata()).orientation).toBeUndefined();
   });
 
@@ -67,16 +67,16 @@ describe("normalizeImageOriginal", () => {
   it("reduz PNG largo sem trocar de formato, e não mexe em PNG estreito", async () => {
     const wide = await normalizeImageOriginal(await solid(3200, 400).png({ compressionLevel: 0 }).toBuffer(), "image/png");
     expect(wide?.contentType).toBe("image/png");
-    expect(wide?.width).toBe(2560);
+    expect(wide?.width).toBe(1920);
 
     expect(await normalizeImageOriginal(await solid(800, 400).png({ compressionLevel: 0 }).toBuffer(), "image/png")).toBeNull();
   });
 
-  it("converte HEIC em JPEG de no máximo 2560px e libera o decodificador", async () => {
+  it("converte HEIC em JPEG de no máximo 1920px e libera o decodificador", async () => {
     const result = await normalizeImageOriginal(Buffer.from("heic"), "image/heic");
 
     expect(result?.contentType).toBe("image/jpeg");
-    expect([result?.width, result?.height]).toEqual([2560, 1707]);
+    expect([result?.width, result?.height]).toEqual([1920, 1280]);
     expect((await sharp(result!.data).metadata()).format).toBe("jpeg");
     expect(heicDispose).toHaveBeenCalledOnce();
   });

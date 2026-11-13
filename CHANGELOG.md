@@ -14,6 +14,11 @@ continuam propagando por merge.
 
 ## [Unreleased]
 
+## [0.9.2] - 2026-11-13
+
+### Changed
+- **Original da foto reduzido de verdade no upload** (`src/contexts/media/image-original.ts`). A largura máxima do original cai de 2560px para **1920px** (a maior variante exibida) e todo JPEG/WebP passa a ser reencodado com qualidade adaptativa (78 → 48) até caber em ~**200 KB** — antes só reencodava acima de 3 MB, a qualidade 85 e 2560px, e fotos de 4 MB ainda ficavam com 1–2 MB. Foto já em ≤1920px e ≤200 KB fica intacta; só substitui quando o resultado é menor. PNG segue só reduzido em largura (agora 1920px), sem perda. Valem os mesmos caminhos de 0.9.0 (buffered e direto ao Blob); assets já existentes não são reprocessados.
+
 ## [0.9.1] - 2026-11-13
 
 ### Changed

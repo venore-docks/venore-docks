@@ -50,8 +50,8 @@ describe("normalizeAssetOriginal", () => {
       contentType: "image/jpeg",
       size: stored.byteLength,
       checksum: expect.stringMatching(/^[0-9a-f]{64}$/),
-      width: 2560,
-      height: 1280,
+      width: 1920,
+      height: 960,
     });
   });
 
