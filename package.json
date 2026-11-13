@@ -56,7 +56,7 @@
     "@venore/plugin-birthdays": "git+https://github.com/venore-docks/venore-plugin-birthdays.git#v1.1.0",
     "@venore/plugin-broadcast": "git+https://github.com/venore-docks/venore-plugin-broadcast.git#v1.10.0",
     "@venore/plugin-calendar": "git+https://github.com/venore-docks/venore-plugin-calendar.git#v1.0.1",
-    "@venore/plugin-calendarios": "git+https://github.com/venore-docks/venore-plugin-calendarios.git#v0.2.0",
+    "@venore/plugin-calendarios": "git+https://github.com/venore-docks/venore-plugin-calendarios.git#v0.3.0",
     "@venore/plugin-colabora": "git+https://github.com/venore-docks/venore-plugin-zammad.git#v1.0.4",
     "@venore/plugin-erasto-league": "git+https://github.com/venore-docks/venore-plugin-erasto-league.git#v0.42.1",
     "@venore/plugin-listas-materiais": "git+https://github.com/venore-docks/venore-plugin-listas-materiais.git#v0.4.0",
