@@ -13,7 +13,9 @@ import sharp from "sharp";
 //   - JPEG/WebP: reduzido a ORIGINAL_MAX_WIDTH e reencodado (exceto se já couber nos dois limites) no mesmo formato, com qualidade
 //     adaptativa que desce até o arquivo caber em ~TARGET_BYTES (média de ~200 KB por foto, pedido
 //     do admin de mídia). Se o resultado não ficar menor, o original segue como veio.
-//   - PNG (logo, print de tela, arte): só reduzido quando passa da largura máxima, sem perda.
+//   - PNG (logo, print de tela, arte): reduzido à largura máxima e, se ainda passar de TARGET_BYTES,
+//     quantizado em paleta (continua PNG, mantém transparência). PNG sem transparência que mesmo
+//     assim não cabe (foto salva como PNG) vira JPEG.
 // GIF (animação) e SVG (vetor) nunca são tocados. O resultado só é usado quando ficou MENOR que o
 // original (ou mudou de formato, no HEIC); senão o original segue como veio.
 //
@@ -59,19 +61,19 @@ export async function normalizeImageOriginal(data: Buffer, contentType: string):
   }
 }
 
-// "IMG_1234.HEIC" -> "IMG_1234.jpg" quando o formato mudou; mesmo nome nos outros casos.
+// "IMG_1234.HEIC" / "arte.png" -> ".jpg" quando o formato mudou; mesmo nome nos outros casos.
 export function normalizedFilename(filename: string, fromContentType: string, toContentType: string): string {
   if (fromContentType === toContentType || toContentType !== "image/jpeg") return filename;
-  const withoutExtension = filename.replace(/\.(heic|heif)$/i, "");
+  const withoutExtension = filename.replace(/\.(heic|heif|png)$/i, "");
   return `${withoutExtension}.jpg`;
 }
 
-async function readUprightWidth(data: Buffer): Promise<{ width: number; animated: boolean } | null> {
+async function readUprightWidth(data: Buffer): Promise<{ width: number; animated: boolean; hasAlpha: boolean } | null> {
   const metadata = await sharp(data).metadata();
   if (!metadata.width || !metadata.height) return null;
   // Orientação 5-8 = foto girada 90°: largura e altura trocam depois do rotate().
   const rotated = (metadata.orientation ?? 1) >= 5;
-  return { width: rotated ? metadata.height : metadata.width, animated: (metadata.pages ?? 1) > 1 };
+  return { width: rotated ? metadata.height : metadata.width, animated: (metadata.pages ?? 1) > 1, hasAlpha: Boolean(metadata.hasAlpha) };
 }
 
 async function reencodePhoto(data: Buffer, contentType: "image/jpeg" | "image/webp"): Promise<NormalizedOriginal | null> {
@@ -110,15 +112,29 @@ async function encodeUnderTarget(
 
 async function shrinkPng(data: Buffer): Promise<NormalizedOriginal | null> {
   const source = await readUprightWidth(data);
-  if (!source || source.animated || source.width <= ORIGINAL_MAX_WIDTH) return null;
+  if (!source || source.animated) return null;
+  // Já no tamanho e dentro do alvo: nada a ganhar.
+  if (source.width <= ORIGINAL_MAX_WIDTH && data.byteLength <= TARGET_BYTES) return null;
 
-  const { data: output, info } = await sharp(data)
-    .rotate()
-    .resize({ width: ORIGINAL_MAX_WIDTH })
-    .png({ compressionLevel: 9, adaptiveFiltering: true })
+  const resize = () => sharp(data).rotate().resize({ width: ORIGINAL_MAX_WIDTH, withoutEnlargement: true });
+
+  // Paleta (estilo pngquant): continua PNG e preserva transparência; ótimo pra arte/print/infográfico.
+  const palette = await resize()
+    .png({ palette: true, quality: 80, effort: 7, compressionLevel: 9 })
     .toBuffer({ resolveWithObject: true });
-  if (output.byteLength >= data.byteLength) return null;
-  return { data: output, contentType: "image/png", width: info.width, height: info.height };
+  let best: NormalizedOriginal = { data: palette.data, contentType: "image/png", width: palette.info.width, height: palette.info.height };
+
+  // Sem transparência e ainda pesado = foto salva como PNG: JPEG resolve.
+  if (!source.hasAlpha && palette.data.byteLength > TARGET_BYTES) {
+    const flat = await resize().flatten({ background: "#ffffff" }).raw().toBuffer({ resolveWithObject: true });
+    const jpeg = await encodeUnderTarget(flat.data, flat.info, "image/jpeg");
+    if (jpeg.byteLength < best.data.byteLength) {
+      best = { data: jpeg, contentType: "image/jpeg", width: flat.info.width, height: flat.info.height };
+    }
+  }
+
+  if (best.data.byteLength >= data.byteLength) return null;
+  return best;
 }
 
 async function convertHeifToJpeg(data: Buffer): Promise<NormalizedOriginal | null> {

@@ -14,6 +14,11 @@ continuam propagando por merge.
 
 ## [Unreleased]
 
+## [0.9.3] - 2026-11-13
+
+### Fixed
+- **PNG pesado de baixa resolução passava intacto no upload** (`src/contexts/media/image-original.ts`): o PNG só era reduzido acima de 1920px de largura. Agora, acima de ~200 KB, é quantizado em paleta (continua PNG, preserva transparência); se for opaco e ainda não couber, vira JPEG (foto salva como PNG) e o nome troca para `.jpg`. Só substitui quando fica menor; PNG já ≤1920px e ≤200 KB fica intacto. Assets já existentes não são reprocessados.
+
 ## [0.9.2] - 2026-11-13
 
 ### Changed

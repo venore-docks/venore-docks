@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import sharp from "sharp";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -69,7 +70,36 @@ describe("normalizeImageOriginal", () => {
     expect(wide?.contentType).toBe("image/png");
     expect(wide?.width).toBe(1920);
 
-    expect(await normalizeImageOriginal(await solid(800, 400).png({ compressionLevel: 0 }).toBuffer(), "image/png")).toBeNull();
+    expect(await normalizeImageOriginal(await solid(800, 400).png({ compressionLevel: 9 }).toBuffer(), "image/png")).toBeNull();
+  });
+
+  it("PNG de baixa resolução mas pesado (foto salva como PNG) vira JPEG de ~200 KB", async () => {
+    const noise = randomBytes(1200 * 800 * 3);
+    const original = await sharp(noise, { raw: { width: 1200, height: 800, channels: 3 } }).png({ compressionLevel: 6 }).toBuffer();
+    expect(original.byteLength).toBeGreaterThan(1024 * 1024);
+
+    const result = await normalizeImageOriginal(original, "image/png");
+
+    expect(result?.contentType).toBe("image/jpeg");
+    expect(result!.data.byteLength).toBeLessThan(original.byteLength / 3);
+    expect(normalizedFilename("foto.png", "image/png", "image/jpeg")).toBe("foto.jpg");
+  });
+
+  it("PNG pesado COM transparência continua PNG (paleta), sem virar JPEG", async () => {
+    const pixels = Buffer.alloc(1200 * 800 * 4);
+    for (let i = 0; i < pixels.length; i += 4) {
+      pixels[i] = (i / 4) % 251;
+      pixels[i + 1] = (i / 4 / 7) % 241;
+      pixels[i + 2] = 90;
+      pixels[i + 3] = (i / 4) % 2 === 0 ? 255 : 120;
+    }
+    const original = await sharp(pixels, { raw: { width: 1200, height: 800, channels: 4 } }).png({ compressionLevel: 1 }).toBuffer();
+
+    const result = await normalizeImageOriginal(original, "image/png");
+
+    expect(result?.contentType).toBe("image/png");
+    expect(result!.data.byteLength).toBeLessThan(original.byteLength);
+    expect((await sharp(result!.data).metadata()).hasAlpha).toBe(true);
   });
 
   it("converte HEIC em JPEG de no máximo 1920px e libera o decodificador", async () => {
