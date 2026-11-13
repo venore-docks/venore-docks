@@ -14,6 +14,11 @@ continuam propagando por merge.
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-11-13
+
+### Changed
+- `@venore/plugin-photo-gallery` v2.0.0 → **v2.1.0** (Portal do Colaborador): bloco novo `photo-gallery.album` ("Galeria de fotos — Fotos de uma galeria"), que mostra as fotos de uma galeria publicada (pelo slug) dentro de uma página/notícia, com o mesmo lightbox de `/galerias/<slug>`. Sem migration.
+
 ## [0.9.0] - 2026-11-13
 
 ### Added
