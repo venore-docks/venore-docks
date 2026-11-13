@@ -288,10 +288,18 @@ export async function importSiteBundle(command: ImportSiteBundleCommand): Promis
         const published = await publishEntry({ id: created.data.id, resolveDefinition: command.resolveDefinition });
         if (!published.success) {
           transitionNote = ` Criada como rascunho — falha ao publicar: ${published.error.message}`;
-        } else if (entry.scheduledArchiveAt) {
-          const updated = await updateEntry({ id: created.data.id, scheduledArchiveAt: new Date(entry.scheduledArchiveAt) });
-          if (!updated.success) {
-            transitionNote = ` Publicada, mas falha ao agendar arquivamento: ${updated.error.message}`;
+        } else {
+          if (entry.scheduledArchiveAt) {
+            const updated = await updateEntry({ id: created.data.id, scheduledArchiveAt: new Date(entry.scheduledArchiveAt) });
+            if (!updated.success) {
+              transitionNote = ` Publicada, mas falha ao agendar arquivamento: ${updated.error.message}`;
+            }
+          }
+          if (entry.pinned) {
+            const pinned = await updateEntry({ id: created.data.id, pinned: true });
+            if (!pinned.success) {
+              transitionNote += ` Publicada, mas falha ao fixar no topo: ${pinned.error.message}`;
+            }
           }
         }
       } else if (entry.status === "scheduled" && entry.scheduledPublishAt) {

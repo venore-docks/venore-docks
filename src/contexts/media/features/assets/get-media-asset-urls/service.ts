@@ -5,13 +5,16 @@ import { findVariantsByAssetIds } from "../../../shared/asset-variants-store";
 import { pickMediaVariantUrl } from "../../../variant-selection";
 import type { MediaActorScope } from "../../../resolve-media-actor-scope";
 import { findAssetUrlsByIds } from "./store";
-import type { GetMediaAssetUrlsQuery, GetMediaAssetUrlsResult } from "./types";
+import type { GetMediaAssetImagesResult, GetMediaAssetUrlsQuery, GetMediaAssetUrlsResult, MediaAssetImage } from "./types";
 
 const MAX_IDS = 200;
 
 // Mesma regra de visibilidade de getMediaAsset: sem sessão só "public"; com sessão, público +
 // os próprios + tudo pra media.manage. Id sem permissão ou inexistente simplesmente não aparece.
-export async function getMediaAssetUrls(query: GetMediaAssetUrlsQuery, scope: MediaActorScope | null): Promise<GetMediaAssetUrlsResult> {
+async function resolveAssetImages(
+  query: GetMediaAssetUrlsQuery,
+  scope: MediaActorScope | null,
+): Promise<GetMediaAssetImagesResult> {
   const ids = [...new Set(query.ids.filter(Boolean))];
   if (ids.length === 0) return { success: true, data: {} };
   if (ids.length > MAX_IDS) {
@@ -31,9 +34,28 @@ export async function getMediaAssetUrls(query: GetMediaAssetUrlsQuery, scope: Me
     }
   }
 
-  const urls: Record<string, string> = {};
+  const images: Record<string, MediaAssetImage> = {};
   for (const row of visibleRows) {
-    urls[row.id] = pickMediaVariantUrl({ url: row.url, variants: variantsByAsset.get(row.id) }, query.displayWidth);
+    images[row.id] = {
+      url: pickMediaVariantUrl({ url: row.url, variants: variantsByAsset.get(row.id) }, query.displayWidth),
+      // Dimensões do ORIGINAL (variante tem a mesma proporção) — null em upload antigo sem backfill.
+      width: row.width ?? null,
+      height: row.height ?? null,
+    };
   }
+  return { success: true, data: images };
+}
+
+export async function getMediaAssetUrls(query: GetMediaAssetUrlsQuery, scope: MediaActorScope | null): Promise<GetMediaAssetUrlsResult> {
+  const result = await resolveAssetImages(query, scope);
+  if (!result.success) return result;
+  const urls: Record<string, string> = {};
+  for (const [id, image] of Object.entries(result.data)) urls[id] = image.url;
   return { success: true, data: urls };
+}
+
+// Igual a getMediaAssetUrls, mas com largura/altura do original — pra quem precisa da proporção
+// da imagem (capa de card que não pode cortar arte vertical/quadrada, cover-image.ts).
+export async function getMediaAssetImages(query: GetMediaAssetUrlsQuery, scope: MediaActorScope | null): Promise<GetMediaAssetImagesResult> {
+  return resolveAssetImages(query, scope);
 }

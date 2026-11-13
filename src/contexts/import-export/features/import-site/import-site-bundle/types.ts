@@ -43,6 +43,8 @@ const exportedEntrySchema = z.object({
   status: entryStatusSchema,
   scheduledPublishAt: z.string().nullable(),
   scheduledArchiveAt: z.string().nullable(),
+  // Opcional: bundles exportados antes do "Fixar no topo" não têm o campo.
+  pinned: z.boolean().optional(),
   visibility: entryVisibilitySchema,
   data: z.unknown(),
   mediaRef: z.string().nullable(),

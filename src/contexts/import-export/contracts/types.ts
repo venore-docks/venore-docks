@@ -44,6 +44,8 @@ export type ExportedEntry = {
   status: EntryStatus;
   scheduledPublishAt: string | null;
   scheduledArchiveAt: string | null;
+  // "Fixar no topo" — opcional pra continuar aceitando bundles antigos.
+  pinned?: boolean;
   visibility: EntryVisibility;
   // data.blocks (composição) tem todo mediaId reescrito pro checksum do asset referenciado —
   // ver composition-media-refs.ts. Campos livres (ex: data.body) passam intactos.

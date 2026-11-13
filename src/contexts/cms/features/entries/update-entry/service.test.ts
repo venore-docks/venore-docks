@@ -251,4 +251,50 @@ describe("updateEntry", () => {
 
     expect(updateEntryFields).toHaveBeenCalledWith("entry-1", expect.objectContaining({ data: undefined }));
   });
+
+  describe("fixar no topo (pinned)", () => {
+    it("fixa: grava pinnedAt com a hora atual", async () => {
+      findEntryById.mockResolvedValue({ ...existingEntry, pinnedAt: null });
+      updateEntryFields.mockResolvedValue(existingEntry);
+
+      const { updateEntry } = await import("./service");
+      await updateEntry({ id: "entry-1", pinned: true, actorId: "actor-1" });
+
+      expect(updateEntryFields).toHaveBeenCalledWith("entry-1", expect.objectContaining({ pinnedAt: expect.any(Date) }));
+    });
+
+    it("fixar de novo mantém o pinnedAt original (não muda a ordem entre fixadas)", async () => {
+      const original = new Date("2026-11-01T12:00:00Z");
+      findEntryById.mockResolvedValue({ ...existingEntry, pinnedAt: original });
+      updateEntryFields.mockResolvedValue(existingEntry);
+
+      const { updateEntry } = await import("./service");
+      await updateEntry({ id: "entry-1", pinned: true, actorId: "actor-1" });
+
+      expect(updateEntryFields).toHaveBeenCalledWith("entry-1", expect.objectContaining({ pinnedAt: original }));
+    });
+
+    it("desfixa com pinned: false e não mexe quando pinned é omitido", async () => {
+      findEntryById.mockResolvedValue({ ...existingEntry, pinnedAt: new Date() });
+      updateEntryFields.mockResolvedValue(existingEntry);
+
+      const { updateEntry } = await import("./service");
+      await updateEntry({ id: "entry-1", pinned: false, actorId: "actor-1" });
+      expect(updateEntryFields).toHaveBeenLastCalledWith("entry-1", expect.objectContaining({ pinnedAt: null }));
+
+      await updateEntry({ id: "entry-1", title: "Outro", actorId: "actor-1" });
+      expect(updateEntryFields).toHaveBeenLastCalledWith("entry-1", expect.objectContaining({ pinnedAt: undefined }));
+    });
+
+    it("numa entry no ar, fixar exige permissão de publicar (não vira proposta)", async () => {
+      findEntryById.mockResolvedValue({ ...existingEntry, status: "published", pinnedAt: null });
+      canPublishInCategory.mockResolvedValueOnce(false);
+
+      const { updateEntry } = await import("./service");
+      const result = await updateEntry({ id: "entry-1", pinned: true, actorId: "actor-1" });
+
+      expect(result).toEqual({ success: false, error: { code: "cms.entries.publish_required", message: expect.stringContaining("Fixar") } });
+      expect(updateEntryFields).not.toHaveBeenCalled();
+    });
+  });
 });

@@ -13,6 +13,8 @@ export type ThemeEntryView = {
   updatedAt: string | null;
   category: { label: string; href: string } | null;
   cover: MediaView | null;
+  // "Fixar no topo" (aditivo, opcional): o tema pode mostrar um selo "Fixado" no card.
+  pinned?: boolean;
 };
 export type TemplateCommon = RegionCommon & {
   jsonLd: ReactNode; // <script nonce> do core via serializeJsonLd

@@ -66,6 +66,8 @@ export type EntryRecord = {
   internalOwner: string | null;
   authorId: string;
   publishedAt: Date | null;
+  // "Fixar no topo" — não-null abre feeds/listagens antes da ordem por publishedAt (list-entries).
+  pinnedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 };

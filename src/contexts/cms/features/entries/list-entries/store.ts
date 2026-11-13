@@ -52,7 +52,13 @@ export async function findPublishedEntries(filters: {
     filters.limit === undefined
       ? await query
       : await query
-          .orderBy(sql`${entries.publishedAt} desc nulls last`, desc(entries.createdAt), entries.id)
+          // Fixadas ("Fixar no topo") abrem a lista — entre elas, a fixada por último primeiro.
+          .orderBy(
+            sql`${entries.pinnedAt} desc nulls last`,
+            sql`${entries.publishedAt} desc nulls last`,
+            desc(entries.createdAt),
+            entries.id,
+          )
           .limit(filters.limit)
           .offset(filters.offset ?? 0);
 

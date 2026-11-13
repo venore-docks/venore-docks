@@ -100,6 +100,10 @@ vi.mock("@/contexts/media", () => ({
     success: true,
     data: Object.fromEntries(ids.map((id) => [id, `/media/${id}.jpg`])),
   }),
+  getMediaAssetImages: async ({ ids }: { ids: string[] }) => ({
+    success: true,
+    data: Object.fromEntries(ids.map((id) => [id, { url: `/media/${id}.jpg`, width: null, height: null }])),
+  }),
   getMediaAsset: async () => ({ success: true, data: null }),
 }));
 

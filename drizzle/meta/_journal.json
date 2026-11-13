@@ -414,6 +414,13 @@
       "when": 1791320841751,
       "tag": "0058_speech_worker_progress",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1794571392655,
+      "tag": "0059_entry_pinned_at",
+      "breakpoints": true
     }
   ]
 }

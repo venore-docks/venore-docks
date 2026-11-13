@@ -9,3 +9,8 @@ export type GetMediaAssetUrlsQuery = {
   displayWidth?: number;
 };
 export type GetMediaAssetUrlsResult = OperationResult<Record<string, string>>;
+
+// getMediaAssetImages: a mesma URL escolhida acima + dimensões do original (null quando o asset
+// ainda não as tem — upload direto antigo sem backfill de variantes).
+export type MediaAssetImage = { url: string; width: number | null; height: number | null };
+export type GetMediaAssetImagesResult = OperationResult<Record<string, MediaAssetImage>>;

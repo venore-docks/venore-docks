@@ -42,6 +42,7 @@ export async function updateEntryFields(
     contentTypeIds?: string[];
     visibility?: EntryVisibility;
     scheduledArchiveAt?: Date | null;
+    pinnedAt?: Date | null;
     data?: unknown;
     mediaId?: string | null;
   },

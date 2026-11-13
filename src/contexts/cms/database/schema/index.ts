@@ -74,6 +74,10 @@ export const entries = cmsSchema.table(
       .notNull()
       .references(() => users.id),
     publishedAt: timestamp("published_at", { withTimezone: true }),
+    // "Fixar no topo": não-null == a entry abre os feeds e a listagem da categoria, à frente da
+    // ordem por publishedAt (list-entries). Timestamp, não boolean: entre várias fixadas, a fixada
+    // por último vem primeiro. Desfixar = voltar a null.
+    pinnedAt: timestamp("pinned_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

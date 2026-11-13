@@ -1,8 +1,9 @@
 import "server-only";
 import Link from "next/link";
-import { ArrowRight, BookOpen } from "lucide-react";
+import { ArrowRight, BookOpen, Pin } from "lucide-react";
 import { getCurrentUser } from "@/contexts/auth";
 import { Badge } from "@/components/ui/badge";
+import { CoverImage } from "@/components/cover-image";
 import { cn } from "@/lib/utils";
 import { formatDate } from "@/shared/format-date";
 import { categoryHref } from "@/platform/category-listing/category-href";
@@ -40,12 +41,12 @@ function FeedCard({
     >
       <div className={cn("relative aspect-[16/10] overflow-hidden bg-muted", featured && "lg:aspect-auto lg:min-h-0 lg:flex-1")}>
         {item.coverUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- mesmo padrão do page-builder, sem domínio remoto configurado pra next/image
-          <img
+          <CoverImage
             src={item.coverUrl}
             alt=""
-            loading="lazy"
-            className="absolute inset-0 size-full object-cover transition-transform duration-500 ease-out group-hover/feed:scale-105 motion-reduce:transition-none motion-reduce:group-hover/feed:scale-100"
+            width={item.coverWidth}
+            height={item.coverHeight}
+            className="transition-transform duration-500 ease-out group-hover/feed:scale-105 motion-reduce:transition-none motion-reduce:group-hover/feed:scale-100"
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-muted-foreground/56">
@@ -53,9 +54,17 @@ function FeedCard({
           </div>
         )}
         <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-linear-to-t from-card/70 to-transparent" />
-        <Badge variant="secondary" className="absolute start-3 top-3 h-6 bg-secondary/90 px-2.5 backdrop-blur-sm">
-          {categoryName}
-        </Badge>
+        <div className="absolute start-3 top-3 flex flex-wrap gap-1.5">
+          {item.pinned && (
+            <Badge className="h-6 gap-1 px-2.5">
+              <Pin className="size-3" aria-hidden="true" />
+              Fixado
+            </Badge>
+          )}
+          <Badge variant="secondary" className="h-6 bg-secondary/90 px-2.5 backdrop-blur-sm">
+            {categoryName}
+          </Badge>
+        </div>
       </div>
       <div className="flex flex-col gap-2.5 p-5">
         {dateLabel && <p className="text-[11px] font-medium tracking-caps text-muted-foreground uppercase">{dateLabel}</p>}

@@ -11,6 +11,9 @@ export type UpdateEntryCommand = {
   // Agendar (só) o arquivamento de uma entry já publicada — diferente de schedule-entry, que
   // agenda a PUBLICAÇÃO e força status "scheduled" (Fase 2/C5). null limpa o agendamento.
   scheduledArchiveAt?: Date | null;
+  // "Fixar no topo": true fixa (mantém o pinnedAt original se já estava fixada), false desfixa.
+  // Ausente = não mexe. Numa entry no ar, exige permissão de publicar (igual scheduledArchiveAt).
+  pinned?: boolean;
   data?: unknown;
   mediaId?: string | null;
   actorId: string;

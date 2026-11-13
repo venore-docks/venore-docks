@@ -160,6 +160,7 @@ export async function exportSiteBundle(): Promise<ExportSiteBundleResult> {
       status: entry.status,
       scheduledPublishAt: toIso(entry.scheduledPublishAt),
       scheduledArchiveAt: toIso(entry.scheduledArchiveAt),
+      pinned: entry.pinnedAt != null,
       visibility: entry.visibility,
       data,
       mediaRef: entry.mediaId ? (checksumByMediaAssetId.get(entry.mediaId) ?? null) : null,

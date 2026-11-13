@@ -1,6 +1,10 @@
 import { extractEntryComposition, getCachedCategoryBySlug, listContentTypes, listEntries } from "@/contexts/cms";
-import { getMediaAssetUrls } from "@/contexts/media";
+import { getMediaAssetImages } from "@/contexts/media";
 import { extractExcerpt } from "@/platform/seo/entry-excerpt";
+
+// Largura (CSS px) em que a capa aparece num card do feed: com a densidade 2x de
+// variant-selection.ts, cai na variante WebP de 960px em vez do original inteiro.
+export const ENTRY_FEED_COVER_DISPLAY_WIDTH = 480;
 
 export type EntryFeedItem = {
   id: string;
@@ -9,6 +13,11 @@ export type EntryFeedItem = {
   publishedAt: string | null;
   excerpt: string | null;
   coverUrl: string | null;
+  // Dimensões do original da capa (proporção) — null quando o asset não as tem.
+  coverWidth: number | null;
+  coverHeight: number | null;
+  // "Fixar no topo" (cms.entries.pinned_at).
+  pinned: boolean;
 };
 
 export type EntryFeed = {
@@ -19,9 +28,9 @@ export type EntryFeed = {
   typeNotFound: boolean;
 };
 
-// Últimas `limit` entries publicadas da categoria (mais recentes primeiro — listEntries ordena por
-// publishedAt quando recebe `limit`). C7: sem sessão só "public", filtrado no banco antes do corte.
-// Devolve null quando a categoria não existe.
+// Últimas `limit` entries publicadas da categoria (fixadas primeiro, depois as mais recentes —
+// listEntries ordena assim quando recebe `limit`). C7: sem sessão só "public", filtrado no banco
+// antes do corte. Devolve null quando a categoria não existe.
 export async function loadEntryFeed(input: {
   categorySlug: string;
   limit: number;
@@ -51,20 +60,26 @@ export async function loadEntryFeed(input: {
   const records = entriesResult.success ? entriesResult.data : [];
 
   const coverIds = records.map((entry) => entry.mediaId).filter((id): id is string => Boolean(id));
-  const coversResult = await getMediaAssetUrls({ ids: coverIds });
-  const coverUrls = coversResult.success ? coversResult.data : {};
+  const coversResult = await getMediaAssetImages({ ids: coverIds, displayWidth: ENTRY_FEED_COVER_DISPLAY_WIDTH });
+  const covers = coversResult.success ? coversResult.data : {};
 
   return {
     categoryName: category.name,
     categoryPath,
     typeNotFound: false,
-    items: records.map((entry) => ({
-      id: entry.id,
-      title: entry.title,
-      path: `${categoryPath}/${entry.slug}`,
-      publishedAt: entry.publishedAt ? entry.publishedAt.toISOString() : null,
-      excerpt: extractExcerpt(extractEntryComposition(entry.data), 140),
-      coverUrl: entry.mediaId ? (coverUrls[entry.mediaId] ?? null) : null,
-    })),
+    items: records.map((entry) => {
+      const cover = entry.mediaId ? covers[entry.mediaId] : undefined;
+      return {
+        id: entry.id,
+        title: entry.title,
+        path: `${categoryPath}/${entry.slug}`,
+        publishedAt: entry.publishedAt ? entry.publishedAt.toISOString() : null,
+        excerpt: extractExcerpt(extractEntryComposition(entry.data), 140),
+        coverUrl: cover?.url ?? null,
+        coverWidth: cover?.width ?? null,
+        coverHeight: cover?.height ?? null,
+        pinned: entry.pinnedAt != null,
+      };
+    }),
   };
 }

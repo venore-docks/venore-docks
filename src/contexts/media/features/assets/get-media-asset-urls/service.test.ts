@@ -36,6 +36,17 @@ describe("getMediaAssetUrls", () => {
     expect(Object.keys(root.success ? root.data : {})).toContain("other");
   });
 
+  it("getMediaAssetImages devolve url + dimensões do original, com o mesmo recorte de visibilidade", async () => {
+    findAssetUrlsByIds.mockResolvedValue([
+      { ...ROWS[0], width: 1080, height: 1350 },
+      { ...ROWS[1], width: null, height: null },
+      ROWS[2],
+    ]);
+    const { getMediaAssetImages } = await import("./service");
+    const result = await getMediaAssetImages({ ids: ["pub", "mine", "other"] }, null);
+    expect(result).toEqual({ success: true, data: { pub: { url: "https://blob/pub.png", width: 1080, height: 1350 } } });
+  });
+
   it("skips the query for an empty list", async () => {
     const { getMediaAssetUrls } = await import("./service");
     expect(await getMediaAssetUrls({ ids: [] }, null)).toEqual({ success: true, data: {} });

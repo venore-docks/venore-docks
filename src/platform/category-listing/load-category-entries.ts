@@ -1,6 +1,6 @@
 import { countCategoryEntriesByType, extractEntryComposition, listContentTypes, listEntries } from "@/contexts/cms";
 import type { EntryRecord } from "@/contexts/cms";
-import { getMediaAssetUrls } from "@/contexts/media";
+import { getMediaAssetImages } from "@/contexts/media";
 import type { ThemeEntryView } from "@/contexts/themes/contracts/v8";
 import { extractExcerpt } from "@/platform/seo/entry-excerpt";
 
@@ -8,6 +8,9 @@ import { extractExcerpt } from "@/platform/seo/entry-excerpt";
 // carregamento automático (`/api/category-entries`, lotes seguintes) usam o MESMO carregador, então
 // ordem, visibilidade e formato do card são idênticos nos dois caminhos.
 export const CATEGORY_LIST_PAGE_SIZE = 12;
+
+// Largura (CSS px) da capa no card da listagem — com densidade 2x vira a variante de 960px.
+const CATEGORY_CARD_COVER_DISPLAY_WIDTH = 480;
 
 export type CategoryRef = { id: string; name: string; slug: string };
 
@@ -73,12 +76,14 @@ export async function loadCategoryEntries(input: {
   const records = fetched.slice(0, CATEGORY_LIST_PAGE_SIZE);
 
   const coverIds = records.map((entry) => entry.mediaId).filter((id): id is string => Boolean(id));
-  const coversResult = await getMediaAssetUrls({ ids: coverIds });
-  const coverUrls = coversResult.success ? coversResult.data : {};
+  // Variante WebP do tamanho do card (não o original) + proporção, pro card não cortar arte
+  // vertical (CoverImage).
+  const coversResult = await getMediaAssetImages({ ids: coverIds, displayWidth: CATEGORY_CARD_COVER_DISPLAY_WIDTH });
+  const covers = coversResult.success ? coversResult.data : {};
 
   const categoryPath = `/${category.slug}`;
   const entries: ThemeEntryView[] = records.map((entry) => {
-    const coverUrl = entry.mediaId ? (coverUrls[entry.mediaId] ?? null) : null;
+    const cover = entry.mediaId ? covers[entry.mediaId] : undefined;
     return {
       id: entry.id,
       title: entry.title,
@@ -87,7 +92,10 @@ export async function loadCategoryEntries(input: {
       publishedAt: toIso(entry.publishedAt),
       updatedAt: toIso(entry.updatedAt),
       category: { label: category.name, href: categoryPath },
-      cover: coverUrl ? { url: coverUrl, alt: "" } : null,
+      cover: cover
+        ? { url: cover.url, alt: "", ...(cover.width && cover.height ? { width: cover.width, height: cover.height } : {}) }
+        : null,
+      pinned: entry.pinnedAt != null,
     };
   });
 

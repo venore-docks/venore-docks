@@ -123,6 +123,7 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
           categoryId={entry.categoryId}
           contentTypeIds={entry.contentTypeIds}
           visibility={entry.visibility}
+          pinned={entry.pinnedAt !== null && entry.pinnedAt !== undefined}
           speech={{ enabled: speechEnabled, status: speechStatus, progress: speechProgress }}
           media={media}
           categories={categoriesResult.data}

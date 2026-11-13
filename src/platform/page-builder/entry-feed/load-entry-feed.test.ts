@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const getCachedCategoryBySlug = vi.fn();
 const listEntries = vi.fn();
 const listContentTypes = vi.fn();
-const getMediaAssetUrls = vi.fn();
+const getMediaAssetImages = vi.fn();
 
 vi.mock("@/contexts/cms", () => ({
   getCachedCategoryBySlug: (slug: string) => getCachedCategoryBySlug(slug),
@@ -11,7 +11,7 @@ vi.mock("@/contexts/cms", () => ({
   listContentTypes: () => listContentTypes(),
   extractEntryComposition: () => [],
 }));
-vi.mock("@/contexts/media", () => ({ getMediaAssetUrls: (query: unknown) => getMediaAssetUrls(query) }));
+vi.mock("@/contexts/media", () => ({ getMediaAssetImages: (query: unknown) => getMediaAssetImages(query) }));
 vi.mock("@/platform/seo/entry-excerpt", () => ({ extractExcerpt: () => "resumo" }));
 
 const { loadEntryFeed } = await import("./load-entry-feed");
@@ -23,10 +23,10 @@ describe("loadEntryFeed", () => {
     getCachedCategoryBySlug.mockReset();
     listEntries.mockReset();
     listContentTypes.mockReset();
-    getMediaAssetUrls.mockReset();
+    getMediaAssetImages.mockReset();
     getCachedCategoryBySlug.mockResolvedValue({ success: true, data: { id: "c1", name: "Notícias", slug: "noticias" } });
     listEntries.mockResolvedValue({ success: true, data: [record] });
-    getMediaAssetUrls.mockResolvedValue({ success: true, data: {} });
+    getMediaAssetImages.mockResolvedValue({ success: true, data: {} });
     listContentTypes.mockResolvedValue({ success: true, data: [{ id: "t-camp", key: "campanhas", name: "Campanhas", entryCount: 3 }] });
   });
 
@@ -36,6 +36,17 @@ describe("loadEntryFeed", () => {
     expect(listEntries.mock.calls[0][0]).not.toHaveProperty("contentTypeId");
     expect(feed?.items).toHaveLength(1);
     expect(feed?.typeNotFound).toBe(false);
+  });
+
+  it("capa: pede a variante do tamanho do card e repassa proporção e 'fixado'", async () => {
+    listEntries.mockResolvedValue({
+      success: true,
+      data: [{ ...record, mediaId: "m1", pinnedAt: new Date("2026-11-10T12:00:00Z") }],
+    });
+    getMediaAssetImages.mockResolvedValue({ success: true, data: { m1: { url: "https://cdn.test/m1.w960.webp", width: 1080, height: 1350 } } });
+    const feed = await loadEntryFeed({ categorySlug: "noticias", limit: 3, viewerIsAuthenticated: true });
+    expect(getMediaAssetImages).toHaveBeenCalledWith({ ids: ["m1"], displayWidth: 480 });
+    expect(feed?.items[0]).toMatchObject({ coverUrl: "https://cdn.test/m1.w960.webp", coverWidth: 1080, coverHeight: 1350, pinned: true });
   });
 
   it("com tipo existente: filtra por content type no banco", async () => {

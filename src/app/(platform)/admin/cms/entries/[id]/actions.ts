@@ -29,6 +29,9 @@ export async function updateEntryAction(
   const mediaId = String(formData.get("mediaId") ?? "").trim();
   const categoryId = String(formData.get("categoryId") ?? "").trim();
   const visibility = formData.get("visibility") === "authenticated" ? "authenticated" : "public";
+  // Só manda `pinned` quando a caixa mudou (ver pinnedBefore em edit-entry-form.tsx).
+  const pinned = formData.get("pinned") === "on";
+  const pinnedChanged = formData.has("pinnedBefore") && pinned !== (formData.get("pinnedBefore") === "true");
 
   // O campo "Corpo" some do form assim que a entry já tem composição do Editor Visual
   // (ver hasComposition em edit-entry-form.tsx) — nesse caso formData não tem "body" e esta tela
@@ -47,6 +50,7 @@ export async function updateEntryAction(
     categoryId: categoryId || null,
     contentTypeIds: formData.getAll("contentTypeIds").map(String),
     visibility,
+    ...(pinnedChanged ? { pinned } : {}),
     data,
     mediaId: mediaId || null,
   });

@@ -14,6 +14,16 @@ continuam propagando por merge.
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-13
+
+### Added
+- **Fixar no topo.** Nova coluna `cms.entries.pinned_at` (migration `0059_entry_pinned_at`, só `ADD COLUMN` nullable). Checkbox "Fixar no topo" no editor da entry (`/admin/cms/entries/[id]`); o action só manda a mudança quando a caixa muda, e numa entry no ar fixar/desfixar exige permissão de publicar (igual ao agendamento de arquivamento). `list-entries` ordena `pinned_at desc nulls last` antes de `published_at`, então fixadas abrem o feed da home (`core.content.entry-feed`) e a listagem da categoria, com selo "Fixado" no card. `ThemeEntryView.pinned` (opcional, aditivo). Exportação/importação de site carregam `pinned`.
+- **Capa que não corta arte de Instagram.** `CoverImage` (`src/components/cover-image.tsx`): capa com proporção abaixo de 1.3 (post 4:5, quadrado, story 9:16) aparece inteira (`object-contain`) sobre uma cópia desfocada dela mesma; foto horizontal segue em `object-cover`. Usada no card do feed e no card da listagem de categoria.
+- `getMediaAssetImages` (contexts/media): igual a `getMediaAssetUrls`, mas devolve também largura/altura do original.
+
+### Changed
+- Feed e listagem de categoria pedem a capa com `displayWidth` 480 — o card baixa a variante WebP de 960px em vez do original.
+
 ## [0.7.10] - 2026-11-12
 
 ### Added

@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const listEntries = vi.fn();
 const listContentTypes = vi.fn();
 const countCategoryEntriesByType = vi.fn();
-const getMediaAssetUrls = vi.fn();
+const getMediaAssetImages = vi.fn();
 
 vi.mock("@/contexts/cms", () => ({
   listEntries: (query: unknown) => listEntries(query),
@@ -11,7 +11,7 @@ vi.mock("@/contexts/cms", () => ({
   countCategoryEntriesByType: (query: unknown) => countCategoryEntriesByType(query),
   extractEntryComposition: () => [],
 }));
-vi.mock("@/contexts/media", () => ({ getMediaAssetUrls: (query: unknown) => getMediaAssetUrls(query) }));
+vi.mock("@/contexts/media", () => ({ getMediaAssetImages: (query: unknown) => getMediaAssetImages(query) }));
 vi.mock("@/platform/seo/entry-excerpt", () => ({ extractExcerpt: () => "resumo" }));
 
 const { CATEGORY_LIST_PAGE_SIZE, loadCategoryEntries } = await import("./load-category-entries");
@@ -43,8 +43,8 @@ describe("loadCategoryEntries", () => {
         { id: "t-fem", key: "noticias-da-fem", name: "Notícias da FEM", entryCount: 6 },
       ],
     });
-    getMediaAssetUrls.mockReset();
-    getMediaAssetUrls.mockResolvedValue({ success: true, data: { m1: "https://cdn.test/capa.jpg" } });
+    getMediaAssetImages.mockReset();
+    getMediaAssetImages.mockResolvedValue({ success: true, data: { m1: { url: "https://cdn.test/capa.w960.webp", width: 1080, height: 1350 } } });
   });
 
   it("visitante sem sessão só pede entries públicas (filtro no banco, antes da paginação)", async () => {
@@ -90,7 +90,7 @@ describe("loadCategoryEntries", () => {
       path: "/noticias/entrada-1",
       excerpt: "resumo",
       category: { label: "Notícias", href: "/noticias" },
-      cover: { url: "https://cdn.test/capa.jpg", alt: "" },
+      cover: { url: "https://cdn.test/capa.w960.webp", alt: "", width: 1080, height: 1350 },
     });
   });
 

@@ -76,10 +76,13 @@ export async function updateEntry(command: UpdateEntryCommand): Promise<UpdateEn
     const canPublishTarget =
       effectiveCategoryId === existing.categoryId ? canPublishHere : await canPublishInCategory(command.actorId, effectiveCategoryId);
     if (!canPublishHere || !canPublishTarget) {
-      if (command.scheduledArchiveAt !== undefined) {
+      if (command.scheduledArchiveAt !== undefined || command.pinned !== undefined) {
         const error = {
           code: "cms.entries.publish_required",
-          message: "Agendar o arquivamento de um conteúdo publicado exige permissão de publicar.",
+          message:
+            command.pinned !== undefined
+              ? "Fixar ou desfixar um conteúdo publicado exige permissão de publicar."
+              : "Agendar o arquivamento de um conteúdo publicado exige permissão de publicar.",
         };
         endOperation(handle, { success: false, error });
         return { success: false, error };
@@ -107,6 +110,9 @@ export async function updateEntry(command: UpdateEntryCommand): Promise<UpdateEn
 
   await recordSnapshot(existing, command.actorId);
 
+  // Fixar de novo uma entry já fixada não muda a ordem entre as fixadas (mantém o pinnedAt antigo).
+  const pinnedAt = command.pinned === undefined ? undefined : command.pinned ? (existing.pinnedAt ?? new Date()) : null;
+
   const entry = await updateEntryFields(command.id, {
     title: command.title,
     slug: command.slug,
@@ -114,6 +120,7 @@ export async function updateEntry(command: UpdateEntryCommand): Promise<UpdateEn
     contentTypeIds: command.contentTypeIds,
     visibility: command.visibility,
     scheduledArchiveAt: command.scheduledArchiveAt,
+    pinnedAt,
     data: mergedData,
     mediaId: command.mediaId,
   });

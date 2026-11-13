@@ -81,6 +81,10 @@ vi.mock("@/contexts/media", () => ({
     success: true,
     data: Object.fromEntries(ids.map((id) => [id, `/media/${id}.jpg`])),
   }),
+  getMediaAssetImages: async ({ ids }: { ids: string[] }) => ({
+    success: true,
+    data: Object.fromEntries(ids.map((id) => [id, { url: `/media/${id}.jpg`, width: null, height: null }])),
+  }),
 }));
 // Independente dos @venore/plugin-* instalados no branch: o markup do core/kit não depende deles,
 // e o grafo de cada plugin puxaria módulos que os mocks abaixo não cobrem.

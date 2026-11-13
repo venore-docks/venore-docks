@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { Pin } from "lucide-react";
 import { MediaPickerField } from "@/components/media-picker-field";
 import type { PickableMedia } from "@/components/media-picker-field.actions";
 import { AutoSlugField } from "@/components/auto-slug-field";
@@ -29,6 +30,7 @@ export function EditEntryForm({
   categoryId,
   contentTypeIds,
   visibility,
+  pinned,
   speech,
   media,
   categories,
@@ -43,6 +45,7 @@ export function EditEntryForm({
   speech: { enabled: boolean; status: string | null; progress: SpeechProgressValue | null };
   contentTypeIds: string[];
   visibility: "public" | "authenticated";
+  pinned: boolean;
   media: PickableMedia | null;
   categories: { id: string; name: string }[];
   contentTypes: { id: string; name: string }[];
@@ -98,6 +101,25 @@ export function EditEntryForm({
             <SelectItem value="authenticated">Fechado (só logados)</SelectItem>
           </SelectContent>
         </Select>
+      </div>
+
+      <div>
+        {/* pinnedBefore: o action só manda `pinned` quando a caixa mudou — salvar outro campo de
+            uma entry no ar não pode esbarrar na exigência de permissão de publicar pra fixar. */}
+        <input type="hidden" name="pinnedBefore" value={pinned ? "true" : "false"} />
+        <label className="flex items-center gap-2 text-sm text-foreground">
+          <input
+            type="checkbox"
+            name="pinned"
+            defaultChecked={pinned}
+            className="size-4 rounded-sm border-border outline-none ui-motion-base focus-visible:ring-2 focus-visible:ring-ring"
+          />
+          <Pin className="size-3.5 text-muted-foreground" aria-hidden="true" />
+          Fixar no topo
+        </label>
+        <p className="mt-1 text-xs text-muted-foreground/56">
+          Aparece primeiro nos feeds e na listagem da categoria, antes das publicações mais recentes.
+        </p>
       </div>
 
       <div>
