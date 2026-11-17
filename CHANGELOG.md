@@ -14,6 +14,11 @@ continuam propagando por merge.
 
 ## [Unreleased]
 
+## [0.9.7] - 2026-11-17
+
+### Changed
+- `@venore/plugin-colabora` v1.2.1 → **v1.2.2** (Portal do Colaborador): tags no detalhe do chamado (só para a equipe) e em "Atribuídos a mim"; filtro por tag na fila do gestor. Sem migration.
+
 ## [0.9.6] - 2026-11-17
 
 ### Changed
