@@ -14,6 +14,11 @@ continuam propagando por merge.
 
 ## [Unreleased]
 
+## [0.9.5] - 2026-11-17
+
+### Changed
+- `@venore/plugin-colabora` v1.1.0 → **v1.2.0** (Portal do Colaborador): fila do gestor por etapa (Novo, Em análise, Reavaliação, Autorizado, Não autorizado, Atribuídos), diálogo "Analisar" com o resumo do pedido e as decisões (manter em análise, autorizar, não autorizar, autorizar e atribuir), layout de uma coluna e moldura do Colabora alinhada ao breadcrumb. Sem migration.
+
 ## [0.9.4] - 2026-11-17
 
 ### Added
