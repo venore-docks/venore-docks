@@ -14,6 +14,11 @@ continuam propagando por merge.
 
 ## [Unreleased]
 
+## [0.9.11] - 2026-11-17
+
+### Changed
+- `@venore/plugin-colabora` v1.3.1 → **v1.3.2** (Portal do Colaborador): botões dos cards da fila menores (24 px), cantos quase retos e fundo semântico translúcido. Sem migration.
+
 ## [0.9.10] - 2026-11-17
 
 ### Changed
