@@ -9,10 +9,13 @@ import { oklchToHex, parseCssColor } from "@/platform/theme-engine/oklch-color";
 export type PaletteMode = ThemePaletteChoice["mode"];
 type CustomChoice = Extract<ThemePaletteChoice, { mode: "custom" }>;
 
-// Tokens editáveis à mão no modo "Personalizada" — o essencial de superfície/texto/marca, mais o
-// alerta (`warning`, que também deriva `warning-soft`/`warning-border` via color-mix no theme.css).
-// Cor semântica NÃO é gerada pela semente de marca (não deve seguir a marca): só muda aqui, por
-// escolha explícita do admin. O resto continua vindo do theme.css (override parcial).
+// Tokens editáveis à mão no modo "Personalizada" — o essencial de superfície/texto/marca, mais as
+// cores SEMÂNTICAS: alerta (`warning`), sucesso (`success`) e perigo (`destructive`), cada uma com o
+// texto que vai por cima. `warning-soft`/`-border` e `success-soft`/`-border` derivam da base via
+// color-mix no theme.css; perigo é usado com opacidade (`bg-destructive/10`). Botões de decisão
+// (ex.: Aprovar/Rejeitar do Colabora) usam esses pares. Cor semântica NÃO é gerada pela semente de
+// marca (não deve seguir a marca): só muda aqui, por escolha explícita do admin. O resto continua
+// vindo do theme.css (override parcial).
 export const PALETTE_PANEL_TOKENS = [
   { token: "background", label: "Fundo" },
   { token: "foreground", label: "Texto" },
@@ -24,6 +27,10 @@ export const PALETTE_PANEL_TOKENS = [
   { token: "border", label: "Borda" },
   { token: "warning", label: "Alerta" },
   { token: "warning-foreground", label: "Texto sobre alerta" },
+  { token: "success", label: "Sucesso" },
+  { token: "success-foreground", label: "Texto sobre sucesso" },
+  { token: "destructive", label: "Perigo" },
+  { token: "destructive-foreground", label: "Texto sobre perigo" },
 ] as const;
 
 export function currentPaletteChoice(draft: ThemeConfigDocument, themeKey: string): ThemePaletteChoice {

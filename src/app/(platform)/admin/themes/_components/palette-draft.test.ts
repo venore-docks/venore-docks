@@ -40,6 +40,14 @@ describe("palette-draft", () => {
     expect(themeConfigDocumentSchema.safeParse({ ...draft, ...withPaletteChoice(draft, "venore-slime", choice) }).success).toBe(true);
   });
 
+  it("painel expõe sucesso e perigo (com o texto por cima) e a escolha é um documento válido", () => {
+    const tokens: readonly string[] = PALETTE_PANEL_TOKENS.map((entry) => entry.token);
+    expect(tokens).toEqual(expect.arrayContaining(["success", "success-foreground", "destructive", "destructive-foreground"]));
+    const choice = setCustomToken(setCustomToken({ mode: "default" }, "light", "success", "#15803d"), "light", "destructive", "#b91c1c");
+    expect(choice.light).toEqual({ success: "#15803d", destructive: "#b91c1c" });
+    expect(themeConfigDocumentSchema.safeParse({ ...draft, ...withPaletteChoice(draft, "venore-slime", choice) }).success).toBe(true);
+  });
+
   it("toPickerHex converte oklch e ignora o resto", () => {
     expect(toPickerHex("#AABBCC")).toBe("#aabbcc");
     expect(toPickerHex("oklch(1 0 0)")).toBe("#ffffff");

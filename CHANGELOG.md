@@ -14,6 +14,14 @@ continuam propagando por merge.
 
 ## [Unreleased]
 
+## [0.9.4] - 2026-11-17
+
+### Added
+- **Paleta personalizada edita sucesso e perigo** (`src/app/(platform)/admin/themes/_components/palette-draft.ts`): o painel de `/admin/themes/customize` ganha "Sucesso"/"Texto sobre sucesso" (`success`, `success-foreground`) e "Perigo"/"Texto sobre perigo" (`destructive`, `destructive-foreground`), ao lado de "Alerta". `success-soft`/`-border` seguem derivados via color-mix no theme.css. Sem token novo no vocabulário: todos já existiam em todo tema (Aurora inclusive).
+
+### Changed
+- `@venore/plugin-colabora` v1.0.4 → **v1.1.0** (Portal do Colaborador): fluxo de atendimento da FEM (Novo → Em análise → Autorizado → Em andamento → Concluído → Finalizado; Não autorizado → Reavaliação) com botões de decisão coloridos por tokens semânticos (aprovar, pedir ajustes, problema não resolvido, rejeitar, reenviar; autorizar/não autorizar/concluir para a equipe), audiência dos setores lida dos Core Workflows do Zammad e gestor reconhecido pela função "<Setor> - Administrador". Configuração do Zammad documentada no plugin (`docs/zammad-fem.md`). Sem migration.
+
 ## [0.9.3] - 2026-11-13
 
 ### Fixed
