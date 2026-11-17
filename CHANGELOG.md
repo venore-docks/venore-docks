@@ -14,6 +14,11 @@ continuam propagando por merge.
 
 ## [Unreleased]
 
+## [0.9.9] - 2026-11-17
+
+### Changed
+- `@venore/plugin-colabora` v1.2.3 → **v1.3.0** (Portal do Colaborador): no desktop, as propriedades do chamado (estado, etapas, decisão, alocação, atendimento) vão para a barra contextual e a coluna principal fica só com a conversa; card da fila compacto em uma linha, com "Atribuir" confirmando em diálogo. Sem migration.
+
 ## [0.9.8] - 2026-11-17
 
 ### Fixed
