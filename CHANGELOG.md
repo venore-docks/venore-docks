@@ -14,6 +14,11 @@ continuam propagando por merge.
 
 ## [Unreleased]
 
+## [0.9.8] - 2026-11-17
+
+### Fixed
+- `@venore/plugin-colabora` v1.2.2 → **v1.2.3** (Portal do Colaborador): gestor ou agente que abriu o próprio chamado agora vê os botões de decisão (Aprovar, Pedir ajustes, Rejeitar, Reenviar). Sem migration.
+
 ## [0.9.7] - 2026-11-17
 
 ### Changed
