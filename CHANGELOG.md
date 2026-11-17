@@ -14,6 +14,11 @@ continuam propagando por merge.
 
 ## [Unreleased]
 
+## [0.9.10] - 2026-11-17
+
+### Changed
+- `@venore/plugin-colabora` v1.3.0 → **v1.3.1** (Portal do Colaborador): botões da fila discretos (contorno, sem fundo cheio), ordem Atribuir/Autorizar/Não autorizar sem "Continuar análise"; cantos um degrau mais retos no plugin. Sem migration.
+
 ## [0.9.9] - 2026-11-17
 
 ### Changed
