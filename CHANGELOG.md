@@ -14,6 +14,11 @@ continuam propagando por merge.
 
 ## [Unreleased]
 
+## [0.9.6] - 2026-11-17
+
+### Changed
+- `@venore/plugin-colabora` v1.2.0 → **v1.2.1** (Portal do Colaborador): tags do Zammad visíveis nos cards da fila do gestor (Rejeitado, Ajustes, Não resolvido, Não autorizado, Reenviado com cor semântica; demais em neutro). Sem migration.
+
 ## [0.9.5] - 2026-11-17
 
 ### Changed
