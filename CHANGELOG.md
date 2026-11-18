@@ -14,6 +14,15 @@ continuam propagando por merge.
 
 ## [Unreleased]
 
+## [0.9.13] - 2026-11-18
+
+### Added
+- `.claude/rules/ui-design.md`: regra de design "telas que guiam" para plugins e temas (cor só para o que pede ação, uma ação principal por bloco, secundário recolhido, um nível de caixa, checklist final).
+
+### Changed
+- `@venore/plugin-colabora` v1.3.3 → **v1.4.0** (Portal do Colaborador): redesenho pela regra acima — selo de estado neutro, barra de etapas fina com "Etapa N de M", decisão do solicitante com dois botões e o resto como links, "Mais opções" recolhido no atendimento, listas com divisórias, painel do gestor com três números e uma ação por linha na fila. Sem migration.
+- `@venore/theme-aurora` v0.2.3 → **v0.2.4**: contraste do modo claro (cartão, borda, `text-muted-foreground` e `text-warning` acima do AA) e `destructive` mais legível no escuro. Sem migration.
+
 ## [0.9.12] - 2026-11-17
 
 ### Changed
