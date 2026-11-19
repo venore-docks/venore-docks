@@ -14,6 +14,11 @@ continuam propagando por merge.
 
 ## [Unreleased]
 
+## [0.9.16] - 2026-11-19
+
+### Fixed
+- `@venore/plugin-colabora` v1.5.1 → **v1.5.2** (Portal do Colaborador): botão "Abrir chamado" volta ao Início da equipe (gestor/agente) e à tela do chamado. Sem migration.
+
 ## [0.9.15] - 2026-11-19
 
 ### Fixed
