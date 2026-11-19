@@ -14,6 +14,11 @@ continuam propagando por merge.
 
 ## [Unreleased]
 
+## [0.9.15] - 2026-11-19
+
+### Fixed
+- `@venore/plugin-colabora` v1.5.0 → **v1.5.1** (Portal do Colaborador): chamado aberto por um gestor ou agente no próprio setor nasce em "Novo" (antes o Zammad tratava a abertura como resposta de agente e pulava para "Em andamento" sem responsável). Sem migration.
+
 ## [0.9.14] - 2026-11-19
 
 ### Changed
