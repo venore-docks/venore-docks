@@ -14,6 +14,11 @@ continuam propagando por merge.
 
 ## [Unreleased]
 
+## [0.9.14] - 2026-11-19
+
+### Changed
+- `@venore/plugin-colabora` v1.4.0 → **v1.5.0** (Portal do Colaborador): tempo previsto do chamado (campo `tempo_previsto` do Zammad; todos veem, só o administrador do setor edita), gestor comenta nos chamados dos seus agentes (resposta ou nota interna), bloco de atendimento sem "Mais opções" e tags discretas nas linhas da fila. Sem migration.
+
 ## [0.9.13] - 2026-11-18
 
 ### Added
