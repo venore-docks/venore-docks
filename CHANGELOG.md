@@ -14,6 +14,11 @@ continuam propagando por merge.
 
 ## [Unreleased]
 
+## [0.9.17] - 2026-11-19
+
+### Changed
+- `@venore/plugin-colabora` v1.5.2 → **v1.6.0** (Portal do Colaborador): chamados filhos — gestor ou agente cria uma subtarefa no próprio setor (já autorizada, com responsável) ou um pedido a outro setor (entra em Novo); o solicitante do filho é quem o criou e o chamado pai só pode ser concluído com todos os filhos finalizados. Sem migration.
+
 ## [0.9.16] - 2026-11-19
 
 ### Fixed
