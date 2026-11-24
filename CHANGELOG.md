@@ -14,6 +14,11 @@ continuam propagando por merge.
 
 ## [Unreleased]
 
+## [0.9.18] - 2026-11-24
+
+### Changed
+- `@venore/plugin-colabora` v1.6.0 → **v1.7.0** (Portal do Colaborador): setor com subgrupos (Tecnologia, Recursos Humanos) exige escolher o assunto — sai o "Outro assunto", "Continuar" fica bloqueado até escolher e o servidor recusa chamado enviado direto ao setor-pai; o atalho `?setor=<pai>` da Home abre a escolha do assunto. Manutenção e Marketing seguem sem subgrupo. Sem migration.
+
 ## [0.9.17] - 2026-11-19
 
 ### Changed
