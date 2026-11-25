@@ -33,7 +33,8 @@
     "db:install:fresh": "tsx --env-file=.env scripts/install-fresh.ts",
     "db:update": "tsx --env-file=.env scripts/update-instance.ts",
     "db:bootstrap-superadmin": "tsx --env-file=.env scripts/bootstrap-superadmin.ts",
-    "db:apply-plugin-migrations": "tsx --env-file=.env scripts/apply-plugin-migrations.ts"
+    "db:apply-plugin-migrations": "tsx --env-file=.env scripts/apply-plugin-migrations.ts",
+    "media:migrate-to-filesystem": "node --env-file-if-exists=.env scripts/migrate-media-to-filesystem.mjs"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.3",

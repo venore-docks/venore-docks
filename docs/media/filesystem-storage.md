@@ -65,3 +65,26 @@ Trocar o driver **não move os arquivos**. Assets criados sob `vercel-blob` cont
 URLs de Blob (e param de carregar se o token sair); assets criados sob `filesystem` apontam pra
 `/api/media/file/...` (e param de carregar se você voltar pra `vercel-blob` sem os arquivos). Para
 uma instância nova de Broadcast na LAN, o cenário limpo é começar já com `filesystem`.
+
+### Migração de `vercel-blob` para `filesystem`
+
+`scripts/migrate-media-to-filesystem.mjs` (`npm run media:migrate-to-filesystem`) leva uma instância
+existente do Blob para o disco. Roda no servidor/container da instância, com `DATABASE_URL` e
+`MEDIA_FILESYSTEM_ROOT` apontando para o banco e o volume definitivos:
+
+```bash
+npm run media:migrate-to-filesystem               # simulação: só conta o que faria
+npm run media:migrate-to-filesystem -- --download # baixa os arquivos, não mexe no banco
+npm run media:migrate-to-filesystem -- --apply    # baixa o que faltar e regrava media.assets.url
+```
+
+- Copia **todo** objeto que o banco conhece: `media.assets` (inclusive com soft delete) e
+  `media.asset_variants`, com o sidecar `.meta.json` no formato do adapter. Arquivo já presente
+  com o tamanho certo é pulado — pode rodar de novo quantas vezes precisar.
+- Baixa pela URL pública do Blob (o store é público por padrão), tentando a URL gravada e a mesma
+  key em **cada host de Blob** encontrado no banco — instâncias antigas trocaram de store mais de
+  uma vez. Com `BLOB_READ_WRITE_TOKEN`, também tenta o store do token (inclusive privado, via API).
+- `--apply` só regrava o banco se nenhum objeto faltar (ou com `--allow-missing`, que mantém a URL
+  antiga dos faltantes). URLs da rota autorizada (`/api/media/asset/<id>`) não mudam.
+- Depois: `MEDIA_STORAGE_DRIVER=filesystem`, remova `BLOB_*` e reinicie. Guia completo de self-host:
+  `docs/self-host/coolify.md`.
