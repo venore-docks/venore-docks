@@ -18,6 +18,11 @@ continuam propagando por merge.
 - `npm run media:migrate-to-filesystem` (`scripts/migrate-media-to-filesystem.mjs`): migra a mídia de uma instância do driver `vercel-blob` para `filesystem` — copia assets e variantes de todos os Blob stores que o banco referencia, com sidecar `.meta.json`, e regrava `media.assets.url` numa transação só quando nada falta. Idempotente, com simulação por padrão.
 - `docs/self-host/coolify.md`: como rodar uma instância fora da Vercel (Coolify), com Postgres e mídia no próprio servidor.
 
+## [0.9.19] - 2026-11-25
+
+### Changed
+- `@venore/plugin-colabora` v1.7.0 → **v1.8.0** (Portal do Colaborador): o chamado filho traz os campos customizados do setor de destino, lidos do Zammad (esquema + Core Workflows) e já preenchidos com os valores do pai (ex.: Local de uso); o servidor remonta e valida o formulário e inclui o resumo das respostas no artigo. Resolve o erro "Missing required value for field 'local_fisico'". "Pedir a outro setor" lista só setores sem subgrupos. Sem migration.
+
 ## [0.9.18] - 2026-11-24
 
 ### Changed
