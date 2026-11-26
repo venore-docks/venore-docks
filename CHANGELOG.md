@@ -18,6 +18,11 @@ continuam propagando por merge.
 - `npm run media:migrate-to-filesystem` (`scripts/migrate-media-to-filesystem.mjs`): migra a mídia de uma instância do driver `vercel-blob` para `filesystem` — copia assets e variantes de todos os Blob stores que o banco referencia, com sidecar `.meta.json`, e regrava `media.assets.url` numa transação só quando nada falta. Idempotente, com simulação por padrão.
 - `docs/self-host/coolify.md`: como rodar uma instância fora da Vercel (Coolify), com Postgres e mídia no próprio servidor.
 
+## [0.9.22] - 2026-11-26
+
+### Changed
+- `@venore/plugin-colabora` v1.9.1 → **v1.10.0** (Portal do Colaborador): a Fila abre em "Em aberto", com todos os chamados abertos agrupados por etapa (subtítulo e cor por etapa); só Finalizado encerra de verdade (Não autorizado e Concluído contam como em aberto, e o cabeçalho do chamado mostra o cadeado no que encerra); a leitura da equipe (fila e cada agente) fica em memória por 20 s e é compartilhada por Fila, Início do gestor e Equipe, então trocar de aba ou filtro não volta ao Zammad. Variável opcional `COLABORA_QUEUE_CACHE_SECONDS` (padrão 20; 0 desliga). Sem migration.
+
 ## [0.9.21] - 2026-11-26
 
 ### Changed
