@@ -200,3 +200,22 @@ describe("SidebarLeftSlot — visibilidade do alternador Site/Admin", () => {
     expect(html).toContain("Área administrativa");
   });
 });
+
+describe("SidebarLeftSlot — rota /admin com cookie em main (drawer mobile)", () => {
+  it("renderiza o menu admin só no mobile e mantém o menu do site no desktop", () => {
+    const html = renderToStaticMarkup(
+      <SidebarLeftSlot {...baseProps} canToggleAdminNav mobileAdminNavGroups={adminGroups} />,
+    );
+    expect(html).toContain('data-nav-mode="main"');
+    expect(html).toContain("max-lg:hidden"); // menu do site some no mobile
+    expect(html).toContain('data-nav-mode="admin"');
+    expect(html).toContain("lg:hidden"); // menu admin some no desktop
+    expect(html).toContain("Papéis e permissões");
+  });
+
+  it("sem mobileAdminNavGroups o markup não ganha o segundo menu", () => {
+    const html = renderToStaticMarkup(<SidebarLeftSlot {...baseProps} canToggleAdminNav />);
+    expect(html).not.toContain('data-nav-mode="admin"');
+    expect(html).not.toContain("max-lg:hidden");
+  });
+});

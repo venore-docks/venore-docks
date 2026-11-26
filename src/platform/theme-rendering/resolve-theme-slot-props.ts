@@ -82,6 +82,7 @@ export async function resolveThemeSlotProps(sidebarNav: {
   navMode: NavMode;
   adminNavGroups: NavGroup[];
   canToggleAdminNav: boolean;
+  routeIsAdmin?: boolean;
   onToggleNavMode: () => Promise<void>;
   canAccessAdmin: boolean;
   onSignOut: () => Promise<void>;
@@ -184,6 +185,8 @@ export async function resolveThemeSlotProps(sidebarNav: {
       navMode: sidebarNav.navMode,
       navItems: sidebarNav.navMode === "admin" ? [] : mainNavItems,
       navGroups: sidebarNav.navMode === "admin" ? sidebarNav.adminNavGroups : [],
+      mobileAdminNavGroups:
+        sidebarNav.routeIsAdmin && sidebarNav.navMode === "main" && sidebarNav.canToggleAdminNav ? sidebarNav.adminNavGroups : undefined,
       canToggleAdminNav: sidebarNav.canToggleAdminNav,
       onToggleNavMode: sidebarNav.onToggleNavMode,
       collapsed: sidebarNav.collapsed,

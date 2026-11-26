@@ -40,11 +40,12 @@ export async function resolveThemeRenderModel({ contextualSlot, onSignOut }: Res
     ]);
     return { adminGate, navMode, adminNavGroups };
   });
-  const slotPropsPromise = Promise.all([navPromise, getSidebarCollapsed()]).then(([{ adminGate, navMode, adminNavGroups }, collapsed]) =>
+  const slotPropsPromise = Promise.all([navPromise, getSidebarCollapsed(), documentPromise]).then(([{ adminGate, navMode, adminNavGroups }, collapsed, doc]) =>
     resolveThemeSlotProps({
       navMode,
       adminNavGroups,
       canToggleAdminNav: adminGate.granted,
+      routeIsAdmin: doc.area === "admin",
       onToggleNavMode: toggleNavModeAction,
       canAccessAdmin: adminGate.granted,
       onSignOut,

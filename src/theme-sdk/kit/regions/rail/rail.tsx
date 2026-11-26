@@ -1,9 +1,10 @@
 "use client";
 
 import type { ReactNode } from "react";
+import Link from "next/link";
 import { useFormStatus } from "react-dom";
 import { ChevronLeft, ChevronRight, Globe2, ShieldCheck, type LucideIcon } from "lucide-react";
-import type { NavItem, SidebarLeftSlotProps } from "@/contexts/themes/contracts/types";
+import type { NavGroup, NavItem, SidebarLeftSlotProps } from "@/contexts/themes/contracts/types";
 import type { HeaderRegionProps, RailRegionProps, RegionCommon, ThemeMobileNavMode, ThemeStrings } from "@/contexts/themes/contracts/v8";
 import { t } from "../../i18n/t";
 import { cn } from "@/lib/utils";
@@ -47,6 +48,7 @@ export function SidebarLeftSlot({
   navMode,
   navItems,
   navGroups,
+  mobileAdminNavGroups,
   canToggleAdminNav,
   onToggleNavMode,
   collapsed: collapsedFromServer,
@@ -65,6 +67,8 @@ export function SidebarLeftSlot({
 
   const isAdmin = navMode === "admin";
   const offCanvas = mobileNavMode === "drawer";
+  // Rota /admin/* com cookie em "main": o drawer mobile mostra o menu admin; o desktop segue o cookie.
+  const mobileAdmin = offCanvas && !isAdmin && mobileAdminNavGroups !== undefined;
   const drawerHeaderNav = offCanvas && headerNavVisibleFrom !== "always" ? headerNavItems : [];
 
   return (
@@ -110,7 +114,18 @@ export function SidebarLeftSlot({
         // sobreposto ao canto superior direito do frame — mesma folga em expandido/colapsado pra
         // não depender de cálculo fino de onde a coluna direita do pill termina.
         <div className="shrink-0 border-b border-border pt-8 pb-4">
-          <SidebarSurfaceSwitch isAdmin={isAdmin} collapsed={collapsed} onToggleNavMode={onToggleNavMode} strings={strings} />
+          <div className={cn(mobileAdmin && "hidden lg:block")}>
+            <SidebarSurfaceSwitch isAdmin={isAdmin} collapsed={collapsed} onToggleNavMode={onToggleNavMode} strings={strings} />
+          </div>
+          {mobileAdmin && (
+            <Link
+              href="/"
+              className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-muted px-3 text-sm font-medium text-foreground ui-motion-base outline-none hover:bg-card focus-visible:ring-2 focus-visible:ring-ring lg:hidden"
+            >
+              <Globe2 className="size-4" aria-hidden="true" />
+              {t(strings, "rail.site")}
+            </Link>
+          )}
         </div>
       )}
 
@@ -121,39 +136,14 @@ export function SidebarLeftSlot({
         data-nav-mode={navMode}
         className={cn(
           "min-h-0 flex-1 space-y-1 overflow-y-auto",
+          mobileAdmin && "max-lg:hidden",
           // Sem o switch acima (usuário sem permissão admin), o <nav> é o primeiro filho — precisa
           // da mesma folga pro botão flutuante de colapso que o bloco do switch reserva.
           canToggleAdminNav ? "pt-2" : "pt-8",
         )}
       >
         {isAdmin
-          ? navGroups.map((group) => (
-              <div key={group.key} className="space-y-1 pb-4">
-                {/* Título da seção (expandido) e divisor fino (colapsado) ocupam uma faixa de
-                    altura FIXA e sempre presente no flex flow — nunca `hidden`/`block` (bug desta
-                    sessão: display:none tira o elemento do cálculo de layout no mesmo quadro em
-                    que troca, deslocando os ícones do grupo pra cima antes do <aside> terminar de
-                    animar a largura). Título e divisor só fazem crossfade de opacidade por cima
-                    um do outro; a altura do bloco nunca muda. */}
-                <div className="relative h-5">
-                  <p
-                    className={cn(
-                      "absolute inset-0 px-3 pb-1 text-xs lg:text-[11px] font-semibold uppercase tracking-caps text-muted-foreground/70 ui-motion-emphasis",
-                      collapsed && "lg:opacity-0",
-                    )}
-                  >
-                    {group.label}
-                  </p>
-                  <div
-                    className={cn("absolute inset-x-2 top-1/2 h-px -translate-y-1/2 bg-border opacity-0 ui-motion-emphasis", collapsed && "lg:opacity-100")}
-                    aria-hidden="true"
-                  />
-                </div>
-                {group.items.map((item) => (
-                  <SidebarNavLink key={item.key} item={item} collapsed={collapsed} isAdmin={isAdmin} />
-                ))}
-              </div>
-            ))
+          ? <AdminNavGroups groups={navGroups} collapsed={collapsed} />
           : navItems.map((item) => <SidebarNavLink key={item.key} item={item} collapsed={collapsed} isAdmin={isAdmin} />)}
 
         {isAdmin && navGroups.length === 0 && (
@@ -164,8 +154,54 @@ export function SidebarLeftSlot({
         {drawerHeaderNav.length > 0 && <DrawerHeaderNav items={drawerHeaderNav} visibleFrom={headerNavVisibleFrom} />}
       </nav>
 
+      {mobileAdmin && (
+        <nav
+          aria-label={regionText(strings, "rail.adminNavLabel")}
+          data-nav-mode="admin"
+          className="min-h-0 flex-1 space-y-1 overflow-y-auto pt-2 lg:hidden"
+        >
+          <AdminNavGroups groups={mobileAdminNavGroups ?? []} collapsed={false} />
+        </nav>
+      )}
+
       {slots?.outletBottom ?? null}
     </MobileNavDrawer>
+  );
+}
+
+// Grupos do menu admin (título de seção + links). Extraído para o drawer mobile reaproveitar o
+// mesmo markup quando a rota é /admin/* mas o cookie de navMode ainda é "main".
+function AdminNavGroups({ groups, collapsed }: { groups: NavGroup[]; collapsed: boolean }) {
+  return (
+    <>
+      {groups.map((group) => (
+        <div key={group.key} className="space-y-1 pb-4">
+          {/* Título da seção (expandido) e divisor fino (colapsado) ocupam uma faixa de
+              altura FIXA e sempre presente no flex flow — nunca `hidden`/`block` (bug desta
+              sessão: display:none tira o elemento do cálculo de layout no mesmo quadro em
+              que troca, deslocando os ícones do grupo pra cima antes do <aside> terminar de
+              animar a largura). Título e divisor só fazem crossfade de opacidade por cima
+              um do outro; a altura do bloco nunca muda. */}
+          <div className="relative h-5">
+            <p
+              className={cn(
+                "absolute inset-0 px-3 pb-1 text-xs lg:text-[11px] font-semibold uppercase tracking-caps text-muted-foreground/70 ui-motion-emphasis",
+                collapsed && "lg:opacity-0",
+              )}
+            >
+              {group.label}
+            </p>
+            <div
+              className={cn("absolute inset-x-2 top-1/2 h-px -translate-y-1/2 bg-border opacity-0 ui-motion-emphasis", collapsed && "lg:opacity-100")}
+              aria-hidden="true"
+            />
+          </div>
+          {group.items.map((item) => (
+            <SidebarNavLink key={item.key} item={item} collapsed={collapsed} isAdmin />
+          ))}
+        </div>
+      ))}
+    </>
   );
 }
 

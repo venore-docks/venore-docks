@@ -224,6 +224,9 @@ export type SidebarLeftSlotProps = {
   // separados em vez de um só `navItems` genérico; `navGroups` fica `[]` quando navMode é "main".
   navItems: MainNavItem[];
   navGroups: NavGroup[];
+  // Só quando a rota atual é /admin/* mas o navMode (cookie) é "main": menu admin extra para o drawer
+  // mobile abrir já no admin, sem mudar o que o desktop mostra. Temas 7.x ignoram.
+  mobileAdminNavGroups?: NavGroup[];
   canToggleAdminNav: boolean;
   onToggleNavMode: () => Promise<void>;
   // Colapso é exclusivo do desktop (off-canvas mobile ignora, docs/ui/shell-spec.md §3.1-3.2) —

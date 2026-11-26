@@ -1,6 +1,4 @@
-import { cookies, headers } from "next/headers";
-import { BREADCRUMB_PATHNAME_HEADER } from "@/platform/breadcrumbs/pathname-header";
-import { areaForPathname } from "@/platform/theme-rendering/area";
+import { cookies } from "next/headers";
 import type { NavMode } from "@/contexts/themes";
 
 const NAV_MODE_COOKIE = "nav-mode";
@@ -19,11 +17,6 @@ export async function getNavMode(canToggleAdminNav: boolean): Promise<NavMode> {
   if (!canToggleAdminNav) {
     return "main";
   }
-
-  // Dentro de /admin/* o menu é o de administração (o drawer mobile não abre mais na aba SITE);
-  // o cookie continua valendo fora do painel.
-  const pathname = (await headers()).get(BREADCRUMB_PATHNAME_HEADER);
-  if (areaForPathname(pathname) === "admin") return "admin";
 
   const store = await cookies();
   return store.get(NAV_MODE_COOKIE)?.value === "admin" ? "admin" : "main";
