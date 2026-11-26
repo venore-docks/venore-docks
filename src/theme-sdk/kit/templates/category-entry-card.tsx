@@ -28,7 +28,7 @@ export function CategoryEntryCard({ entry, locale, readMoreLabel }: { entry: The
             </div>
           )}
           {entry.pinned && (
-            <span className="absolute start-2 top-2 inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[11px] font-medium text-primary-foreground">
+            <span className="absolute start-2 top-2 inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-xs lg:text-[11px] font-medium text-primary-foreground">
               <Pin className="size-3" aria-hidden="true" />
               Fixado
             </span>
@@ -36,7 +36,7 @@ export function CategoryEntryCard({ entry, locale, readMoreLabel }: { entry: The
         </div>
         <div className="flex flex-1 flex-col gap-2 p-4">
           {publishedLabel && (
-            <p className="flex items-center gap-1 text-[11px] font-medium tracking-caps text-muted-foreground/56 uppercase">
+            <p className="flex items-center gap-1 text-xs lg:text-[11px] font-medium tracking-caps text-muted-foreground/56 uppercase">
               <Calendar className="size-3" aria-hidden="true" /> {publishedLabel}
             </p>
           )}

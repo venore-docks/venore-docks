@@ -71,7 +71,7 @@ export function PermissionPicker({
                   <span className="flex flex-col">
                     <span className="text-sm text-foreground">{permission.title}</span>
                     <span className="text-xs text-muted-foreground">{permission.description}</span>
-                    <span className="text-[0.65rem] text-muted-foreground/56">{permission.key}</span>
+                    <span className="text-xs lg:text-[0.65rem] text-muted-foreground/56">{permission.key}</span>
                   </span>
                 </label>
               ))}

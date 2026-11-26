@@ -67,7 +67,7 @@ function FeedCard({
         </div>
       </div>
       <div className="flex flex-col gap-2.5 p-5">
-        {dateLabel && <p className="text-[11px] font-medium tracking-caps text-muted-foreground uppercase">{dateLabel}</p>}
+        {dateLabel && <p className="text-xs lg:text-[11px] font-medium tracking-caps text-muted-foreground uppercase">{dateLabel}</p>}
         <h3 className={cn("line-clamp-2 text-lg leading-snug font-semibold text-foreground", featured && "lg:text-2xl")}>{item.title}</h3>
         {item.excerpt && <p className="line-clamp-2 text-sm text-muted-foreground">{item.excerpt}</p>}
         <ArrowRight

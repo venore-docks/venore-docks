@@ -178,10 +178,10 @@ export function MediaPickerField({
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={item.url} alt={item.filename} className="h-full w-full object-cover" />
                     ) : (
-                      <span className="text-[10px] text-muted-foreground/56">arquivo</span>
+                      <span className="text-xs lg:text-[10px] text-muted-foreground/56">arquivo</span>
                     )}
                   </div>
-                  <span className="truncate text-[11px] text-muted-foreground" title={item.filename}>
+                  <span className="truncate text-xs lg:text-[11px] text-muted-foreground" title={item.filename}>
                     {item.filename}
                   </span>
                 </button>

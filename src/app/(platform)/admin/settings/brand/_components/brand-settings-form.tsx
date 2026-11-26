@@ -102,7 +102,7 @@ export function BrandSettingsForm({
         </p>
         <div className="space-y-3">
           <div className="rounded-lg border border-border bg-background p-4">
-            <p className="mb-2 text-[11px] text-muted-foreground">Normal</p>
+            <p className="mb-2 text-xs lg:text-[11px] text-muted-foreground">Normal</p>
             <PlatformBrand
               name={siteName}
               mode={aesthetics.mode}
@@ -115,7 +115,7 @@ export function BrandSettingsForm({
             />
           </div>
           <div className="rounded-lg border border-border bg-primary p-4 text-primary-foreground">
-            <p className="mb-2 text-[11px] text-primary-foreground/80">Ao rolar a página</p>
+            <p className="mb-2 text-xs lg:text-[11px] text-primary-foreground/80">Ao rolar a página</p>
             <PlatformBrand
               name={siteName}
               mode={aesthetics.mode}

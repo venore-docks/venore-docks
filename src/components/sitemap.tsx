@@ -39,7 +39,7 @@ export function Sitemap({ items }: { items: SitemapItem[] }) {
 }
 
 function SitemapColumnHeading({ item }: { item: SitemapItem }) {
-  const className = "text-[11px] font-semibold uppercase tracking-caps text-muted-foreground";
+  const className = "text-xs lg:text-[11px] font-semibold uppercase tracking-caps text-muted-foreground";
 
   // "Rótulo sem link" (targetType "label" no menu) é o caso de uso principal do primeiro nível —
   // cabeçalho de grupo não clicável. Se o item de primeiro nível tiver href, ainda funciona como

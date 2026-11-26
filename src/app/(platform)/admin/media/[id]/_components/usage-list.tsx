@@ -12,7 +12,7 @@ export function UsageList({ usage }: { usage: MediaUsageReference[] }) {
     <ul className="space-y-1">
       {usage.map((reference, index) => (
         <li key={`${reference.consumerKey}-${reference.href}-${index}`} className="flex items-center gap-2 text-xs">
-          <span className="rounded-sm border border-border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+          <span className="rounded-sm border border-border px-1.5 py-0.5 text-xs lg:text-[10px] font-medium text-muted-foreground">
             {reference.consumerLabel}
           </span>
           <Link href={reference.href} className="text-foreground outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring">

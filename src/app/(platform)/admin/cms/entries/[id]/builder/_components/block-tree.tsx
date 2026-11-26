@@ -218,7 +218,7 @@ function BlockNode({
           {visibleAreas.map((area) => (
             <div key={area.key}>
               <div className="flex items-center justify-between">
-                <p className="text-[11px] font-medium text-muted-foreground/56 uppercase">
+                <p className="text-xs lg:text-[11px] font-medium text-muted-foreground/56 uppercase">
                   {definition?.areaDefinitions?.find((candidate) => candidate.key === area.key)?.label ?? area.key}
                 </p>
                 <button

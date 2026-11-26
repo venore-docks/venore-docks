@@ -138,7 +138,7 @@ export function SidebarLeftSlot({
                 <div className="relative h-5">
                   <p
                     className={cn(
-                      "absolute inset-0 px-3 pb-1 text-[11px] font-semibold uppercase tracking-caps text-muted-foreground/70 ui-motion-emphasis",
+                      "absolute inset-0 px-3 pb-1 text-xs lg:text-[11px] font-semibold uppercase tracking-caps text-muted-foreground/70 ui-motion-emphasis",
                       collapsed && "lg:opacity-0",
                     )}
                   >

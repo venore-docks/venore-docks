@@ -767,7 +767,7 @@ async function TabsBlock({ block, renderBlocks }: BlockRendererProps) {
                     >
                       {readString(child.data, "label", "Aba")}
                       {badge && (
-                        <span className="ms-1.5 rounded-full bg-current/15 px-1.5 text-[0.7rem] leading-5 font-semibold tabular-nums">{badge}</span>
+                        <span className="ms-1.5 rounded-full bg-current/15 px-1.5 text-xs lg:text-[0.7rem] leading-5 font-semibold tabular-nums">{badge}</span>
                       )}
                     </TabsTrigger>
                   );

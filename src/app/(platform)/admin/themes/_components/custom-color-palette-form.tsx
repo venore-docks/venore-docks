@@ -73,7 +73,7 @@ function ColorModeFields({ mode, tokens }: { mode: "light" | "dark"; tokens: Pal
     <div className="space-y-4">
       {FIELD_GROUPS.map((group) => (
         <div key={group.label} className="space-y-2">
-          <p className="text-[0.65rem] font-medium uppercase tracking-caps text-muted-foreground/72">{group.label}</p>
+          <p className="text-xs lg:text-[0.65rem] font-medium uppercase tracking-caps text-muted-foreground/72">{group.label}</p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {group.fields.map(({ token, label: fieldLabel }) => (
               <label key={token} className="flex flex-col items-center gap-1 text-xs text-muted-foreground">

@@ -40,7 +40,7 @@ function VisibilityMark({ visibility, withLabel = false }: { visibility: MediaVi
   return (
     <span
       title={VISIBILITY_LABELS[visibility]}
-      className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium", config.tone)}
+      className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs lg:text-[11px] font-medium", config.tone)}
     >
       <Icon className="size-3" strokeWidth={2} aria-hidden="true" />
       {withLabel ? VISIBILITY_LABELS[visibility] : <span className="sr-only">{VISIBILITY_LABELS[visibility]}</span>}
@@ -59,7 +59,7 @@ function Thumbnail({ filename, url, contentType, className }: { filename: string
       ) : (
         <div className="flex flex-col items-center gap-1 text-muted-foreground/56">
           <Icon className="size-7" strokeWidth={1.5} />
-          <span className="text-[11px] font-semibold tracking-wide">{formatLabelOf(contentType, filename)}</span>
+          <span className="text-xs lg:text-[11px] font-semibold tracking-wide">{formatLabelOf(contentType, filename)}</span>
         </div>
       )}
     </div>

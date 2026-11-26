@@ -1,0 +1,11 @@
+/* Alvos de toque (B4): em ponteiro grosso (celular/tablet) os controles dos primitivos shadcn
+   chegam à altura de --ui-control-height-lg (44 px no venore-slime). Só consome var() — o valor
+   mora no tema. Ponteiro fino (mouse) não é afetado, então o desktop segue igual. */
+@media (pointer: coarse) {
+  [data-slot="button"],
+  [data-slot="input"],
+  [data-slot="select-trigger"],
+  [data-slot="tabs-trigger"] {
+    min-height: var(--ui-control-height-lg);
+  }
+}

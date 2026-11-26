@@ -86,7 +86,7 @@ export function RoleMatrix({
                     <span className="flex items-center gap-1.5">
                       <span className="text-sm font-medium text-foreground">{role.name}</span>
                       {role.isSystem && (
-                        <Badge variant="outline" className="h-4 px-1 text-[0.65rem] font-normal">
+                        <Badge variant="outline" className="h-4 px-1 text-xs lg:text-[0.65rem] font-normal">
                           sistema
                         </Badge>
                       )}

@@ -25,6 +25,7 @@
 @import "./styles/region-tokens.css";
 @import "./styles/fonts.css";
 @import "./styles/page-layout.css";
+@import "./styles/touch-targets.css";
 
 /* tw-animate-css: os primitivos stock (dialog, select) usam animate-in/fade-in-0/zoom-in-95/
    slide-in-from-* — sem esse import essas classes não geram CSS nenhum (ficam inertes) e os
