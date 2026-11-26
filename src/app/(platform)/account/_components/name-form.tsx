@@ -18,7 +18,10 @@ export function NameForm({ name, editable }: { name: string | null; editable: bo
   if (!editable) {
     return (
       <div className="space-y-2">
-        <Input value={name ?? ""} disabled readOnly />
+        <label className="flex flex-col gap-1 text-sm text-foreground">
+          Nome
+          <Input value={name ?? ""} disabled readOnly />
+        </label>
         <p className="text-xs text-muted-foreground/56">
           Definido pelo provedor de login (Google, GitHub, Microsoft) — não pode ser editado aqui.
         </p>
@@ -27,8 +30,11 @@ export function NameForm({ name, editable }: { name: string | null; editable: bo
   }
 
   return (
-    <form action={formAction} className="flex flex-col gap-2 sm:flex-row sm:items-center">
-      <Input name="name" defaultValue={name ?? ""} required className="sm:max-w-sm" />
+    <form action={formAction} className="flex flex-col gap-2 sm:flex-row sm:items-end">
+      <label className="flex flex-1 flex-col gap-1 text-sm text-foreground sm:max-w-sm">
+        Nome
+        <Input name="name" defaultValue={name ?? ""} required />
+      </label>
       <Button type="submit" disabled={pending}>
         {pending ? "Salvando..." : "Salvar"}
       </Button>

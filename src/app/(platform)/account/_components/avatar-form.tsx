@@ -36,14 +36,17 @@ export function AvatarForm({ avatarMedia }: { avatarMedia: AvatarPreview | null 
         )}
       </div>
 
-      <form action={uploadFormAction} className="flex flex-col gap-2 sm:flex-row sm:items-center">
+      <form action={uploadFormAction} className="flex flex-col gap-2 sm:flex-row sm:items-end">
+        <label className="flex min-w-0 flex-col gap-1 text-sm text-foreground">
+          Nova imagem
         <input
           type="file"
           name="file"
           accept="image/png,image/jpeg,image/webp,image/gif"
           required
-          className="rounded-sm text-sm text-muted-foreground outline-none ui-motion-base file:mr-3 file:rounded-lg file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-primary-foreground focus-visible:ring-2 focus-visible:ring-ring"
+          className="rounded-sm text-sm text-muted-foreground outline-none ui-motion-base file:mr-3 file:rounded-lg file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-primary-foreground focus-visible:ring-2 focus-visible:ring-ring w-full min-w-0"
         />
+        </label>
         <Button type="submit" disabled={uploadPending}>
           {uploadPending ? "Enviando..." : "Enviar"}
         </Button>

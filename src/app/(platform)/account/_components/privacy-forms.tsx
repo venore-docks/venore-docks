@@ -19,8 +19,16 @@ export function DeleteAccountForm({ hasPasswordLogin }: { hasPasswordLogin: bool
         Apaga seu nome, e-mail e senha e encerra o acesso. O que você publicou no site continua, sem ligação com você. Não dá para
         desfazer.
       </p>
-      <Input name="confirmEmail" type="email" placeholder="Digite seu e-mail para confirmar" autoComplete="off" required />
-      {hasPasswordLogin && <PasswordInput name="password" placeholder="Senha" autoComplete="current-password" required />}
+      <label className="flex flex-col gap-1 text-sm text-foreground">
+        Confirme seu e-mail
+        <Input name="confirmEmail" type="email" placeholder="voce@exemplo.com" autoComplete="off" required />
+      </label>
+      {hasPasswordLogin && (
+        <label className="flex flex-col gap-1 text-sm text-foreground">
+          Senha
+          <PasswordInput name="password" autoComplete="current-password" required />
+        </label>
+      )}
       <Button type="submit" variant="destructive" className="self-start" disabled={pending}>
         {pending ? "Excluindo..." : "Excluir minha conta"}
       </Button>

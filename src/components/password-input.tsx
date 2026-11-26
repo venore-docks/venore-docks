@@ -12,12 +12,12 @@ export function PasswordInput(props: PasswordInputProps) {
 
   return (
     <div className="relative">
-      <Input {...props} type={visible ? "text" : "password"} className="pr-10" />
+      <Input {...props} type={visible ? "text" : "password"} className="pr-12 lg:pr-10" />
       <Button
         type="button"
         variant="ghost"
         size="icon-sm"
-        className="absolute top-1/2 right-1 -translate-y-1/2"
+        className="absolute top-1/2 right-0 size-11 -translate-y-1/2 lg:right-1 lg:size-7"
         onClick={() => setVisible((current) => !current)}
         aria-label={visible ? "Ocultar senha" : "Mostrar senha"}
         title={visible ? "Ocultar senha" : "Mostrar senha"}

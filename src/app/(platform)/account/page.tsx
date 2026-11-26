@@ -6,14 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { renderTemplate, resolveTemplateContext, resolveTemplateVariant } from "@/platform/theme-rendering/render-template";
 import { AvatarForm } from "./_components/avatar-form";
 import { NameForm } from "./_components/name-form";
-import { ChangePasswordForm, RevokeSessionsForm } from "./_components/security-forms";
+import { RevokeSessionsForm } from "./_components/security-forms";
 import { DisableMfa, EnableMfa } from "./_components/mfa-forms";
 import { DeleteAccountForm } from "./_components/privacy-forms";
 
 export const dynamic = "force-dynamic";
 
 const NOTICES: Record<string, string> = {
-  "senha-alterada": "Senha alterada. As outras sessões desta conta foram encerradas.",
   "sessoes-encerradas": "As outras sessões foram encerradas.",
 };
 
@@ -71,15 +70,6 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
           </CardHeader>
           <CardContent>
             <AvatarForm avatarMedia={avatarMedia} />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Senha</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ChangePasswordForm hasPasswordLogin={hasPassword} />
           </CardContent>
         </Card>
 
