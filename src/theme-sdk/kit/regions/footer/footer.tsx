@@ -19,9 +19,9 @@ export type KitFooterProps = FooterSlotProps & Partial<RegionCommon> & { strings
 
 export function FooterSlot({ brand, sitemapItems, creditsEnabled, loginLinkHref, strings, slots }: KitFooterProps) {
   return (
-    <footer data-region="footer" className="mt-auto grid gap-8 border-t border-border px-4 py-12 text-muted-foreground sm:px-6 lg:grid-cols-[max-content_minmax(0,1fr)] lg:gap-12 lg:px-8">
+    <footer data-region="footer" className="mt-auto grid gap-5 border-t border-border px-4 py-6 text-muted-foreground sm:gap-8 sm:px-6 sm:py-12 lg:grid-cols-[max-content_minmax(0,1fr)] lg:gap-12 lg:px-8">
       {slots?.outletTop ? <div className="col-span-full">{slots.outletTop}</div> : null}
-      <div className="w-fit max-w-full justify-self-start space-y-5 rounded-panel border border-border bg-accent/14 px-6 py-6">
+      <div className="w-fit max-w-full justify-self-start space-y-3 rounded-panel border border-border bg-accent/14 px-4 py-4 sm:space-y-5 sm:px-6 sm:py-6">
         <div>
           {/* origin no canto inicial: `0_50%` == `left` em LTR (pixel-idêntico), espelhado em RTL. */}
           <div className="max-w-40 origin-[0_50%] rtl:origin-[100%_50%] scale-125">

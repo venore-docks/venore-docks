@@ -48,7 +48,7 @@ export default async function AdminPage() {
         <EmptyState
           icon={<GraduationCap className="size-8" strokeWidth={1.5} />}
           title="Nada para mostrar aqui"
-          description="Escolha uma área no menu ao lado para começar."
+          description="Escolha uma área no menu de administração para começar."
         />
       )}
     </div>
