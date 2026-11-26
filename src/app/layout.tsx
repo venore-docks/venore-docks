@@ -4,6 +4,7 @@ import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
 import { ServiceWorkerRegistrar } from "@/components/pwa/service-worker-registrar";
 import { InstallPrompt } from "@/components/pwa/install-prompt";
+import { readPwaInstallSetting } from "@/platform/pwa/read-install-setting";
 import { ThemeDomSync } from "@/components/theme-dom-sync";
 import { resolveThemeMetadataDefaults } from "@/platform/seo/metadata-defaults";
 import { generateViewport as generateThemeViewport } from "@/platform/seo/viewport";
@@ -31,7 +32,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [doc, requestHeaders] = await Promise.all([resolveDocumentModel(), headers()]);
+  const [doc, requestHeaders, pwaInstall] = await Promise.all([resolveDocumentModel(), headers(), readPwaInstallSetting()]);
   // Nonce da CSP gerado por request em src/proxy.ts — o script inline do next-themes (evita o
   // flash de tema) precisa dele pra rodar quando a política estiver em "enforce".
   const nonce = requestHeaders.get("x-nonce") ?? undefined;
@@ -71,7 +72,7 @@ export default async function RootLayout({
           {children}
           <Toaster />
           <ServiceWorkerRegistrar />
-          <InstallPrompt />
+          <InstallPrompt setting={pwaInstall} />
         </ThemeProvider>
       </body>
     </html>

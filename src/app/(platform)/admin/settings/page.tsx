@@ -10,6 +10,8 @@ import { DefaultRoleForm } from "./_components/default-role-form";
 import { RegistrationApprovalToggleForm } from "./_components/registration-approval-toggle-form";
 import { LocaleForm } from "./_components/locale-form";
 import { MaintenanceForm } from "./_components/maintenance-form";
+import { PwaInstallForm } from "./_components/pwa-install-form";
+import { readPwaInstallSetting } from "@/platform/pwa/read-install-setting";
 import { MembersOnlyForm } from "./_components/members-only-form";
 import { readMembersOnlySetting } from "@/platform/site-access/members-only";
 
@@ -34,6 +36,7 @@ export default async function SettingsAdminPage() {
   const record = settingResult.data;
   const approvalRequired = !record || typeof record.value !== "boolean" ? true : record.value;
   const membersOnly = await readMembersOnlySetting();
+  const pwaInstall = await readPwaInstallSetting();
   const [selfRegistration, defaultRoleKey, rolesResult] = await Promise.all([
     isSelfRegistrationEnabled(),
     getDefaultRegistrationRoleKey(),
@@ -80,6 +83,17 @@ export default async function SettingsAdminPage() {
       {/* v8 (spec §9): cada formulário tem dono e action próprios — idioma (W8), manutenção (W4). */}
       <LocaleForm />
       <MaintenanceForm />
+
+      <section className="rounded-panel border border-border bg-card ui-panel-padding-roomy">
+        <h2 className="text-sm font-semibold text-foreground">Instalar app (PWA)</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Convite discreto para instalar o portal. Nunca aparece no painel, em formulários, no app já instalado nem na primeira
+          visita da pessoa; depois de dispensado, só volta após o prazo abaixo.
+        </p>
+        <div className="mt-3">
+          <PwaInstallForm setting={pwaInstall} />
+        </div>
+      </section>
 
       <section className="rounded-panel border border-border bg-card ui-panel-padding-roomy">
         <h2 className="text-sm font-semibold text-foreground">Acesso ao site</h2>
