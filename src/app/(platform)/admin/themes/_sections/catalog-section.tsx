@@ -30,8 +30,8 @@ export async function CatalogSection({ actor }: { actor: AdminActor }) {
           const parent = entry?.contract === 8 ? entry.lineage[1] : undefined;
           const themeIssues = issues.filter((issue) => issue.themeKey === manifest.key);
           return (
-            <li key={manifest.key} className="flex flex-wrap items-center justify-between gap-4 text-sm text-muted-foreground">
-              <div className="flex flex-col gap-0.5">
+            <li key={manifest.key} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 text-sm text-muted-foreground">
+              <div className="flex min-w-0 flex-col gap-0.5 break-words">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-medium text-foreground">{manifest.name}</span>
                   {isActive && <Badge variant="secondary">Ativo</Badge>}
@@ -48,7 +48,7 @@ export async function CatalogSection({ actor }: { actor: AdminActor }) {
                   </span>
                 ))}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2">
                 {canUpdateThemes && <ThemeUpdatePanel themeKey={manifest.key} themeName={manifest.name} />}
                 {!isActive && enabled && <ActivateThemeButton themeKey={manifest.key} />}
                 {canToggleThemes && (

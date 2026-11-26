@@ -117,8 +117,8 @@ export function UninstallPluginControl({
   const blockedNames = consequences.blockedByDependents.map((dependent) => dependent.name).join(", ");
 
   return (
-    <div className="flex flex-col items-end gap-2 text-right">
-      <div className="flex items-center gap-2">
+    <div className="flex min-w-0 flex-col items-stretch gap-2 text-start sm:items-end sm:text-right">
+      <div className="flex flex-wrap items-center gap-2">
         <Badge variant={enabled ? "secondary" : "outline"}>{enabled ? "Ativo" : "Inativo"}</Badge>
         {!enabled && (
           <form action={toggleAction}>

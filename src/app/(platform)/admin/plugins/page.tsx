@@ -80,8 +80,8 @@ export default async function PluginsAdminPage() {
         <ul className="space-y-3">
           {report.entries.map((entry) => (
             <li key={entry.key} className="rounded-panel border border-border bg-card ui-panel-padding-roomy">
-              <div className="flex items-center justify-between gap-4">
-                <div>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                <div className="min-w-0 break-words">
                   <h2 className="text-sm font-semibold text-foreground">{entry.manifest?.name ?? entry.key}</h2>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {entry.key}
@@ -91,9 +91,9 @@ export default async function PluginsAdminPage() {
                     <p className="mt-1 text-xs text-muted-foreground">{entry.manifest.description}</p>
                   )}
                 </div>
-                <div className="flex shrink-0 flex-col items-end gap-2">
+                <div className="flex w-full min-w-0 flex-col items-stretch gap-2 sm:w-auto sm:shrink-0 sm:items-end">
                   <span
-                    className={`rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_CLASSNAME[entry.status] ?? "bg-muted text-muted-foreground"}`}
+                    className={`self-start rounded-full px-2.5 py-1 sm:self-auto text-xs font-medium ${STATUS_CLASSNAME[entry.status] ?? "bg-muted text-muted-foreground"}`}
                   >
                     {STATUS_LABEL[entry.status] ?? entry.status}
                   </span>

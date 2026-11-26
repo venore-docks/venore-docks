@@ -33,7 +33,7 @@ export function InstallPluginControl({
   useActionToast({ pending, error: state.error, successMessage: "Plugin instalado.", onSuccess: () => setOpen(false) });
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <Badge variant="outline">Disponível</Badge>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>

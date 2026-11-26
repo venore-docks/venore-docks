@@ -34,9 +34,9 @@ export function ThemeUpdatePanel({ themeKey, themeName }: { themeKey: string; th
 
   if (!status) {
     return (
-      <form action={checkAction}>
+      <form action={checkAction} className="min-w-0 max-w-full">
         <input type="hidden" name="themeKey" value={themeKey} />
-        <Button type="submit" variant="ghost" size="sm" disabled={checkPending}>
+        <Button type="submit" variant="ghost" size="sm" disabled={checkPending} className="h-auto min-h-8 max-w-full whitespace-normal text-start">
           {checkPending ? "Verificando…" : `Verificar atualização de ${themeName}`}
         </Button>
       </form>
@@ -44,7 +44,7 @@ export function ThemeUpdatePanel({ themeKey, themeName }: { themeKey: string; th
   }
 
   return (
-    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+    <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs text-muted-foreground">
       <span>Instalada</span>
       <Badge variant="outline">v{status.installedVersion}</Badge>
       {status.latestVersion && (
