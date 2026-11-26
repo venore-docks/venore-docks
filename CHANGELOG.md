@@ -18,6 +18,11 @@ continuam propagando por merge.
 - `npm run media:migrate-to-filesystem` (`scripts/migrate-media-to-filesystem.mjs`): migra a mídia de uma instância do driver `vercel-blob` para `filesystem` — copia assets e variantes de todos os Blob stores que o banco referencia, com sidecar `.meta.json`, e regrava `media.assets.url` numa transação só quando nada falta. Idempotente, com simulação por padrão.
 - `docs/self-host/coolify.md`: como rodar uma instância fora da Vercel (Coolify), com Postgres e mídia no próprio servidor.
 
+## [0.9.21] - 2026-11-26
+
+### Changed
+- `@venore/plugin-colabora` v1.9.0 → **v1.9.1** (Portal do Colaborador): desempenho — a pessoa logada deixa de ser buscada no Zammad 2–3 vezes por página, e a Fila só lê solicitante e tags das linhas da aba aberta (25 por vez, com "Mostrar mais"); abas, filtros e menu mostram que estão carregando, e os botões de ação ficam ocupados até a tela atualizar (sem clique duplicado). `COLABORA_TIMING=1` registra o tempo de cada chamada ao Zammad. Sem migration.
+
 ## [0.9.20] - 2026-11-26
 
 ### Changed
