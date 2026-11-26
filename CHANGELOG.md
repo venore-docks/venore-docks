@@ -18,6 +18,11 @@ continuam propagando por merge.
 - `npm run media:migrate-to-filesystem` (`scripts/migrate-media-to-filesystem.mjs`): migra a mídia de uma instância do driver `vercel-blob` para `filesystem` — copia assets e variantes de todos os Blob stores que o banco referencia, com sidecar `.meta.json`, e regrava `media.assets.url` numa transação só quando nada falta. Idempotente, com simulação por padrão.
 - `docs/self-host/coolify.md`: como rodar uma instância fora da Vercel (Coolify), com Postgres e mídia no próprio servidor.
 
+## [0.9.20] - 2026-11-26
+
+### Changed
+- `@venore/plugin-colabora` v1.8.0 → **v1.9.0** (Portal do Colaborador): estado **Atribuído** entre Autorizado e Em andamento (atribuir leva a Atribuído; o agente inicia o atendimento); a **Fila** ganha uma aba por estado, incluindo Atribuído, Em andamento, Concluído e Finalizado; **histórico do chamado** (estado, responsável, setor, prioridade, tempo previsto, com data, hora e autor) na visão da equipe. O Zammad precisa do estado Atribuído e do gatilho de atribuição ajustado (docs do plugin). Sem migration.
+
 ## [0.9.19] - 2026-11-25
 
 ### Changed
