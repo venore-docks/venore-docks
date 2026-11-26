@@ -18,6 +18,11 @@ continuam propagando por merge.
 - `npm run media:migrate-to-filesystem` (`scripts/migrate-media-to-filesystem.mjs`): migra a mídia de uma instância do driver `vercel-blob` para `filesystem` — copia assets e variantes de todos os Blob stores que o banco referencia, com sidecar `.meta.json`, e regrava `media.assets.url` numa transação só quando nada falta. Idempotente, com simulação por padrão.
 - `docs/self-host/coolify.md`: como rodar uma instância fora da Vercel (Coolify), com Postgres e mídia no próprio servidor.
 
+## [0.9.23] - 2026-11-26
+
+### Changed
+- `@venore/plugin-colabora` v1.10.0 → **v1.10.1** (Portal do Colaborador): o "Voltar" do chamado filho leva ao chamado pai (e, numa cadeia de filhos, passo a passo até o chamado raiz), em vez de ir sempre para a lista. Sem migration.
+
 ## [0.9.22] - 2026-11-26
 
 ### Changed
