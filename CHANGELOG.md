@@ -18,6 +18,14 @@ continuam propagando por merge.
 - `npm run media:migrate-to-filesystem` (`scripts/migrate-media-to-filesystem.mjs`): migra a mídia de uma instância do driver `vercel-blob` para `filesystem` — copia assets e variantes de todos os Blob stores que o banco referencia, com sidecar `.meta.json`, e regrava `media.assets.url` numa transação só quando nada falta. Idempotente, com simulação por padrão.
 - `docs/self-host/coolify.md`: como rodar uma instância fora da Vercel (Coolify), com Postgres e mídia no próprio servidor.
 
+## [0.9.24] - 2026-11-27
+
+### Changed
+- `@venore/plugin-colabora` v1.10.1 → **v1.13.0** (Portal do Colaborador; reúne v1.11.0, v1.12.0 e v1.13.0). **Tem migration**: cria o schema `colabora` (`ticket_events`, `ticket_intervals`, `plugin_notes`), aplicada no `prebuild` (`db:migrate:plugins`); o plugin passa a declarar `drizzle-orm` como peer, que o core já tem.
+  - **Campos condicionais** (correção): o assistente "Abrir chamado" reavalia os Core Workflows a cada resposta. "Ferramenta do portal" (Sistema afetado = Portal do Colaborador) e "Telas afetadas" (= Broadcast e TVs) passam a ser perguntadas, na mesma tela do campo que as libera; o servidor refaz a avaliação antes de criar o chamado (antes o Zammad recusava com 422). Vale também para o chamado filho. A "Prioridade sugerida" passa a ser perguntada (o Zammad a exige do cliente).
+  - **Em pausa**: Pausar (pede o motivo) e Retomar, para o responsável e o gestor; aba e contador na Fila. Um agente tem um chamado Em andamento por vez: iniciar outro pausa o atual (urgência), com a anotação "Interrompido por #N".
+  - **Tempo previsto e prazo de entrega**: o plugin avalia o que a mudança de estado exige no Zammad e, sem valor definido, preenche 1 dia útil. O prazo aparece para todos; o tempo previsto, só para a equipe.
+
 ## [0.9.23] - 2026-11-26
 
 ### Changed

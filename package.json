@@ -1,6 +1,6 @@
 {
   "name": "venore-docks-1.0.0",
-  "version": "0.9.23",
+  "version": "0.9.24",
   "private": true,
   "engines": {
     "node": ">=22.12"
@@ -58,7 +58,7 @@
     "@venore/plugin-broadcast": "git+https://github.com/venore-docks/venore-plugin-broadcast.git#v1.10.0",
     "@venore/plugin-calendar": "git+https://github.com/venore-docks/venore-plugin-calendar.git#v1.0.1",
     "@venore/plugin-calendarios": "git+https://github.com/venore-docks/venore-plugin-calendarios.git#v0.4.1",
-    "@venore/plugin-colabora": "git+https://github.com/venore-docks/venore-plugin-colabora.git#v1.10.1",
+    "@venore/plugin-colabora": "git+https://github.com/venore-docks/venore-plugin-colabora.git#v1.13.0",
     "@venore/plugin-erasto-league": "git+https://github.com/venore-docks/venore-plugin-erasto-league.git#v0.42.1",
     "@venore/plugin-listas-materiais": "git+https://github.com/venore-docks/venore-plugin-listas-materiais.git#v0.5.1",
     "@venore/plugin-novels": "github:venore-docks/venore-plugin-novels#dee9fc4ca22fedba85683aa3bb158f6ab14c1107",
