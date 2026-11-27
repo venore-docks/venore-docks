@@ -18,6 +18,15 @@ continuam propagando por merge.
 - `npm run media:migrate-to-filesystem` (`scripts/migrate-media-to-filesystem.mjs`): migra a mídia de uma instância do driver `vercel-blob` para `filesystem` — copia assets e variantes de todos os Blob stores que o banco referencia, com sidecar `.meta.json`, e regrava `media.assets.url` numa transação só quando nada falta. Idempotente, com simulação por padrão.
 - `docs/self-host/coolify.md`: como rodar uma instância fora da Vercel (Coolify), com Postgres e mídia no próprio servidor.
 
+## [0.9.25] - 2026-11-27
+
+### Changed
+- `@venore/plugin-colabora` v1.13.0 → **v1.14.0** (Portal do Colaborador). Sem migration nova.
+  - **Novo estado "Aguardando solicitante"** (id 12 do Zammad): botão "Aguardar solicitante" e "Enviar e aguardar resposta" no chamado, etapa própria na Fila, contagem à parte na Equipe e no Início, e o chamado aparece para o solicitante em "Aguardando você" com a pergunta da equipe. Estado que o Colabora não reconhece vai para "Outros estados".
+  - **Fila**: navegação por etapa em gaveta no celular e coluna lateral a partir do tablet, em grupos.
+  - **Correções**: "Autorizar e atribuir" no primeiro clique; "Ver como" refaz a tela ao trocar de pessoa; "Solicitante respondeu" ignora a mensagem de abertura; contagens do Início, da Equipe e da Fila com uma regra só; abas de "Meus chamados" sem repetição; formulário de abertura com o assunto dentro do card do setor, campo de e-mail validado, ajuda por setor e mensagens de erro que somem.
+  - Os campos `acesso_nome` e `acesso_email` do Zammad ainda não têm regras (aparecem em todos os setores): a configuração é do Zammad.
+
 ## [0.9.24] - 2026-11-27
 
 ### Changed
